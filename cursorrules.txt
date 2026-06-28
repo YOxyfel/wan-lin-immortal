@@ -1,0 +1,91 @@
+Game Design Document (GDD): Project 
+
+$$Insert Working Title$$
+
+1. Project Overview
+
+Genre: Dark Fantasy / Xianxia Action-RPG
+
+Camera/Perspective: Third-Person / Over-the-shoulder
+
+Theme: Conspiracy, Cultivation, Betrayal, Hidden Bloodlines
+
+Target Demo Length: 15-20 Minutes (Vertical Slice)
+
+2. Elevator Pitch / Logline
+
+A dark cultivation action-RPG where a devastating "random" monster attack on a remote village hides a chilling political conspiracy. Armed with an ancient scroll holding an opportunistic, trapped Immortal, you must survive the mortal realm, unlock your unknown origins, and uncover who ordered the execution of your family.
+
+3. Core Narrative (The Demo Arc)
+
+The demo acts as a prologue and establishes the deep mystery of the world.
+
+The Incident: An Immortal battle in the sky ends with a divine scroll falling near the MC's peaceful village.
+
+The Betrayal: A sudden monster wave destroys the village. The dying Uncle hands the MC the scroll, warning that the monsters were just a cover.
+
+The Trial: The MC completes mortal survival quests to gather enough strength to open the scroll. Inside, a transactional, trapped Immortal forces them through a trial.
+
+The Awakening: Upon success, the Immortal unlocks the MC's meridians, triggering a system shock: The MC's origins are "Unknown." The Immortal realizes the MC possesses a terrifying, supposedly extinct bloodline and forms a secretive pact to use the MC for their own resurrection.
+
+The Clue (Ending Twist): Returning to the ruins, the MC finds a glowing Magic Crystal on the destroyed captain's desk reading: Leave your post at jdi38edh. The soldiers didn't flee; they were ordered to leave the village to die.
+
+4. Key Characters
+
+The Protagonist (MC): Believes they are a mortal villager, but harbors an ancient, hidden bloodline. Driven by the mystery of their missing family.
+
+The Uncle: The tragic catalyst. Dies handing over the scroll, knowing the true reason behind the attack.
+
+The Immortal (Mentor): Trapped inside the scroll. Arrogant, transactional, and opportunistic. Only agrees to help the MC after realizing the potential of the MC's terrifying lineage.
+
+The "Clean-Up Crew" (Antagonists): Shadowy figures/factions executing survivors of the monster attack.
+
+5. Core Gameplay Loop (Mortal Phase vs. Cultivator Phase)
+
+Phase 1 (Mortal): Vulnerable exploration. Gameplay focuses on basic survival, gathering items, and simple tactical combat against lingering rogue monsters.
+
+Phase 2 (The Trial): A puzzle/combat challenge in an isolated celestial arena inside the scroll.
+
+Phase 3 (Cultivator): Post-trial gameplay. The MC unlocks the Qi Condensation stage, unlocking new UI elements (Cultivation Bar) and basic magical combat to fight through the final ruins.
+
+6. Demo Walkthrough (Beat-by-Beat)
+
+Intro Cinematic: Immortals clash in the sky; the scroll is lost.
+
+Peaceful Exploration: Player explores the calm village. Subtly passes by patrolling soldiers and a Captain's desk with a glowing crystal.
+
+The Catastrophe: Sudden attack. Guided, intense pathing sequence through burning alleys.
+
+The Handoff: Uncle dies, gives the scroll, issues the warning to power up before seeking a major sect.
+
+Survival Quests: Player completes 1-2 emotional/survival quests in the ruins to raise "Mortal Might".
+
+The Scroll Trial: Teleportation to the scroll dimension. Interaction and trial with the Immortal.
+
+The Pact & Twist: Origin revealed. Immortal changes tune. Player teleports back.
+
+The Discovery: Player finds the crystal (jdi38edh) in the ashes. Ominous realization sets in.
+
+Outro: "Thanks for playing" screen with a final text crawl hinting at the missing family and delayed executions.
+
+7. Art Direction & Atmosphere
+
+Vibe: Gritty, dark traditional Chinese fantasy mixed with high-stakes mystery (e.g., Sekiro meets Renegade Immortal).
+
+Visual Contrast: High contrast between the warm, vibrant "Peaceful Village" and the ash-choked, red-skied "Ruined Village".
+
+Key Visuals: The ethereal, glowing interior of the Scroll Dimension contrasting with the bloody mud of the mortal realm.
+
+8. Open Questions & Next Steps
+
+$$$$
+
+ Finalize the combat style for the "Mortal Phase" (Heavy/Tactical vs. Fast/Fluid).
+
+$$$$
+
+ Detail the exact requirements for the 1-2 "Powering Up" quests.
+
+$$$$
+
+ Write the specific dialogue exchange between the MC and the Immortal inside the scroll.
