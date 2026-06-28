@@ -171,6 +171,18 @@
             #beat-label .beat-name { display: none; }
             #scroll-hint { bottom: 4.75rem; }
         }
+
+        /* On touch/mobile: let the artwork land first, then fade the whole
+           text overlay in a couple of seconds later for a cinematic feel. */
+        @media (max-width: 768px) {
+            .beat-inner { opacity: 0; transform: translateY(18px); transition: opacity 1.1s ease, transform 1.1s ease; }
+            .beat.in .beat-inner { opacity: 1; transform: translateY(0); transition-delay: 2s; }
+            /* Reveal the inner text together with the panel (no extra long stagger). */
+            .beat.in .beat-kicker { transition-delay: 2.1s; }
+            .beat.in .beat-title  { transition-delay: 2.25s; }
+            .beat.in .beat-body   { transition-delay: 2.45s; }
+            .beat.in .beat-extra  { transition-delay: 2.6s; }
+        }
         #progress-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(to right, #5A4310, #C28E0E); transition: width 0.6s ease; }
 
         /* Scroll hint */

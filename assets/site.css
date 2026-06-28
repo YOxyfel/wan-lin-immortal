@@ -204,8 +204,16 @@ body {
 }
 #navbar a { text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95), 0 0 22px rgba(0, 0, 0, 0.6); }
 
-/* Mobile menu */
-#mobile-menu { transition: opacity 0.4s ease, transform 0.4s ease; }
+/* Mobile menu — absolutely positioned dropdown so it never inflates the
+   nav bar's height (otherwise the scrolled nav background paints a tall
+   black block over the page on mobile). */
+#mobile-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
 #mobile-menu.hidden-menu { opacity: 0; transform: translateY(-12px); pointer-events: none; }
 #mobile-menu a { text-shadow: none; }
 
