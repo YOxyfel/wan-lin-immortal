@@ -1,0 +1,20 @@
+{
+  "name": "Wan & Lin Immortal",
+  "short_name": "Wan & Lin",
+  "description": "A dark xianxia cultivation action-RPG. Survive the slaughter, unlock your hidden bloodline, and uncover the conspiracy behind your village's massacre.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "lang": "en",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "assets/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ]
+}

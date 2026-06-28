@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://yoxyfel.github.io/wan-lin-immortal/sitemap.xml

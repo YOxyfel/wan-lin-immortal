@@ -5,6 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Demo, Beat by Beat | Wan &amp; Lin Immortal</title>
     <meta name="description" content="A cinematic, beat-by-beat walkthrough of the Wan & Lin Immortal vertical slice — from the falling scroll to the chilling discovery in the ashes.">
+    <meta name="keywords" content="Wan and Lin Immortal story, demo walkthrough, xianxia story, cultivation plot, vertical slice, game narrative">
+    <meta name="author" content="Wan & Lin Immortal">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta name="theme-color" content="#050505">
+    <link rel="canonical" href="https://yoxyfel.github.io/wan-lin-immortal/story.html">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/favicon.svg">
+    <link rel="manifest" href="site.webmanifest">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Wan &amp; Lin Immortal">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:title" content="The Demo, Beat by Beat | Wan &amp; Lin Immortal">
+    <meta property="og:description" content="A cinematic, beat-by-beat walkthrough of the Wan & Lin Immortal vertical slice — from the falling scroll to the chilling discovery in the ashes.">
+    <meta property="og:url" content="https://yoxyfel.github.io/wan-lin-immortal/story.html">
+    <meta property="og:image" content="https://yoxyfel.github.io/wan-lin-immortal/Images/Art/WideIntro.png">
+    <meta property="og:image:alt" content="Two immortals clash beneath a torn, blood-red sky.">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="The Demo, Beat by Beat | Wan &amp; Lin Immortal">
+    <meta name="twitter:description" content="A cinematic, beat-by-beat walkthrough of the Wan & Lin Immortal vertical slice — from the falling scroll to the chilling discovery in the ashes.">
+    <meta name="twitter:image" content="https://yoxyfel.github.io/wan-lin-immortal/Images/Art/WideIntro.png">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://yoxyfel.github.io/wan-lin-immortal/" },
+        { "@type": "ListItem", "position": 2, "name": "The Demo, Beat by Beat", "item": "https://yoxyfel.github.io/wan-lin-immortal/story.html" }
+      ]
+    }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -331,7 +366,7 @@
     bgLayers.innerHTML = BEATS.map((b, i) => b.wide
         ? `<div class="bg-layer bg-wide" data-i="${i}">
             <div class="bg-ambient" style="background-image:url('${enc(b.bg)}')"></div>
-            <img class="bg-pic-wide" src="${enc(b.bg)}" alt="">
+            <img class="bg-pic-wide" src="${enc(b.bg)}" alt="" decoding="async" fetchpriority="${i === 0 ? 'high' : 'low'}">
         </div>`
         : `<div class="bg-layer" data-i="${i}">
             <div class="bg-ambient" style="background-image:url('${enc(b.bg)}')"></div>
@@ -339,7 +374,7 @@
                 <div class="bg-pic-frame">
                     <span class="corner tl"></span><span class="corner tr"></span>
                     <span class="corner bl"></span><span class="corner br"></span>
-                    <img class="bg-pic" src="${enc(b.bg)}" alt="">
+                    <img class="bg-pic" src="${enc(b.bg)}" alt="" decoding="async" loading="lazy">
                 </div>
             </div>
         </div>`

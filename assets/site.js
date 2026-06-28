@@ -152,7 +152,7 @@ function renderGalleries() {
       .map(
         (img, i) => `
         <figure class="gallery-item reveal" data-lb-key="${key}" data-lb-index="${i}">
-          <img loading="lazy" src="${src(img.file)}" alt="${img.cap}">
+          <img loading="lazy" decoding="async" src="${src(img.file)}" alt="${img.cap}">
           <figcaption class="cap"><span>${img.cap}</span></figcaption>
         </figure>`
       )
