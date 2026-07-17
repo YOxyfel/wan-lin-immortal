@@ -25,6 +25,7 @@ export default defineConfig({
         cultivation: resolve(__dirname, 'cultivation.html'),
         story: resolve(__dirname, 'story.html'),
         gallery: resolve(__dirname, 'gallery.html'),
+        privacy: resolve(__dirname, 'privacy.html'),
       },
     },
   },

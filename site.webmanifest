@@ -1,6 +1,6 @@
 {
-  "name": "Wan & Lin Immortal",
-  "short_name": "Wan & Lin",
+  "name": "Wuhen & Xuan: Heaven Defying",
+  "short_name": "Wuhen & Xuan",
   "description": "A dark xianxia cultivation action-RPG. Survive the slaughter, unlock your hidden bloodline, and uncover the conspiracy behind your village's massacre.",
   "start_url": "./index.html",
   "scope": "./",
@@ -14,6 +14,18 @@
       "src": "assets/favicon.svg",
       "type": "image/svg+xml",
       "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
       "purpose": "any"
     }
   ]

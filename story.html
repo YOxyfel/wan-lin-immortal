@@ -3,32 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Demo, Beat by Beat | Wan &amp; Lin Immortal</title>
-    <meta name="description" content="A cinematic, beat-by-beat walkthrough of the Wan & Lin Immortal vertical slice — from the falling scroll to the chilling discovery in the ashes.">
-    <meta name="keywords" content="Wan and Lin Immortal story, demo walkthrough, xianxia story, cultivation plot, vertical slice, game narrative">
-    <meta name="author" content="Wan & Lin Immortal">
+    <title>The Demo, Beat by Beat | Wuhen &amp; Xuan: Heaven Defying</title>
+    <meta name="description" content="A cinematic, beat-by-beat walkthrough of the Wuhen & Xuan: Heaven Defying vertical slice — from the falling scroll to the chilling discovery in the ashes.">
+    <meta name="keywords" content="Wuhen and Xuan story, Heaven Defying story, demo walkthrough, xianxia story, cultivation plot, vertical slice, game narrative">
+    <meta name="author" content="Yane Zhekov">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <meta name="theme-color" content="#050505">
     <link rel="canonical" href="https://yoxyfel.github.io/wan-lin-immortal/story.html">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="apple-touch-icon" href="assets/favicon.svg">
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
     <link rel="manifest" href="site.webmanifest">
 
     <!-- Open Graph -->
     <meta property="og:type" content="article">
-    <meta property="og:site_name" content="Wan &amp; Lin Immortal">
+    <meta property="og:site_name" content="Wuhen &amp; Xuan: Heaven Defying">
     <meta property="og:locale" content="en_US">
-    <meta property="og:title" content="The Demo, Beat by Beat | Wan &amp; Lin Immortal">
-    <meta property="og:description" content="A cinematic, beat-by-beat walkthrough of the Wan & Lin Immortal vertical slice — from the falling scroll to the chilling discovery in the ashes.">
+    <meta property="og:title" content="The Demo, Beat by Beat | Wuhen &amp; Xuan: Heaven Defying">
+    <meta property="og:description" content="A cinematic, beat-by-beat walkthrough of the Wuhen & Xuan: Heaven Defying vertical slice — from the falling scroll to the chilling discovery in the ashes.">
     <meta property="og:url" content="https://yoxyfel.github.io/wan-lin-immortal/story.html">
-    <meta property="og:image" content="https://yoxyfel.github.io/wan-lin-immortal/Images/Art/WideIntro.png">
-    <meta property="og:image:alt" content="Two immortals clash beneath a torn, blood-red sky.">
+    <meta property="og:image" content="https://yoxyfel.github.io/wan-lin-immortal/Images/Share/story.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:alt" content="Twin souls at the cliff of dusk beneath a blood-red sky.">
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="The Demo, Beat by Beat | Wan &amp; Lin Immortal">
-    <meta name="twitter:description" content="A cinematic, beat-by-beat walkthrough of the Wan & Lin Immortal vertical slice — from the falling scroll to the chilling discovery in the ashes.">
-    <meta name="twitter:image" content="https://yoxyfel.github.io/wan-lin-immortal/Images/Art/WideIntro.png">
+    <meta name="twitter:title" content="The Demo, Beat by Beat | Wuhen &amp; Xuan: Heaven Defying">
+    <meta name="twitter:description" content="A cinematic, beat-by-beat walkthrough of the Wuhen & Xuan: Heaven Defying vertical slice — from the falling scroll to the chilling discovery in the ashes.">
+    <meta name="twitter:image" content="https://yoxyfel.github.io/wan-lin-immortal/Images/Share/story.jpg">
+    <meta name="twitter:image:alt" content="Twin souls at the cliff of dusk beneath a blood-red sky.">
 
     <script type="application/ld+json">
     {
@@ -43,7 +47,8 @@
     <link rel="stylesheet" href="assets/tailwind.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&display=swap" rel="stylesheet"></noscript>
     <link rel="stylesheet" href="assets/site.css">
     <style>
         html, body { height: 100%; }
@@ -216,7 +221,21 @@
             content: ''; position: absolute; inset: 0 0 -2.75rem 0; z-index: -1; pointer-events: none;
             background: linear-gradient(to bottom, rgba(5,5,5,0.92) 0%, rgba(5,5,5,0.7) 45%, rgba(5,5,5,0.3) 78%, rgba(5,5,5,0) 100%);
         }
+
+        /* Reduced motion: no snap-scroll easing, no beat/art transitions */
+        @media (prefers-reduced-motion: reduce) {
+            #stage { scroll-behavior: auto; }
+            .bg-layer { transition: opacity 0.1s linear; }
+            .bg-pic-frame, .bg-pic-wide { transition: none; }
+            .bg-layer.active .bg-pic-frame { transform: none; }
+            .bg-layer.bg-wide.active .bg-pic-wide { transform: scale(1.06); }
+            .beat-kicker, .beat-title, .beat-body, .beat-extra, .beat-inner {
+                opacity: 1; transform: none; transition: none;
+            }
+        }
     </style>
+    <!-- TODO analytics: create a free account at goatcounter.com, then uncomment and replace CODE -->
+    <!-- <script data-goatcounter="https://CODE.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script> -->
 </head>
 <body class="bg-obsidian-900 text-gray-200 font-story antialiased selection:bg-imperial-800 selection:text-imperial-300">
 
@@ -224,8 +243,8 @@
     <nav class="fixed w-full z-40 top-0">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
-                <a href="index.html" class="font-serif text-lg md:text-xl font-light text-imperial-400 tracking-[0.3em] uppercase">Wan<span class="text-gray-500 font-thin">&amp;</span>Lin</a>
-                <a href="index.html" class="text-gray-300 hover:text-imperial-300 font-serif uppercase tracking-[0.2em] text-[0.65rem] transition-colors flex items-center gap-2">
+                <a href="./" class="font-serif text-lg md:text-xl font-light text-imperial-400 tracking-[0.3em] uppercase">Wuhen<span class="text-gray-500 font-thin">&amp;</span>Xuan</a>
+                <a href="./" class="text-gray-300 hover:text-imperial-300 font-serif uppercase tracking-[0.2em] text-[0.65rem] transition-colors flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                     Exit
                 </a>
@@ -273,21 +292,21 @@
             kicker: 'Beat 01 — Intro Cinematic',
             title: 'The Heavens Tear Open',
             body: 'Two Immortals clash in the sky above a quiet world. Their war shatters the clouds — and from the wound in heaven, a single divine scroll spirals down, lost, falling toward a village that has never known the names of gods.',
-            bg: 'Images/Art/WideIntro.png', wide: true
+            bg: 'Images/Art/WideIntro.webp', wide: true
         },
         {
             num: '二', glyph: '村', tone: 'imperial',
             kicker: 'Beat 02 — Peaceful Exploration',
             title: 'A Village Unaware',
             body: 'You wander warm, lantern-lit streets. Merchants haggle, children laugh. You pass patrolling soldiers and a Captain&rsquo;s desk where a strange crystal pulses with quiet light. It means nothing to you now. It will mean everything soon.',
-            bg: 'Images/Environment/City.png'
+            bg: 'Images/Environment/City.webp'
         },
         {
             num: '三', glyph: '劫', tone: 'cinnabar',
             kicker: 'Beat 03 — The Catastrophe',
             title: 'Ash &amp; Slaughter',
             body: 'Without warning, the monster wave breaks upon the village. Roofs collapse into fire. You run — a desperate, guided flight through burning alleys, the screams of neighbours swallowed by the roar.',
-            bg: 'Images/MCs/MC2.png'
+            bg: 'Images/MCs/MC2.webp'
         },
         {
             num: '四', glyph: '託', tone: 'imperial',
@@ -295,21 +314,21 @@
             title: 'Your Uncle&rsquo;s Last Breath',
             body: 'Dying in the rubble, your uncle presses the fallen scroll into your hands. He knows the truth you do not.',
             extra: '&ldquo;Grow strong&hellip; seek a great sect. The monsters were only a cover. Trust nothing.&rdquo;',
-            bg: 'Images/Magic/image_0 (18).png'
+            bg: 'Images/Magic/image_0 (18).webp'
         },
         {
             num: '五', glyph: '試', tone: 'imperial',
             kicker: 'Beat 05 — Survival Quests',
             title: 'To Earn the Right',
             body: 'The scroll will not open for the weak. Among the ruins you take up small, aching tasks — burying the dead, salvaging the living, surviving the rogue beasts that linger. Each trial raises your Mortal Might until, at last, the seal trembles.',
-            bg: 'Images/Environment/Environment2.png'
+            bg: 'Images/Environment/Environment2.webp'
         },
         {
             num: '六', glyph: '丹', tone: 'jade',
             kicker: 'Beat 06 — The Scroll Trial',
             title: 'Inside the Celestial Arena',
             body: 'The scroll unfurls and the world dissolves. You stand in an isolated heaven of light and sigil, face to face with the Immortal trapped within — arrogant, transactional, amused by your mortality. He sets his trial. Survive it, or remain dust forever.',
-            bg: 'Images/Magic/AscendantMagic.png'
+            bg: 'Images/Magic/AscendantMagic.webp'
         },
         {
             num: '七', glyph: '契', tone: 'imperial',
@@ -317,23 +336,23 @@
             title: 'Origin: Unknown',
             body: 'You endure. The Immortal pries open your meridians — and the heavens recoil. The system reads your origin and returns a single, impossible word.',
             extra: 'A terrifying, supposedly extinct bloodline sleeps in your veins. The Immortal&rsquo;s contempt becomes hunger. A secret pact is struck: your power, for his resurrection.',
-            bg: 'Images/MCs/MC1.png'
+            bg: 'Images/MCs/MC1.webp'
         },
         {
             num: '八', glyph: '謀', tone: 'cinnabar',
             kicker: 'Beat 08 — The Discovery',
             title: 'The Order in the Ashes',
             body: 'Returned to the smoldering ruins, you find the Captain&rsquo;s crystal half-buried in soot. Its projection flickers to life with a command that turns your grief to ice:',
-            extra: '&ldquo;Leave your post at <span class="text-cinnabar-500">jdi38edh</span>.&rdquo; &mdash; The soldiers did not flee. They were ordered to let the village die.',
-            bg: 'Images/Magic/MagicSphere.png'
+            extra: '&ldquo;Leave your post at <span class="text-cinnabar-500">Directive 38-EDH</span>.&rdquo; &mdash; The soldiers did not flee. They were ordered to let the village die.',
+            bg: 'Images/Magic/MagicSphere.webp'
         },
         {
             num: '九', glyph: '終', tone: 'imperial',
             kicker: 'Beat 09 — Outro',
             title: 'Thanks for Playing',
             body: 'Your family is still missing. The executions were delayed, not cancelled. And somewhere above the clouds, those who ordered the slaughter do not yet know that the last of an extinct bloodline survived.',
-            extra: 'Wan &amp; Lin Immortal — the journey has only begun.',
-            bg: 'Images/Art/ArtSunset.png',
+            extra: 'Wuhen &amp; Xuan: Heaven Defying — the journey has only begun.',
+            bg: 'Images/Art/ArtSunset.webp',
             cta: true
         }
     ];
@@ -378,12 +397,17 @@
                 <p class="beat-body text-xl md:text-2xl text-gray-50 font-normal leading-relaxed">${b.body}</p>
                 ${b.extra ? `<p class="beat-extra mt-6 text-lg md:text-xl text-gray-100 italic leading-relaxed border-l-2 border-imperial-400 pl-6">${b.extra}</p>` : ''}
                 ${b.cta ? `<div class="beat-extra mt-10 flex flex-wrap gap-6">
-                    <a href="index.html#demo" class="group relative px-8 py-3 overflow-hidden">
+                    <!-- TODO replace with Buttondown/Discord when created -->
+                    <a href="mailto:zhekov.yane123@gmail.com?subject=Notify me — Wuhen %26 Xuan demo" class="inline-flex items-center justify-center px-8 py-3 bg-imperial-500 hover:bg-imperial-400 text-obsidian-900 font-serif font-medium uppercase tracking-[0.3em] text-sm transition-colors duration-300 border border-imperial-400">Get Notified</a>
+                    <a href="./#demo" class="group relative px-8 py-3 overflow-hidden">
                         <div class="absolute inset-0 border border-imperial-500/60 group-hover:border-imperial-400 transition-colors duration-700"></div>
-                        <span class="relative text-imperial-300 font-serif uppercase tracking-[0.3em] text-sm">Play the Demo</span>
+                        <span class="relative text-imperial-300 font-serif uppercase tracking-[0.3em] text-sm">About the Demo</span>
                     </a>
                     <a href="gallery.html" class="text-gray-400 hover:text-white font-serif uppercase tracking-[0.2em] text-xs transition-colors self-center">View the Gallery &rarr;</a>
-                </div>` : ''}
+                </div>
+                <p class="beat-extra mt-8 text-sm text-gray-500 font-serif uppercase tracking-[0.2em]">Demo in development &mdash; coming to PC</p>
+                <!-- TODO update to yanezhekov.dev when live -->
+                <p class="beat-extra mt-4 text-[0.65rem] text-gray-500 font-serif uppercase tracking-[0.2em]">A game by <a href="https://v0-yanez.vercel.app" class="text-imperial-400/80 hover:text-imperial-300 transition-colors">Yane Zhekov</a> &nbsp;&middot;&nbsp; <a href="mailto:zhekov.yane123@gmail.com" class="hover:text-imperial-300 transition-colors">zhekov.yane123@gmail.com</a> &nbsp;&middot;&nbsp; <a href="privacy.html" class="hover:text-imperial-300 transition-colors">Privacy</a></p>` : ''}
             </div>
         </section>
     `).join('');
@@ -420,9 +444,10 @@
     }, { root: stage, threshold: [0.55] });
     beats.forEach((b) => io.observe(b));
 
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     function goTo(i) {
         i = Math.max(0, Math.min(BEATS.length - 1, i));
-        beats[i].scrollIntoView({ behavior: 'smooth' });
+        beats[i].scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
     }
 
     trackBtns.forEach((t) => t.addEventListener('click', () => goTo(parseInt(t.dataset.i, 10))));
@@ -456,8 +481,8 @@
     });
     // Stop auto-play if the user scrolls manually
     let userScrollLock = false;
-    stage.addEventListener('wheel', () => { if (!userScrollLock) stopAuto(); });
-    stage.addEventListener('touchstart', () => stopAuto());
+    stage.addEventListener('wheel', () => { if (!userScrollLock) stopAuto(); }, { passive: true });
+    stage.addEventListener('touchstart', () => stopAuto(), { passive: true });
 
     setActive(0);
     </script>

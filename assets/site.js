@@ -1,118 +1,133 @@
 /* ===========================================================
-   Wan & Lin Immortal — shared site behaviour
+   Wuhen & Xuan: Heaven Defying — shared site behaviour
    Nav, reveal-on-scroll, gallery rendering + lightbox
    =========================================================== */
 
 /* ---------- Image catalogue (relative to site root) ---------- */
 const IMAGES = {
   art: [
-    { file: 'Images/Art/ArtSunset.png', cap: 'Twin Souls at the Cliff of Dusk' },
-    { file: 'Images/Art/ArtSect.png', cap: 'The Lotus Sect, Adrift in Cloud' },
-    { file: 'Images/Art/Art.png', cap: 'Key Vision' },
+    { file: 'Images/Art/ArtSunset.webp', cap: 'Twin Souls at the Cliff of Dusk' },
+    { file: 'Images/Art/ArtSect.webp', cap: 'The Lotus Sect, Adrift in Cloud' },
+    { file: 'Images/Art/Art.webp', cap: 'Key Vision' },
   ],
   mcs: [
-    { file: 'Images/MCs/MC1.png', cap: 'The Unsealed Bloodline' },
-    { file: 'Images/MCs/MC2.png', cap: 'Crimson Ascension' },
-    { file: 'Images/MCs/MC3.png', cap: 'The Wanderer' },
-    { file: 'Images/MCs/MC4.png', cap: 'Vow of Ash' },
-    { file: 'Images/MCs/MC5.png', cap: 'The Quiet Storm' },
-    { file: 'Images/MCs/image_0 (21).png', cap: 'Drifting Cultivator' },
-    { file: 'Images/MCs/image_1 (10).png', cap: 'Heir of the Forgotten' },
-    { file: 'Images/MCs/image_1 (8).png', cap: 'Eyes of the Old World' },
+    { file: 'Images/MCs/MC1.webp', cap: 'The Unsealed Bloodline' },
+    { file: 'Images/MCs/MC2.webp', cap: 'Crimson Ascension' },
+    { file: 'Images/MCs/MC3.webp', cap: 'The Wanderer' },
+    { file: 'Images/MCs/MC4.webp', cap: 'Vow of Ash' },
+    { file: 'Images/MCs/MC5.webp', cap: 'The Quiet Storm' },
+    { file: 'Images/MCs/image_0 (21).webp', cap: 'Drifting Cultivator' },
+    { file: 'Images/MCs/image_1 (10).webp', cap: 'Heir of the Forgotten' },
+    { file: 'Images/MCs/image_1 (8).webp', cap: 'Eyes of the Old World' },
   ],
   clothing: [
-    { file: 'Images/Clothing/image_1 (22).png', cap: 'Mortal Robes' },
+    { file: 'Images/Clothing/image_1 (22).webp', cap: 'Mortal Robes' },
   ],
   environment: [
-    { file: 'Images/Environment/City.png', cap: 'The Lantern Quarter' },
-    { file: 'Images/Environment/City2.png', cap: 'Market Under Snow' },
-    { file: 'Images/Environment/City3.png', cap: 'The Old Capital' },
-    { file: 'Images/Environment/Inn.png', cap: 'The Wayfarer\u2019s Inn' },
-    { file: 'Images/Environment/Housing.png', cap: 'Village Dwellings' },
-    { file: 'Images/Environment/Hill.png', cap: 'The Green Hills' },
-    { file: 'Images/Environment/Mountain.png', cap: 'Peaks of the Immortals' },
-    { file: 'Images/Environment/Environment1.png', cap: 'Borderland Path' },
-    { file: 'Images/Environment/Environment2.png', cap: 'Misted Valley' },
-    { file: 'Images/Environment/Environment3.png', cap: 'Forgotten Shrine' },
-    { file: 'Images/Environment/Environment4.png', cap: 'River of Reeds' },
-    { file: 'Images/Environment/image_0 (2).png', cap: 'Wandering Road' },
-    { file: 'Images/Environment/image_0 (5).png', cap: 'Quiet Courtyard' },
-    { file: 'Images/Environment/image_0 (7).png', cap: 'Cliffside Trail' },
-    { file: 'Images/Environment/image_0 (9).png', cap: 'Dawn Over Tiles' },
-    { file: 'Images/Environment/image_0 (10).png', cap: 'Lake of Mirrors' },
-    { file: 'Images/Environment/image_0 (13).png', cap: 'Pavilion in Bloom' },
-    { file: 'Images/Environment/image_0 (16).png', cap: 'Stone Bridge' },
-    { file: 'Images/Environment/image_0 (22).png', cap: 'Terraced Slopes' },
-    { file: 'Images/Environment/image_0 (23).png', cap: 'Bamboo Hollow' },
-    { file: 'Images/Environment/image_0 (26).png', cap: 'Temple Steps' },
-    { file: 'Images/Environment/image_1 (4).png', cap: 'Frosted Eaves' },
-    { file: 'Images/Environment/image_1 (6).png', cap: 'Twilight Walk' },
-    { file: 'Images/Environment/image_1 (7).png', cap: 'Lantern-lit Lane' },
-    { file: 'Images/Environment/image_1 (15).png', cap: 'Cloud Terrace' },
-    { file: 'Images/Environment/image_1 (20).png', cap: 'Mountain Gate' },
-    { file: 'Images/Environment/image_1 (21).png', cap: 'Hidden Hamlet' },
-    { file: 'Images/Environment/image_1 (23).png', cap: 'Snowfall Square' },
-    { file: 'Images/Environment/image_1 (24).png', cap: 'Riverside Town' },
-    { file: 'Images/Environment/image_1 (27).png', cap: 'The Long Wall' },
-    { file: 'Images/Environment/image_1 (35).png', cap: 'Verdant Overlook' },
-    { file: 'Images/Environment/image_1 (36).png', cap: 'Sunset Rooftops' },
+    { file: 'Images/Environment/City.webp', cap: 'The Lantern Quarter' },
+    { file: 'Images/Environment/City2.webp', cap: 'Market Under Snow' },
+    { file: 'Images/Environment/City3.webp', cap: 'The Old Capital' },
+    { file: 'Images/Environment/Inn.webp', cap: 'The Wayfarer\u2019s Inn' },
+    { file: 'Images/Environment/Housing.webp', cap: 'Village Dwellings' },
+    { file: 'Images/Environment/Hill.webp', cap: 'The Green Hills' },
+    { file: 'Images/Environment/Mountain.webp', cap: 'Peaks of the Immortals' },
+    { file: 'Images/Environment/Environment1.webp', cap: 'Borderland Path' },
+    { file: 'Images/Environment/Environment2.webp', cap: 'Misted Valley' },
+    { file: 'Images/Environment/Environment3.webp', cap: 'Forgotten Shrine' },
+    { file: 'Images/Environment/Environment4.webp', cap: 'River of Reeds' },
+    { file: 'Images/Environment/image_0 (2).webp', cap: 'Wandering Road' },
+    { file: 'Images/Environment/image_0 (5).webp', cap: 'Quiet Courtyard' },
+    { file: 'Images/Environment/image_0 (7).webp', cap: 'Cliffside Trail' },
+    { file: 'Images/Environment/image_0 (9).webp', cap: 'Dawn Over Tiles' },
+    { file: 'Images/Environment/image_0 (10).webp', cap: 'Lake of Mirrors' },
+    { file: 'Images/Environment/image_0 (13).webp', cap: 'Pavilion in Bloom' },
+    { file: 'Images/Environment/image_0 (16).webp', cap: 'Stone Bridge' },
+    { file: 'Images/Environment/image_0 (22).webp', cap: 'Terraced Slopes' },
+    { file: 'Images/Environment/image_0 (23).webp', cap: 'Bamboo Hollow' },
+    { file: 'Images/Environment/image_0 (26).webp', cap: 'Temple Steps' },
+    { file: 'Images/Environment/image_1 (4).webp', cap: 'Frosted Eaves' },
+    { file: 'Images/Environment/image_1 (6).webp', cap: 'Twilight Walk' },
+    { file: 'Images/Environment/image_1 (7).webp', cap: 'Lantern-lit Lane' },
+    { file: 'Images/Environment/image_1 (15).webp', cap: 'Cloud Terrace' },
+    { file: 'Images/Environment/image_1 (20).webp', cap: 'Mountain Gate' },
+    { file: 'Images/Environment/image_1 (21).webp', cap: 'Hidden Hamlet' },
+    { file: 'Images/Environment/image_1 (23).webp', cap: 'Snowfall Square' },
+    { file: 'Images/Environment/image_1 (24).webp', cap: 'Riverside Town' },
+    { file: 'Images/Environment/image_1 (27).webp', cap: 'The Long Wall' },
+    { file: 'Images/Environment/image_1 (35).webp', cap: 'Verdant Overlook' },
+    { file: 'Images/Environment/image_1 (36).webp', cap: 'Sunset Rooftops' },
   ],
   magic: [
-    { file: 'Images/Magic/bigMagic.png', cap: 'Heaven-Spanning Array' },
-    { file: 'Images/Magic/AscendantMagic.png', cap: 'Ascendant Rite' },
-    { file: 'Images/Magic/MagicArray.png', cap: 'Sealing Array I' },
-    { file: 'Images/Magic/MagicArray2.png', cap: 'Sealing Array II' },
-    { file: 'Images/Magic/MagicArray3.png', cap: 'Sealing Array III' },
-    { file: 'Images/Magic/MagicArray4.png', cap: 'Sealing Array IV' },
-    { file: 'Images/Magic/MagicSphere.png', cap: 'Qi Condensation' },
-    { file: 'Images/Magic/MagicLines.png', cap: 'Threads of Fate' },
-    { file: 'Images/Magic/magicVoid.png', cap: 'Into the Void' },
-    { file: 'Images/Magic/body.png', cap: 'Meridian Awakening' },
-    { file: 'Images/Magic/DragonDog.png', cap: 'The Beast Within' },
-    { file: 'Images/Magic/Swords.png', cap: 'Sword Intent' },
-    { file: 'Images/Magic/SwordsFlying.png', cap: 'Flying Sword Art' },
-    { file: 'Images/Magic/Soldier.png', cap: 'The Clean-Up Crew' },
-    { file: 'Images/Magic/image_0 (2).png', cap: 'Spirit Flame' },
-    { file: 'Images/Magic/image_0 (3).png', cap: 'Talisman Burst' },
-    { file: 'Images/Magic/image_0 (4).png', cap: 'Lightning Coil' },
-    { file: 'Images/Magic/image_0 (6).png', cap: 'Golden Sigil' },
-    { file: 'Images/Magic/image_0 (8).png', cap: 'Astral Bloom' },
-    { file: 'Images/Magic/image_0 (10).png', cap: 'Radiant Surge' },
-    { file: 'Images/Magic/image_0 (11).png', cap: 'Frost Domain' },
-    { file: 'Images/Magic/image_0 (15).png', cap: 'Ember Crown' },
-    { file: 'Images/Magic/image_0 (17).png', cap: 'Phantom Step' },
-    { file: 'Images/Magic/image_0 (18).png', cap: 'Soul Lantern' },
-    { file: 'Images/Magic/image_0 (25).png', cap: 'Heaven\u2019s Decree' },
-    { file: 'Images/Magic/image_1 (3).png', cap: 'Cinder Wing' },
-    { file: 'Images/Magic/image_1 (4).png', cap: 'Jade Current' },
-    { file: 'Images/Magic/image_1 (5).png', cap: 'Star Compass' },
-    { file: 'Images/Magic/image_1 (7).png', cap: 'Blood Sigil' },
-    { file: 'Images/Magic/image_1 (10).png', cap: 'Void Rupture' },
-    { file: 'Images/Magic/image_1 (11).png', cap: 'Lotus Flame' },
-    { file: 'Images/Magic/image_1 (12).png', cap: 'Mirror of Karma' },
-    { file: 'Images/Magic/image_1 (13).png', cap: 'Thunder Glyph' },
-    { file: 'Images/Magic/image_1 (18).png', cap: 'Celestial Tide' },
-    { file: 'Images/Magic/image_1 (19).png', cap: 'Gilded Storm' },
-    { file: 'Images/Magic/image_1 (21).png', cap: 'Spirit Severance' },
-    { file: 'Images/Magic/image_1 (22).png', cap: 'Crimson Array' },
-    { file: 'Images/Magic/image_1 (25).png', cap: 'Pale Moon Rite' },
-    { file: 'Images/Magic/image_1 (26).png', cap: 'Ashen Vortex' },
-    { file: 'Images/Magic/image_1 (28).png', cap: 'Dragon Seal' },
-    { file: 'Images/Magic/image_1 (29).png', cap: 'Heaven\u2019s Eye' },
-    { file: 'Images/Magic/image_1 (30).png', cap: 'Eternal Coil' },
+    { file: 'Images/Magic/bigMagic.webp', cap: 'Heaven-Spanning Array' },
+    { file: 'Images/Magic/AscendantMagic.webp', cap: 'Ascendant Rite' },
+    { file: 'Images/Magic/MagicArray.webp', cap: 'Sealing Array I' },
+    { file: 'Images/Magic/MagicArray2.webp', cap: 'Sealing Array II' },
+    { file: 'Images/Magic/MagicArray3.webp', cap: 'Sealing Array III' },
+    { file: 'Images/Magic/MagicArray4.webp', cap: 'Sealing Array IV' },
+    { file: 'Images/Magic/MagicSphere.webp', cap: 'Qi Condensation' },
+    { file: 'Images/Magic/MagicLines.webp', cap: 'Threads of Fate' },
+    { file: 'Images/Magic/magicVoid.webp', cap: 'Into the Void' },
+    { file: 'Images/Magic/body.webp', cap: 'Meridian Awakening' },
+    { file: 'Images/Magic/DragonDog.webp', cap: 'The Beast Within' },
+    { file: 'Images/Magic/Swords.webp', cap: 'Sword Intent' },
+    { file: 'Images/Magic/SwordsFlying.webp', cap: 'Flying Sword Art' },
+    { file: 'Images/Magic/Soldier.webp', cap: 'The Clean-Up Crew' },
+    { file: 'Images/Magic/image_0 (2).webp', cap: 'Spirit Flame' },
+    { file: 'Images/Magic/image_0 (3).webp', cap: 'Talisman Burst' },
+    { file: 'Images/Magic/image_0 (4).webp', cap: 'Lightning Coil' },
+    { file: 'Images/Magic/image_0 (6).webp', cap: 'Golden Sigil' },
+    { file: 'Images/Magic/image_0 (8).webp', cap: 'Astral Bloom' },
+    { file: 'Images/Magic/image_0 (10).webp', cap: 'Radiant Surge' },
+    { file: 'Images/Magic/image_0 (11).webp', cap: 'Frost Domain' },
+    { file: 'Images/Magic/image_0 (15).webp', cap: 'Ember Crown' },
+    { file: 'Images/Magic/image_0 (17).webp', cap: 'Phantom Step' },
+    { file: 'Images/Magic/image_0 (18).webp', cap: 'Soul Lantern' },
+    { file: 'Images/Magic/image_0 (25).webp', cap: 'Heaven\u2019s Decree' },
+    { file: 'Images/Magic/image_1 (3).webp', cap: 'Cinder Wing' },
+    { file: 'Images/Magic/image_1 (4).webp', cap: 'Jade Current' },
+    { file: 'Images/Magic/image_1 (5).webp', cap: 'Star Compass' },
+    { file: 'Images/Magic/image_1 (7).webp', cap: 'Blood Sigil' },
+    { file: 'Images/Magic/image_1 (10).webp', cap: 'Void Rupture' },
+    { file: 'Images/Magic/image_1 (11).webp', cap: 'Lotus Flame' },
+    { file: 'Images/Magic/image_1 (12).webp', cap: 'Mirror of Karma' },
+    { file: 'Images/Magic/image_1 (13).webp', cap: 'Thunder Glyph' },
+    { file: 'Images/Magic/image_1 (18).webp', cap: 'Celestial Tide' },
+    { file: 'Images/Magic/image_1 (19).webp', cap: 'Gilded Storm' },
+    { file: 'Images/Magic/image_1 (21).webp', cap: 'Spirit Severance' },
+    { file: 'Images/Magic/image_1 (22).webp', cap: 'Crimson Array' },
+    { file: 'Images/Magic/image_1 (25).webp', cap: 'Pale Moon Rite' },
+    { file: 'Images/Magic/image_1 (26).webp', cap: 'Ashen Vortex' },
+    { file: 'Images/Magic/image_1 (28).webp', cap: 'Dragon Seal' },
+    { file: 'Images/Magic/image_1 (29).webp', cap: 'Heaven\u2019s Eye' },
+    { file: 'Images/Magic/image_1 (30).webp', cap: 'Eternal Coil' },
   ],
 };
 
 /* ---------- Helpers ---------- */
 function src(file) { return encodeURI(file); }
 
-/* ---------- Reveal on scroll ---------- */
-function runReveal() {
-  const reveals = document.querySelectorAll('.reveal');
-  const wh = window.innerHeight;
-  reveals.forEach((el) => {
-    if (el.getBoundingClientRect().top < wh - 90) el.classList.add('active');
-  });
+/* ---------- Reveal on scroll (IntersectionObserver) ---------- */
+let revealObserver = null;
+function initReveal() {
+  const reveals = document.querySelectorAll('.reveal:not(.active)');
+  if (!('IntersectionObserver' in window)) {
+    reveals.forEach((el) => el.classList.add('active'));
+    return;
+  }
+  if (!revealObserver) {
+    revealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('active');
+            revealObserver.unobserve(entry.target);
+          }
+        });
+      },
+      { rootMargin: '0px 0px -90px 0px' }
+    );
+  }
+  reveals.forEach((el) => revealObserver.observe(el));
 }
 
 /* ---------- Navbar fade ---------- */
@@ -152,14 +167,14 @@ function renderGalleries() {
       .map(
         (img, i) => `
         <figure class="gallery-item reveal" data-lb-key="${key}" data-lb-index="${i}">
-          <img loading="lazy" decoding="async" src="${src(img.file)}" alt="${img.cap}">
+          <img loading="lazy" decoding="async" src="${src(img.file)}" alt="${img.cap}" width="1024" height="1024">
           <figcaption class="cap"><span>${img.cap}</span></figcaption>
         </figure>`
       )
       .join('');
   });
   initLightbox();
-  runReveal();
+  initReveal();
 }
 
 /* ---------- Lightbox ---------- */
@@ -207,6 +222,14 @@ function showLb() {
   lb.querySelector('.lb-cap').textContent = img.cap;
   lb.classList.add('open');
   document.body.style.overflow = 'hidden';
+  preloadLbNeighbors();
+}
+function preloadLbNeighbors() {
+  if (!LB_LIST.length) return;
+  [lbIndex - 1, lbIndex + 1].forEach((n) => {
+    const img = LB_LIST[(n + LB_LIST.length) % LB_LIST.length];
+    if (img) new Image().src = src(img.file);
+  });
 }
 function stepLb(dir) {
   lbIndex = (lbIndex + dir + LB_LIST.length) % LB_LIST.length;
@@ -218,10 +241,9 @@ function closeLb() {
 }
 
 /* ---------- Boot ---------- */
-window.addEventListener('scroll', runReveal);
 document.addEventListener('DOMContentLoaded', () => {
   initNav();
   renderGalleries();
-  runReveal();
+  initReveal();
 });
-window.addEventListener('load', runReveal);
+window.addEventListener('load', initReveal);

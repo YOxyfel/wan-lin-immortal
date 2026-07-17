@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Wan and Lin Immortal">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Wuhen and Xuan: Heaven Defying">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#FDE047"/>
@@ -7,5 +7,5 @@
   </defs>
   <rect width="64" height="64" rx="12" fill="#050505"/>
   <rect x="2.5" y="2.5" width="59" height="59" rx="10" fill="none" stroke="#5A4310" stroke-width="1.5"/>
-  <text x="32" y="47" text-anchor="middle" font-family="'Cinzel', 'Songti SC', 'SimSun', serif" font-size="42" fill="url(#g)">ู</text>
+  <text x="32" y="47" text-anchor="middle" font-family="'Cinzel', 'Songti SC', 'SimSun', serif" font-size="42" fill="url(#g)">ไป</text>
 </svg>
