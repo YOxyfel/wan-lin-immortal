@@ -2,6 +2,8 @@
 
 A promotional website for **Wuhen & Xuan: Heaven Defying**, a dark-fantasy *xianxia* cultivation action-RPG. A devastating "random" monster attack on a remote village hides a chilling political conspiracy — armed with an ancient scroll holding a trapped Immortal, you must survive the mortal realm, unlock your hidden bloodline, and uncover who ordered the death of your family.
 
+A production by **Oxyfel Games**.
+
 **Live site:** https://yoxyfel.github.io/wan-lin-immortal/
 
 ---
