@@ -1,8 +1,8 @@
 {
-  "name": "wan-lin-immortal",
+  "name": "wuhen-xuan-heaven-defying",
   "version": "1.0.0",
   "private": true,
-  "description": "Wan & Lin Immortal — a dark xianxia cultivation game website.",
+  "description": "Wuhen & Xuan: Heaven Defying — a dark xianxia cultivation game website.",
   "type": "module",
   "scripts": {
     "css": "tailwindcss -i ./assets/tailwind.src.css -o ./assets/tailwind.css --minify",

@@ -1,6 +1,6 @@
-# Wan & Lin Immortal
+# Wuhen & Xuan: Heaven Defying
 
-A promotional website for **Wan & Lin Immortal**, a dark-fantasy *xianxia* cultivation action-RPG. A devastating "random" monster attack on a remote village hides a chilling political conspiracy — armed with an ancient scroll holding a trapped Immortal, you must survive the mortal realm, unlock your hidden bloodline, and uncover who ordered the death of your family.
+A promotional website for **Wuhen & Xuan: Heaven Defying**, a dark-fantasy *xianxia* cultivation action-RPG. A devastating "random" monster attack on a remote village hides a chilling political conspiracy — armed with an ancient scroll holding a trapped Immortal, you must survive the mortal realm, unlock your hidden bloodline, and uncover who ordered the death of your family.
 
 **Live site:** https://yoxyfel.github.io/wan-lin-immortal/
 
@@ -16,6 +16,7 @@ A promotional website for **Wan & Lin Immortal**, a dark-fantasy *xianxia* culti
 | `cultivation.html` | The path from mortal flesh to Qi Condensation — the arts & arrays gallery |
 | `story.html` | A cinematic, **beat-by-beat** walkthrough of the demo (scroll-snap + auto-play) |
 | `gallery.html` | The complete concept-art archive |
+| `privacy.html` | Privacy policy — no cookies, no tracking |
 
 ## Features
 

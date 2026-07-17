@@ -1,5 +1,5 @@
 /* ===========================================================
-   Wan & Lin Immortal — shared site styles
+   Wuhen & Xuan: Heaven Defying — shared site styles
    Dark Xianxia aesthetic (obsidian / imperial gold / jade / cinnabar)
    =========================================================== */
 
@@ -228,4 +228,37 @@ body {
   width: 100%;
   height: 1px;
   background: linear-gradient(to right, transparent, rgba(194, 142, 14, 0.35), transparent);
+}
+
+/* Hero height — prefer dynamic viewport units where supported so the hero
+   never overflows behind mobile browser chrome. Used alongside min-h-screen. */
+@supports (min-height: 100dvh) {
+  .hero-dvh { min-height: 100dvh; }
+}
+
+/* ---------- Touch devices: no hover, so surface hover-only content ---------- */
+@media (hover: none) {
+  /* Gallery captions always visible */
+  .gallery-item .cap { transform: translateY(0); opacity: 1; }
+  /* Gameplay-phase panel copy at full opacity (index.html) */
+  .gameplay-copy { opacity: 1; }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html, html.scroll-smooth { scroll-behavior: auto; }
+  .animate-drift,
+  .animate-breathe,
+  .animate-float,
+  .animate-bounce { animation: none; }
+  .reveal,
+  .reveal-delay-1,
+  .reveal-delay-2,
+  .reveal-delay-3 {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  #lightbox img { animation: none; }
+  #mobile-menu { transition: none; }
 }
