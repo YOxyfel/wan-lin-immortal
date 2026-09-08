@@ -23,14 +23,20 @@ A production by **Oxyfel Games**.
 ## Features
 
 - Cinematic dark-xianxia design (obsidian / imperial-gold / jade / cinnabar palette, Cinzel + Cormorant fonts).
-- Scroll-driven reveal animations, a click-to-zoom lightbox, and a self-playing story experience.
+- Scroll-triggered awakening: a spatial gate opens, red/gold spirits merge, and a layered realm leads into the story.
+- Optional cinematic sound, Skip/Replay, reduced-motion support, and session-aware return navigation.
+- Paced story chapters and scroll-driven reveals.
+- Filterable 87-image art archive with keyboard-operated lightbox and focus management.
+- Nine-chapter concept-art prologue with manual and automatic playback.
 - All artwork is local, organized by category under `Images/` (Art, MCs, Environment, Magic, Clothing).
 - Responsive layout with a mobile menu.
 
 ## Tech
 
-- Static HTML, styled with [Tailwind CSS](https://tailwindcss.com/) (via CDN).
-- Shared `assets/site.css` and `assets/site.js` (gallery rendering, lightbox, nav).
+- Static HTML with locally compiled Tailwind CSS and a shared cinematic visual system.
+- Shared `assets/cinematic.css`, `assets/site.js`, and `assets/cinematic.js` (responsive layout, navigation, archive, lightbox, and motion).
+- `assets/story-cinema.css` gives the nine-chapter prologue its cinematic layout.
+- `assets/spatial-gate.js`, `assets/rift-effects.js`, and `assets/gate-audio.js` drive the homepage awakening; imagery remains local.
 - [Vite](https://vitejs.dev/) as the local dev server (hot reload).
 
 ## Local development
@@ -80,3 +86,11 @@ git push
 ---
 
 *Concept art and game design are works in progress for the vertical-slice demo.*
+
+## Cinematic redesign verification
+
+The September 2026 redesign preserves existing routes, lore, art, credits, contact address, and the PC demo's in-development status. The interactive prologue is labeled as concept-art storytelling with spoilers, not gameplay footage.
+
+Verified at 1440×960 and 390×844: all eight pages, local asset loading, horizontal overflow, main landmarks, in-page anchors, FAQ, mobile navigation, gallery categories, lightbox keyboard controls/focus return, and story playback. The story also supports scrolling through complete chapters at 844×390. `npm run build` bundles the shared JavaScript and CSS and retains the dynamically selected gallery/story artwork in the static output.
+
+The awakening was also verified at 320×568 and 667×375, including touch entry, keyboard Sound/Skip/Replay, reduced-motion interruption, session returns, and browser Back restoration. Sound starts disabled and requires explicit activation.

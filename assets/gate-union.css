@@ -1,0 +1,67 @@
+/* The two physical portraits stay anchored; their spirit echoes converge. */
+.spatial-gate{--spirit-alpha:0;--spirit-distance:24vw;--spirit-scale:1;--union-alpha:0;--union-scale:.93;--union-veil:0}
+.gate-union-veil{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:var(--union-veil);background:radial-gradient(ellipse at 50% 46%,#05080af7 0%,#07090be0 31%,#05080a70 58%,transparent 85%)}
+.gate-convergence{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden;mix-blend-mode:screen}
+.gate-spirit{position:absolute;top:8%;left:50%;width:min(48vw,56svh);height:auto;max-width:none;mix-blend-mode:screen;opacity:var(--spirit-alpha);will-change:transform,opacity;mask-image:linear-gradient(transparent,#000 8%,#000 85%,transparent);-webkit-mask-image:linear-gradient(transparent,#000 8%,#000 85%,transparent)}
+.gate-spirit--mortal{transform:translateX(calc(-50% - var(--spirit-distance))) scale(var(--spirit-scale))}
+.gate-spirit--immortal{transform:translateX(calc(-50% + var(--spirit-distance))) scale(var(--spirit-scale))}
+.gate-spirit--united{top:4%;width:min(51vw,61svh);opacity:var(--union-alpha);transform:translateX(-50%) scale(var(--union-scale))}
+.gate-union-caption{position:absolute;left:20px;right:20px;bottom:10%;margin:0;text-align:center;color:#f0dfbd;opacity:var(--union-alpha);font:10px/1.5 var(--label);letter-spacing:.3em;text-shadow:0 2px 15px #000}
+.gate-replay{display:block;min-height:44px;margin:12px auto 0;padding:10px 5px;color:#c8bea9;font:9px var(--label);letter-spacing:.12em;text-transform:uppercase;border-bottom:1px solid #c8bea944;transition:color .2s,border-color .2s}
+.gate-replay:hover{color:#fff4d9;border-color:#fff4d9}
+.is-playing .gate-skip{visibility:visible;opacity:1;color:#fff1ce;mix-blend-mode:normal;background:#080a0a8f;border:1px solid #c3a57766;padding:12px 16px;min-height:44px;display:flex;align-items:center}
+.is-playing .gate-progress{opacity:1;pointer-events:none}
+@media(max-width:700px){.gate-spirit{top:18%;width:94vw}.gate-spirit--united{top:13%;width:108vw}.gate-union-caption{font-size:8px;letter-spacing:.2em;bottom:13%}.gate-replay{margin-top:8px;font-size:8px}.gate-arrival{bottom:12%}}
+@media(max-height:650px){.gate-spirit{width:56svh;top:0}.gate-spirit--united{width:60svh;top:-4%}.gate-union-caption{bottom:9%;font-size:8px}.gate-replay{margin-top:4px;min-height:36px}.gate-arrival{bottom:9%}}
+@media(prefers-reduced-motion:reduce){.gate-convergence,.gate-union-veil,.gate-replay{display:none!important}}
+
+/* Energy removes the spirit layers from their outer edges toward the union. */
+.spatial-gate{--charge:0;--spirit-cut:-15%;--spirit-softness:0px;--chest-x:50%;--chest-y:50%;--realm-depth:0;--journey:0}
+.gate-spirit--mortal,.gate-spirit--immortal{filter:blur(var(--spirit-softness));mask-composite:intersect;-webkit-mask-composite:source-in}
+.gate-spirit--mortal{mask-image:linear-gradient(90deg,transparent calc(var(--spirit-cut) - 10%),#000 calc(var(--spirit-cut) + 10%)),linear-gradient(transparent,#000 8%,#000 83%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent calc(var(--spirit-cut) - 10%),#000 calc(var(--spirit-cut) + 10%)),linear-gradient(transparent,#000 8%,#000 83%,transparent)}
+.gate-spirit--immortal{mask-image:linear-gradient(270deg,transparent calc(var(--spirit-cut) - 10%),#000 calc(var(--spirit-cut) + 10%)),linear-gradient(transparent,#000 8%,#000 83%,transparent);-webkit-mask-image:linear-gradient(270deg,transparent calc(var(--spirit-cut) - 10%),#000 calc(var(--spirit-cut) + 10%)),linear-gradient(transparent,#000 8%,#000 83%,transparent)}
+.gate-shutter img{filter:brightness(calc(1 - var(--charge) * .24))}
+.gate-aura{background:radial-gradient(ellipse at var(--chest-x) var(--chest-y),#fffdf3 0%,#fff8dfbb 20%,#ffd49433 48%,transparent 78%)}
+.gate-flare{top:var(--chest-y)}
+.gate-effects{z-index:6}
+.gate-sound{display:none;position:absolute;z-index:10;top:104px;right:4.5%;align-items:center;gap:9px;min-height:44px;padding:10px 13px;border:1px solid #c8ad7644;background:#080a0a75;color:#d8cbb0;font:10px var(--label);letter-spacing:.11em;text-transform:uppercase;cursor:pointer;transition:background .2s,border-color .2s}
+.is-enhanced .gate-sound{display:inline-flex}
+.gate-sound:hover,.gate-sound[aria-pressed=true]{background:#241e148c;border-color:#c8ad7688;color:#fff0cb}
+.gate-sound:focus-visible,.gate-replay:focus-visible,.gate-skip:focus-visible{outline:2px solid #e8cc94;outline-offset:4px}
+.spatial-gate.is-enhanced.is-revisited{height:100svh;min-height:0}
+.is-revisited .gate-stage{position:relative;height:100svh;min-height:0}
+@media(max-width:700px){
+ .gate-person a{font-size:10px;line-height:1.35;min-height:46px;gap:5px;padding:10px 8px;letter-spacing:.045em;max-width:100%;text-align:left}
+ .gate-person--immortal a{text-align:right}
+ .gate-scroll{font-size:10px;letter-spacing:.1em}
+ .gate-sound{top:79px;right:5%;font-size:10px;padding:8px 10px;min-height:40px}
+ .gate-replay{font-size:10px;letter-spacing:.09em}
+ .gate-union-caption{font-size:10px;letter-spacing:.16em}
+ .bloodline-page .cinema-nav .menu-button,.bloodline-page .gate-art-link{font-size:10px}
+ .bloodline-page .cinema-nav{gap:16px}
+}
+@media(max-width:360px){
+ .bloodline-page .cinema-nav{padding-inline:16px;gap:12px}
+ .bloodline-page .cinema-nav .brand{font-size:10px;gap:5px}
+ .bloodline-page .cinema-nav .menu-button,.bloodline-page .gate-art-link{font-size:9px;letter-spacing:.025em}
+ .gate-person a{font-size:9px;padding-inline:7px;letter-spacing:.02em}
+ .gate-scroll{font-size:9px}
+}
+@media(max-height:650px) and (orientation:landscape){
+ .gate-sound{top:18px;right:43%;min-height:36px;padding:8px 10px;font-size:9px}
+ .gate-person a{font-size:9px;min-height:40px}
+ .gate-scroll{font-size:9px}
+ .gate-union-caption{bottom:11%;font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .gate-sound{display:none!important}
+ .gate-shutter img{filter:none}
+ .spatial-gate.is-enhanced.is-revisited{min-height:640px}
+ .is-revisited .gate-stage{min-height:640px}
+}
+
+.gate-person,.gate-meta,.gate-scroll{transition:opacity .25s}
+.is-playing .gate-person,.is-playing .gate-meta,.is-playing .gate-scroll{opacity:0}
+@media(prefers-reduced-motion:reduce){.gate-person,.gate-meta,.gate-scroll{transition:none}}
+
+@media(max-width:700px) and (orientation:portrait){.gate-spirit--mortal,.gate-spirit--immortal{width:76vw;top:23%}}

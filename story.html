@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Demo, Beat by Beat | Wuhen &amp; Xuan: Heaven Defying</title>
+    <title>The Interactive Prologue | Wuhen &amp; Xuan: Heaven Defying</title>
     <meta name="description" content="A cinematic, beat-by-beat walkthrough of the Wuhen & Xuan: Heaven Defying vertical slice — from the falling scroll to the chilling discovery in the ashes.">
     <meta name="keywords" content="Wuhen and Xuan story, Heaven Defying story, demo walkthrough, xianxia story, cultivation plot, vertical slice, game narrative">
     <meta name="author" content="Yane Zhekov">
@@ -18,7 +18,7 @@
     <meta property="og:type" content="article">
     <meta property="og:site_name" content="Wuhen &amp; Xuan: Heaven Defying">
     <meta property="og:locale" content="en_US">
-    <meta property="og:title" content="The Demo, Beat by Beat | Wuhen &amp; Xuan: Heaven Defying">
+    <meta property="og:title" content="The Interactive Prologue | Wuhen &amp; Xuan: Heaven Defying">
     <meta property="og:description" content="A cinematic, beat-by-beat walkthrough of the Wuhen & Xuan: Heaven Defying vertical slice — from the falling scroll to the chilling discovery in the ashes.">
     <meta property="og:url" content="https://yoxyfel.github.io/wan-lin-immortal/story.html">
     <meta property="og:image" content="https://yoxyfel.github.io/wan-lin-immortal/Images/Share/story.jpg">
@@ -29,7 +29,7 @@
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="The Demo, Beat by Beat | Wuhen &amp; Xuan: Heaven Defying">
+    <meta name="twitter:title" content="The Interactive Prologue | Wuhen &amp; Xuan: Heaven Defying">
     <meta name="twitter:description" content="A cinematic, beat-by-beat walkthrough of the Wuhen & Xuan: Heaven Defying vertical slice — from the falling scroll to the chilling discovery in the ashes.">
     <meta name="twitter:image" content="https://yoxyfel.github.io/wan-lin-immortal/Images/Share/story.jpg">
     <meta name="twitter:image:alt" content="Twin souls at the cliff of dusk beneath a blood-red sky.">
@@ -40,7 +40,7 @@
       "@type": "BreadcrumbList",
       "itemListElement": [
         { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://yoxyfel.github.io/wan-lin-immortal/" },
-        { "@type": "ListItem", "position": 2, "name": "The Demo, Beat by Beat", "item": "https://yoxyfel.github.io/wan-lin-immortal/story.html" }
+        { "@type": "ListItem", "position": 2, "name": "The Interactive Prologue", "item": "https://yoxyfel.github.io/wan-lin-immortal/story.html" }
       ]
     }
     </script>
@@ -50,6 +50,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&display=swap" rel="stylesheet"></noscript>
     <link rel="stylesheet" href="assets/site.css">
+    <link rel="stylesheet" href="assets/cinematic.css">
     <style>
         html, body { height: 100%; }
         body { overflow: hidden; }
@@ -236,20 +237,18 @@
     </style>
     <!-- TODO analytics: create a free account at goatcounter.com, then uncomment and replace CODE -->
     <!-- <script data-goatcounter="https://CODE.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script> -->
+<link rel="stylesheet" href="assets/story-cinema.css">
 </head>
-<body class="bg-obsidian-900 text-gray-200 font-story antialiased selection:bg-imperial-800 selection:text-imperial-300">
+<body id="top" data-page="story" class="bg-obsidian-900 text-gray-200 font-story antialiased selection:bg-imperial-800 selection:text-imperial-300">
 
     <!-- Top nav (minimal, transparent) -->
-    <nav class="fixed w-full z-40 top-0">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-20">
-                <a href="./" class="font-serif text-lg md:text-xl font-light text-imperial-400 tracking-[0.3em] uppercase">Wuhen<span class="text-gray-500 font-thin">&amp;</span>Xuan</a>
-                <a href="./" class="text-gray-300 hover:text-imperial-300 font-serif uppercase tracking-[0.2em] text-[0.65rem] transition-colors flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                    Exit
-                </a>
-            </div>
-        </div>
+    <a class="skip-link" href="#stage">Skip to content</a>
+    <nav class="cinema-nav" id="navbar" aria-label="Main navigation">
+      <a class="brand" href="./" aria-label="Wuhen and Xuan home"><span class="brand-seal" aria-hidden="true">玄</span><span>WUHEN <i>&amp;</i> XUAN<small>HEAVEN DEFYING</small></span></a>
+      <div class="desktop-links"><a href="world.html" >The world</a><a href="characters.html" >The characters</a><a href="cultivation.html" >Cultivation</a><a href="story.html" aria-current="page">The story</a><a href="gallery.html" >Gallery</a></div>
+      <a class="nav-cta" href="./#demo">The demo <span aria-hidden="true">↗</span></a>
+      <button id="menu-toggle" class="menu-button" aria-label="Open navigation" aria-expanded="false" aria-controls="mobile-menu">Menu <span aria-hidden="true">＋</span></button>
+      <div id="mobile-menu" class="hidden-menu"><a href="./">The beginning</a><a href="world.html" >The world</a><a href="characters.html" >The characters</a><a href="cultivation.html" >Cultivation</a><a href="story.html" aria-current="page">The story</a><a href="gallery.html" >Gallery</a><a href="./#demo">About the demo</a></div>
     </nav>
 
     <!-- Background layers + vignette + text scrim -->
@@ -258,12 +257,13 @@
     <div id="bg-scrim"></div>
 
     <!-- Cinematic stage -->
-    <main id="stage"></main>
+    <h1 class="sr-only">The Interactive Prologue</h1><main id="stage" tabindex="-1"></main>
 
     <!-- Side tracker -->
     <div id="tracker"></div>
 
     <!-- Scroll hint -->
+    <div class="story-context">INTERACTIVE CONCEPT-ART PROLOGUE · STORY SPOILERS</div>
     <div id="scroll-hint">
         <p class="font-serif uppercase tracking-[0.3em] text-[0.6rem] mb-2">Scroll to Witness</p>
         <svg class="w-4 h-4 mx-auto animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
@@ -349,7 +349,7 @@
         {
             num: '九', glyph: '終', tone: 'imperial',
             kicker: 'Beat 09 — Outro',
-            title: 'Thanks for Playing',
+            title: 'The Journey Has Only Begun',
             body: 'Your family is still missing. The executions were delayed, not cancelled. And somewhere above the clouds, those who ordered the slaughter do not yet know that the last of an extinct bloodline survived.',
             extra: 'Wuhen &amp; Xuan: Heaven Defying — the journey has only begun.',
             bg: 'Images/Art/ArtSunset.webp',
@@ -361,6 +361,7 @@
     const enc = (s) => encodeURI(s);
 
     const stage = document.getElementById('stage');
+    stage.setAttribute('aria-label', 'Interactive concept-art prologue');
     const bgLayers = document.getElementById('bg-layers');
     const tracker = document.getElementById('tracker');
     const beatLabel = document.getElementById('beat-label');
@@ -415,7 +416,7 @@
 
     // Build tracker
     tracker.innerHTML = BEATS.map((b, i) =>
-        `<button data-i="${i}"><span class="dot"></span><span>${b.num} &nbsp; ${b.kicker.split('—')[1].trim()}</span></button>`
+        `<button data-i="${i}" aria-label="Chapter ${i + 1}: ${b.title.replace(/&[^;]+;/g, ' ')}"><span class="dot"></span><span>${b.num} &nbsp; ${b.kicker.split('—')[1].trim()}</span></button>`
     ).join('');
     const trackBtns = [...tracker.querySelectorAll('button')];
 
@@ -425,7 +426,7 @@
         current = i;
         layers.forEach((l, j) => l.classList.toggle('active', j === i));
         beats.forEach((b, j) => b.classList.toggle('in', j === i));
-        trackBtns.forEach((t, j) => t.classList.toggle('active', j === i));
+        trackBtns.forEach((t, j) => { t.classList.toggle('active', j === i); t.setAttribute('aria-current', j === i ? 'step' : 'false'); });
         const n = String(i + 1).padStart(2, '0');
         const total = String(BEATS.length).padStart(2, '0');
         const name = BEATS[i].kicker.split('—')[1].trim();
@@ -434,15 +435,21 @@
         scrollHint.style.opacity = i === 0 ? '1' : '0';
     }
 
-    // Observe which beat is centered
-    const io = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-            if (e.isIntersecting && e.intersectionRatio > 0.55) {
-                setActive(parseInt(e.target.dataset.i, 10));
-            }
-        });
-    }, { root: stage, threshold: [0.55] });
-    beats.forEach((b) => io.observe(b));
+    // Use section offsets so chapters taller than a small screen remain navigable.
+    let activeFrame = 0;
+    function updateChapter() {
+        activeFrame = 0;
+        const marker = stage.scrollTop + stage.clientHeight * 0.45;
+        let index = 0;
+        for (let n = 0; n < beats.length; n++) {
+            if (beats[n].offsetTop <= marker) index = n;
+        }
+        setActive(index);
+    }
+    stage.addEventListener('scroll', () => {
+        if (!activeFrame) activeFrame = requestAnimationFrame(updateChapter);
+    }, { passive: true });
+    window.addEventListener('resize', updateChapter);
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     function goTo(i) {
@@ -450,7 +457,7 @@
         beats[i].scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
     }
 
-    trackBtns.forEach((t) => t.addEventListener('click', () => goTo(parseInt(t.dataset.i, 10))));
+    trackBtns.forEach((t) => t.addEventListener('click', () => { stopAuto(); goTo(parseInt(t.dataset.i, 10)); }));
     document.getElementById('btn-prev').addEventListener('click', () => { stopAuto(); goTo(current - 1); });
     document.getElementById('btn-next').addEventListener('click', () => { stopAuto(); goTo(current + 1); });
 
@@ -461,6 +468,7 @@
     function startAuto() {
         if (autoTimer) return;
         iconPlay.classList.add('hidden'); iconPause.classList.remove('hidden');
+        document.getElementById('btn-play').setAttribute('aria-label', 'Pause auto-play'); document.getElementById('btn-play').setAttribute('aria-pressed', 'true');
         if (current >= BEATS.length - 1) goTo(0);
         autoTimer = setInterval(() => {
             if (current >= BEATS.length - 1) { stopAuto(); return; }
@@ -471,20 +479,24 @@
         if (!autoTimer) return;
         clearInterval(autoTimer); autoTimer = null;
         iconPlay.classList.remove('hidden'); iconPause.classList.add('hidden');
+        document.getElementById('btn-play').setAttribute('aria-label', 'Start auto-play'); document.getElementById('btn-play').setAttribute('aria-pressed', 'false');
     }
     document.getElementById('btn-play').addEventListener('click', () => autoTimer ? stopAuto() : startAuto());
 
     // Keyboard
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { stopAuto(); goTo(current + 1); }
-        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { stopAuto(); goTo(current - 1); }
+        if (e.target.closest('button, a, input')) return;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); stopAuto(); goTo(current + 1); }
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); stopAuto(); goTo(current - 1); }
     });
     // Stop auto-play if the user scrolls manually
     let userScrollLock = false;
     stage.addEventListener('wheel', () => { if (!userScrollLock) stopAuto(); }, { passive: true });
     stage.addEventListener('touchstart', () => stopAuto(), { passive: true });
 
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stopAuto(); });
     setActive(0);
     </script>
+<script type="module" src="assets/site.js"></script>
 </body>
 </html>

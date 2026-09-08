@@ -1,3 +1,4 @@
+import { initCinematic } from './cinematic.js';
 /* ===========================================================
    Wuhen & Xuan: Heaven Defying — shared site behaviour
    Nav, reveal-on-scroll, gallery rendering + lightbox
@@ -6,6 +7,7 @@
 /* ---------- Image catalogue (relative to site root) ---------- */
 const IMAGES = {
   art: [
+    { file: 'Images/Art/WideIntro.webp', cap: 'Above the Mortal Realm' },
     { file: 'Images/Art/ArtSunset.webp', cap: 'Twin Souls at the Cliff of Dusk' },
     { file: 'Images/Art/ArtSect.webp', cap: 'The Lotus Sect, Adrift in Cloud' },
     { file: 'Images/Art/Art.webp', cap: 'Key Vision' },
@@ -103,147 +105,108 @@ const IMAGES = {
   ],
 };
 
-/* ---------- Helpers ---------- */
+
+/* ---------- Accessible navigation, reveal, and artwork viewer ---------- */
 function src(file) { return encodeURI(file); }
-
-/* ---------- Reveal on scroll (IntersectionObserver) ---------- */
-let revealObserver = null;
+let revealObserver;
 function initReveal() {
-  const reveals = document.querySelectorAll('.reveal:not(.active)');
-  if (!('IntersectionObserver' in window)) {
-    reveals.forEach((el) => el.classList.add('active'));
-    return;
+  const elements = document.querySelectorAll('.reveal:not(.active)');
+  if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    elements.forEach(el => el.classList.add('active')); return;
   }
-  if (!revealObserver) {
-    revealObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('active');
-            revealObserver.unobserve(entry.target);
-          }
-        });
-      },
-      { rootMargin: '0px 0px -90px 0px' }
-    );
-  }
-  reveals.forEach((el) => revealObserver.observe(el));
+  revealObserver ||= new IntersectionObserver(entries => entries.forEach(entry => {
+    if (entry.isIntersecting) { entry.target.classList.add('active'); revealObserver.unobserve(entry.target); }
+  }), { rootMargin: '0px 0px -35px 0px' });
+  elements.forEach(el => revealObserver.observe(el));
 }
-
-/* ---------- Navbar fade ---------- */
 function initNav() {
-  const nav = document.getElementById('navbar');
-  const navBorder = document.getElementById('nav-border');
-  if (!nav) return;
-  const onScroll = () => {
-    if (window.scrollY > 50) {
-      nav.classList.add('bg-obsidian-900/95', 'backdrop-blur-md');
-      navBorder && navBorder.classList.add('border-white/5');
-    } else {
-      nav.classList.remove('bg-obsidian-900/95', 'backdrop-blur-md');
-      navBorder && navBorder.classList.remove('border-white/5');
-    }
-  };
-  window.addEventListener('scroll', onScroll);
-  onScroll();
-
   const toggle = document.getElementById('menu-toggle');
   const menu = document.getElementById('mobile-menu');
-  if (toggle && menu) {
-    toggle.addEventListener('click', () => menu.classList.toggle('hidden-menu'));
-    menu.querySelectorAll('a').forEach((a) =>
-      a.addEventListener('click', () => menu.classList.add('hidden-menu'))
-    );
-  }
-}
-
-/* ---------- Gallery rendering ---------- */
-let LB_LIST = [];
-function renderGalleries() {
-  document.querySelectorAll('[data-gallery]').forEach((container) => {
-    const key = container.getAttribute('data-gallery');
-    const list = IMAGES[key] || [];
-    container.innerHTML = list
-      .map(
-        (img, i) => `
-        <figure class="gallery-item reveal" data-lb-key="${key}" data-lb-index="${i}">
-          <img loading="lazy" decoding="async" src="${src(img.file)}" alt="${img.cap}" width="1024" height="1024">
-          <figcaption class="cap"><span>${img.cap}</span></figcaption>
-        </figure>`
-      )
-      .join('');
+  if (!toggle || !menu) return;
+  const setOpen = open => {
+    menu.classList.toggle('hidden-menu', !open);
+    menu.inert = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+    toggle.querySelector('span').textContent = open ? '−' : '＋';
+  };
+  setOpen(false);
+  toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
+  menu.querySelectorAll('a').forEach(link => link.addEventListener('click', () => setOpen(false)));
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') { setOpen(false); toggle.focus(); }
   });
-  initLightbox();
-  initReveal();
+  document.addEventListener('click', event => { if (!event.target.closest('#navbar')) setOpen(false); });
+  matchMedia('(min-width:901px)').addEventListener('change', event => { if (event.matches) setOpen(false); });
 }
-
-/* ---------- Lightbox ---------- */
-let lbKey = null;
-let lbIndex = 0;
+function renderGalleries() {
+  document.querySelectorAll('[data-gallery]').forEach(container => {
+    const key = container.dataset.gallery;
+    container.innerHTML = (IMAGES[key] || []).map((img, i) => `<figure class="gallery-item reveal" tabindex="0" role="button" aria-label="View ${img.cap}" data-lb-key="${key}" data-lb-index="${i}"><img loading="lazy" decoding="async" src="${src(img.file)}" alt="${img.cap}" width="1024" height="1024"><figcaption class="cap"><span>${img.cap}</span></figcaption></figure>`).join('');
+  });
+  initLightbox(); initReveal();
+}
+let lbList = [], lbIndex = 0, returnFocus = null, previousOverflow = '';
+const inertStates = new Map();
 function initLightbox() {
   let lb = document.getElementById('lightbox');
   if (!lb) {
     lb = document.createElement('div');
-    lb.id = 'lightbox';
-    lb.innerHTML = `
-      <span class="lb-close" aria-label="Close">&#10005;</span>
-      <span class="lb-nav lb-prev" aria-label="Previous">&#8249;</span>
-      <img alt="">
-      <span class="lb-nav lb-next" aria-label="Next">&#8250;</span>
-      <div class="lb-cap"></div>`;
-    document.body.appendChild(lb);
-
+    lb.id = 'lightbox'; lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Concept art viewer'); lb.setAttribute('aria-hidden', 'true');
+    lb.innerHTML = '<button type="button" class="lb-close" aria-label="Close artwork">×</button><button type="button" class="lb-nav lb-prev" aria-label="Previous artwork">‹</button><img alt=""><button type="button" class="lb-nav lb-next" aria-label="Next artwork">›</button><div class="lb-cap" aria-live="polite"></div>';
+    document.body.append(lb);
     lb.querySelector('.lb-close').addEventListener('click', closeLb);
-    lb.querySelector('.lb-prev').addEventListener('click', (e) => { e.stopPropagation(); stepLb(-1); });
-    lb.querySelector('.lb-next').addEventListener('click', (e) => { e.stopPropagation(); stepLb(1); });
-    lb.addEventListener('click', (e) => { if (e.target === lb) closeLb(); });
-    document.addEventListener('keydown', (e) => {
+    lb.querySelector('.lb-prev').addEventListener('click', () => stepLb(-1));
+    lb.querySelector('.lb-next').addEventListener('click', () => stepLb(1));
+    lb.addEventListener('click', event => { if (event.target === lb) closeLb(); });
+    document.addEventListener('keydown', event => {
       if (!lb.classList.contains('open')) return;
-      if (e.key === 'Escape') closeLb();
-      if (e.key === 'ArrowLeft') stepLb(-1);
-      if (e.key === 'ArrowRight') stepLb(1);
+      if (['Escape','ArrowLeft','ArrowRight'].includes(event.key)) event.preventDefault();
+      if (event.key === 'Escape') closeLb();
+      if (event.key === 'ArrowLeft') stepLb(-1);
+      if (event.key === 'ArrowRight') stepLb(1);
+      if (event.key === 'Tab') {
+        const controls = [...lb.querySelectorAll('button')];
+        const first = controls[0], last = controls.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
     });
   }
-
-  document.querySelectorAll('.gallery-item').forEach((item) => {
-    item.addEventListener('click', () => {
-      lbKey = item.getAttribute('data-lb-key');
-      lbIndex = parseInt(item.getAttribute('data-lb-index'), 10);
-      LB_LIST = IMAGES[lbKey] || [];
+  document.querySelectorAll('.gallery-item:not([data-lb-bound])').forEach(item => {
+    item.dataset.lbBound = 'true';
+    const open = () => {
+      lbList = IMAGES[item.dataset.lbKey] || [];
+      lbIndex = Number(item.dataset.lbIndex);
+      returnFocus = item;
+      previousOverflow = document.body.style.overflow;
       showLb();
-    });
+      for (const el of document.body.children) {
+        if (el !== lb && !['SCRIPT','STYLE'].includes(el.tagName)) { inertStates.set(el, el.inert); el.inert = true; }
+      }
+      lb.querySelector('.lb-close').focus();
+    };
+    item.addEventListener('click', open);
+    item.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(); } });
   });
 }
 function showLb() {
-  const lb = document.getElementById('lightbox');
-  const img = LB_LIST[lbIndex];
+  const lb = document.getElementById('lightbox'), img = lbList[lbIndex];
   if (!img) return;
   lb.querySelector('img').src = src(img.file);
-  lb.querySelector('.lb-cap').textContent = img.cap;
-  lb.classList.add('open');
+  lb.querySelector('img').alt = img.cap;
+  lb.querySelector('.lb-cap').textContent = `${img.cap} — ${lbIndex + 1} / ${lbList.length}`;
+  lb.classList.add('open'); lb.setAttribute('aria-hidden','false');
   document.body.style.overflow = 'hidden';
-  preloadLbNeighbors();
+  [lbIndex - 1, lbIndex + 1].forEach(n => { new Image().src = src(lbList[(n + lbList.length) % lbList.length].file); });
 }
-function preloadLbNeighbors() {
-  if (!LB_LIST.length) return;
-  [lbIndex - 1, lbIndex + 1].forEach((n) => {
-    const img = LB_LIST[(n + LB_LIST.length) % LB_LIST.length];
-    if (img) new Image().src = src(img.file);
-  });
-}
-function stepLb(dir) {
-  lbIndex = (lbIndex + dir + LB_LIST.length) % LB_LIST.length;
-  showLb();
-}
+function stepLb(direction) { lbIndex = (lbIndex + direction + lbList.length) % lbList.length; showLb(); }
 function closeLb() {
-  document.getElementById('lightbox').classList.remove('open');
-  document.body.style.overflow = '';
+  const lb = document.getElementById('lightbox');
+  lb.classList.remove('open'); lb.setAttribute('aria-hidden','true');
+  document.body.style.overflow = previousOverflow;
+  for (const [el, state] of inertStates) el.inert = state;
+  inertStates.clear(); returnFocus?.focus({ preventScroll: true });
 }
-
-/* ---------- Boot ---------- */
-document.addEventListener('DOMContentLoaded', () => {
-  initNav();
-  renderGalleries();
-  initReveal();
-});
-window.addEventListener('load', initReveal);
+function boot() { initNav(); renderGalleries(); initCinematic({ images: IMAGES, initLightbox }); initReveal(); }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

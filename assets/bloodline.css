@@ -1,0 +1,128 @@
+/* The Bloodline: a native-scroll opening, from the fracture into the realm. */
+body.bloodline-page{overflow-x:clip}
+.bloodline-page .cinema-nav{border:0;background:linear-gradient(#050505aa,transparent);height:100px;padding-inline:4.5%;gap:32px}
+.bloodline-page .cinema-nav .brand{font-size:15px}
+.bloodline-page .cinema-nav .brand small{display:none}
+.bloodline-page .cinema-nav .menu-button{display:flex;margin-left:auto;gap:13px;align-items:center;font:10px var(--label);letter-spacing:.18em;text-transform:uppercase;min-height:44px}
+.bloodline-page .cinema-nav .menu-button span{font-size:17px;color:var(--gold)}
+.bloodline-page .gate-art-link{font:10px var(--label);letter-spacing:.18em;text-transform:uppercase;padding:15px 0}
+.bloodline-page .cinema-nav #mobile-menu{display:flex;position:absolute;left:auto;right:4.5%;top:82px;width:300px;flex-direction:column;padding:18px 26px;background:#0a0b0bf5;border:1px solid var(--line);backdrop-filter:blur(18px)}
+.bloodline-page .cinema-nav #mobile-menu a{font:22px var(--display);padding:11px 0;border-bottom:1px solid #ffffff12}
+.bloodline-page .cinema-nav #mobile-menu.hidden-menu{visibility:hidden}
+.spatial-gate{position:relative;height:100svh;min-height:640px;background:#090b0b;isolation:isolate;--split:0vw;--title:1;--title-lift:0px;--seam:0.8;--bloom:0;--exposure:1;--realm-copy:0;--world-scale:1.16}
+.spatial-gate.is-enhanced{height:420svh;min-height:0}
+.gate-stage{position:relative;height:100svh;min-height:640px;overflow:hidden;background:#090b0b}
+.is-enhanced .gate-stage{position:sticky;top:0;min-height:0}
+.gate-world,.gate-shutter,.gate-shutter img,.gate-flood,.gate-aura,.gate-front{position:absolute;inset:0;width:100%;height:100%}
+.gate-world{overflow:hidden}
+.gate-world>img{width:100%;height:100%;object-fit:cover;object-position:center 45%;transform:scale(var(--world-scale));filter:saturate(.4)}
+.gate-world:after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,#080a0a 0%,#080a0ad6 22%,#080a0a80 62%,#080a0a08)}
+.gate-flood{background:#fffdf3;opacity:var(--exposure);z-index:1}
+/* The aperture moves through a fixed portrait plane. Only the clipping edge
+   travels; translating either the image or its container would drag the actors. */
+.gate-shutter{z-index:3;will-change:clip-path;backface-visibility:hidden;--portrait-shade:linear-gradient(0deg,#040505ef,transparent 39%,transparent 76%,#05050566),linear-gradient(90deg,#05050544,transparent 26%,transparent 74%,#05050544)}
+.gate-shutter img{object-fit:cover;object-position:center;max-width:none}
+.gate-shutter:after{content:'';position:absolute;inset:0;pointer-events:none;background:var(--portrait-shade)}
+.gate-shutter--left{clip-path:polygon(0 0,calc(50.1% - var(--split)) 0,calc(49.95% - var(--split)) 8%,calc(50.3% - var(--split)) 14%,calc(49.8% - var(--split)) 22%,calc(50.25% - var(--split)) 31%,calc(49.9% - var(--split)) 40%,calc(50.2% - var(--split)) 49%,calc(49.8% - var(--split)) 57%,calc(50.25% - var(--split)) 66%,calc(49.9% - var(--split)) 73%,calc(50.15% - var(--split)) 84%,calc(49.9% - var(--split)) 92%,calc(50.1% - var(--split)) 100%,0 100%)}
+.gate-shutter--right{clip-path:polygon(calc(50% + var(--split)) 0,100% 0,100% 100%,calc(50% + var(--split)) 100%,calc(49.8% + var(--split)) 92%,calc(50.05% + var(--split)) 84%,calc(49.8% + var(--split)) 73%,calc(50.15% + var(--split)) 66%,calc(49.7% + var(--split)) 57%,calc(50.1% + var(--split)) 49%,calc(49.8% + var(--split)) 40%,calc(50.15% + var(--split)) 31%,calc(49.7% + var(--split)) 22%,calc(50.2% + var(--split)) 14%,calc(49.85% + var(--split)) 8%)}
+.gate-seam{position:absolute;left:50%;top:0;width:38vw;max-width:650px;height:100%;max-height:none;object-fit:fill;z-index:4;mix-blend-mode:screen;pointer-events:none;opacity:var(--seam);will-change:transform}
+.gate-seam--left{transform:translate3d(calc(-50% - var(--split)),0,0)}
+.gate-seam--right{transform:translate3d(calc(-50% + var(--split)),0,0)}
+.gate-aura{z-index:2;pointer-events:none;opacity:var(--bloom);background:radial-gradient(ellipse at 50% 50%,#fffdf3 0%,#fff8dfbb 24%,#ffd49433 54%,transparent 80%);mix-blend-mode:screen}
+.gate-front{z-index:6;opacity:var(--title);pointer-events:none}
+.gate-title{margin:0;font:400 clamp(100px,17vw,265px)/.78 'Cormorant Garamond',Georgia,serif;text-align:center;color:#d9cab1;letter-spacing:-.065em;text-shadow:0 3px 25px #0006}
+.gate-title span{position:absolute;left:0;right:0;display:block}
+.gate-title .heaven{top:11%;transform:translateY(calc(-1 * var(--title-lift))) scaleX(.82)}
+.gate-title .defying{top:51%;transform:translateY(var(--title-lift)) scaleX(.7)}
+.gate-person{position:absolute;bottom:11.5%;width:33%;max-width:440px;pointer-events:auto}
+.gate-person--mortal{left:7%}
+.gate-person--immortal{right:7%;text-align:right}
+.gate-person h2{font:12px var(--label);letter-spacing:.24em;margin:0 0 12px;color:#e8e0cc;text-transform:uppercase}
+.gate-person p{font:26px/1.25 var(--display);color:#c6c2b8;margin:0 0 23px}
+.gate-person a{display:inline-flex;align-items:center;justify-content:space-between;gap:35px;min-height:45px;padding:14px 20px;font:10px var(--label);letter-spacing:.15em;text-transform:uppercase;border:1px solid #b38c5266;color:#e8d5b1;background:#3b2e170d;transition:background .25s,border-color .25s}
+.gate-person--mortal a{border-color:#b25c488c;background:#4a180e24;color:#e6c4ba}
+.gate-person a:hover{background:#a786482f;border-color:#d1b986}
+.gate-person--mortal a:hover{background:#a149372f;border-color:#be6b59}
+.gate-person a span{font-size:17px;line-height:1}
+.gate-scroll{position:absolute;left:50%;bottom:4.6%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:14px;pointer-events:auto;font:8px var(--label);letter-spacing:.2em;color:#e0d4b8;white-space:nowrap;padding:10px}
+.gate-scroll:before{content:'';width:180px;height:1px;background:linear-gradient(90deg,transparent,#b99760,transparent)}
+.gate-scroll span{font-size:17px;color:#c3a577}
+.gate-meta{position:absolute;bottom:4%;left:4.5%;right:4.5%;display:flex;justify-content:space-between;gap:20px;font:8px var(--label);letter-spacing:.12em;color:#a6a49c}
+.gate-meta span:last-child{display:flex;align-items:center;gap:9px}
+.gate-progress{display:none;position:absolute;right:4.5%;bottom:4%;z-index:8;align-items:center;gap:12px;font:8px var(--label);letter-spacing:.15em;color:#eee2c6;mix-blend-mode:difference}
+.is-enhanced .gate-progress{display:flex;opacity:calc(1 - var(--title))}
+.gate-progress-track{height:1px;width:54px;background:#c1b69b55}
+.gate-progress-track i{display:block;width:100%;height:100%;background:#eed9ad;transform:scaleX(var(--progress,0));transform-origin:left}
+.gate-skip{position:absolute;left:4.5%;bottom:4%;z-index:9;font:9px var(--label);letter-spacing:.1em;color:#eee2c6;opacity:calc(1 - var(--title));visibility:hidden;mix-blend-mode:difference;padding:10px 0}
+.is-opening .gate-skip{visibility:visible}
+.gate-arrival{position:absolute;z-index:7;inset:auto 24px 16%;text-align:center;opacity:var(--realm-copy);visibility:hidden;transform:translateY(calc((1 - var(--realm-copy)) * 24px))}
+.is-arrived .gate-arrival{visibility:visible}
+.gate-arrival .eyebrow{justify-content:center;color:#ddd0b4;margin-bottom:20px}
+.gate-arrival h2{font-size:clamp(54px,6.6vw,100px);line-height:1;margin:0 0 25px;color:#fff8e8;text-shadow:0 2px 25px #080a0a55}
+.gate-arrival h2 em{color:#ddc594}
+.gate-arrival>p:not(.eyebrow){font:21px/1.5 var(--display);max-width:480px;margin:0 auto 28px;color:#d5d8cc}
+.gate-arrival-links{display:flex;justify-content:center;align-items:center;gap:30px}
+.gate-arrival .text-link{color:#dfd1b2}
+.bloodline-page .chapter-strip{background:#080a0a;position:relative}
+@media(min-aspect-ratio:2/1){.gate-title{font-size:clamp(78px,18vh,160px)}.gate-title .heaven{top:18%}.gate-title .defying{top:50%}.gate-person{bottom:12%}.gate-person p{display:none}.gate-person h2{margin-bottom:12px}.gate-scroll{bottom:4%;gap:7px}.gate-scroll:before{height:20px}.gate-meta{font-size:7px;bottom:3%}.gate-arrival{bottom:14%}.gate-arrival h2{font-size:60px}.gate-arrival>p:not(.eyebrow){display:none}.gate-arrival .eyebrow{margin-bottom:12px}}
+@media(max-width:700px){
+ .bloodline-page .cinema-nav{height:76px;padding-inline:22px;gap:22px}
+ .bloodline-page .cinema-nav .brand{font-size:12px;gap:8px}
+ .bloodline-page .cinema-nav .menu-button,.bloodline-page .gate-art-link{font-size:8px;letter-spacing:.1em}
+ .bloodline-page .cinema-nav .menu-button{gap:7px;padding-left:0}
+ .bloodline-page .cinema-nav .brand-seal{height:29px;width:24px;font-size:20px}
+ .bloodline-page .cinema-nav #mobile-menu{right:16px;left:16px;top:70px;width:auto}
+ .spatial-gate.is-enhanced{height:360svh}
+ .gate-shutter--left img{object-position:30% center}
+ .gate-shutter--right img{object-position:75% center}
+ .gate-shutter{--portrait-shade:linear-gradient(0deg,#030404 0%,#030404e8 16%,transparent 49%,#03040433 80%)}
+ .gate-title{font-size:18.5vw;letter-spacing:-.07em}
+ .gate-title .heaven{top:17%}
+ .gate-title .defying{top:55%}
+ .gate-person{bottom:17%;width:43%;max-width:none}
+ .gate-person--mortal{left:5%}
+ .gate-person--immortal{right:5%}
+ .gate-person h2{font-size:9px;letter-spacing:.15em;margin-bottom:9px}
+ .gate-person p{font-size:16px;line-height:1.25;min-height:40px;margin-bottom:15px;max-width:160px}
+ .gate-person--immortal p{margin-left:auto}
+ .gate-person a{gap:8px;padding:12px 10px;font-size:7px;letter-spacing:.07em;min-height:43px}
+ .gate-person a span{font-size:13px}
+ .gate-scroll{bottom:5%;font-size:7px;gap:9px}
+ .gate-scroll:before{height:24px}
+ .gate-meta{left:5%;right:5%;bottom:2.8%;font-size:6px;letter-spacing:.045em}
+ .gate-meta span:last-child{gap:5px}
+ .gate-seam{width:70vw}
+ .gate-arrival{bottom:17%;inset-inline:26px}
+ .gate-arrival h2{font-size:57px}
+ .gate-arrival>p:not(.eyebrow){font-size:20px;max-width:300px}
+ .gate-arrival-links{flex-direction:column;gap:13px}
+ .gate-progress{font-size:7px;right:5%;bottom:3%}
+ .gate-skip{left:5%;bottom:3%;font-size:8px}
+}
+@media(max-height:650px) and (max-width:700px){.gate-title .heaven{top:19%}.gate-person p{display:none}.gate-person{bottom:19%}.gate-scroll:before{height:12px}.gate-scroll{bottom:5%;gap:5px}.gate-arrival{bottom:15%}.gate-arrival h2{font-size:46px}.gate-arrival>p:not(.eyebrow){font-size:18px;margin-bottom:15px}.gate-arrival .eyebrow{margin-bottom:13px}}
+/* Without animation the same art and direct links stay usable in one screen. */
+@media(prefers-reduced-motion:reduce){.spatial-gate.is-enhanced{height:100svh;min-height:640px}.is-enhanced .gate-stage{position:relative;min-height:640px}.gate-shutter{transform:none!important}.gate-seam{opacity:.65!important;transform:translateX(-50%)!important}.gate-front{opacity:1!important}.gate-title span{transform:none!important}.gate-arrival,.gate-aura,.gate-progress,.gate-skip{display:none!important}.gate-world>img{transform:none}.gate-person a{transition:none}}
+
+@media(max-height:650px) and (orientation:landscape){
+ .gate-title{font-size:20vh}
+ .gate-title .heaven{top:20%}
+ .gate-title .defying{top:49%}
+ .gate-person{bottom:12%;width:36%}
+ .gate-person p{display:none}
+ .gate-person h2{margin-bottom:9px}
+ .gate-scroll{bottom:5%;gap:5px}
+ .gate-scroll:before{height:12px}
+ .gate-meta{bottom:3%}
+ .gate-arrival{bottom:14%}
+ .gate-arrival h2{font-size:15vh;margin-bottom:18px}
+ .gate-arrival>p:not(.eyebrow){display:none}
+ .gate-arrival .eyebrow{margin-bottom:12px}
+ .gate-arrival-links{flex-direction:row}
+}
+.nojs-explore summary{font:10px var(--label);letter-spacing:.15em;text-transform:uppercase;cursor:pointer;padding:15px}
+.nojs-explore>div{position:absolute;right:22px;top:75px;display:grid;gap:14px;background:#0a0b0b;padding:25px;border:1px solid var(--line);min-width:240px}
+.nojs-explore a{font:20px var(--display)}
+
+@media(max-width:700px){.gate-title{font-family:'Cinzel',Georgia,serif;line-height:.9}.gate-title .heaven{transform:translateY(calc(-1 * var(--title-lift)))}.gate-title .defying{transform:translateY(var(--title-lift))}.gate-person p{font-size:16px}.gate-scroll:before{width:70px;height:1px}}
+@media(max-height:650px) and (orientation:landscape){.gate-title{font-family:'Cinzel',Georgia,serif;line-height:.9}.gate-title .heaven{transform:translateY(calc(-1 * var(--title-lift)))}.gate-title .defying{transform:translateY(var(--title-lift))}.gate-scroll:before{width:70px;height:1px}}
+@media(prefers-reduced-motion:reduce) and (min-width:701px) and (min-height:651px){.gate-title .heaven{transform:scaleX(.82)!important}.gate-title .defying{transform:scaleX(.7)!important}}

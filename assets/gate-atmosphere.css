@@ -1,0 +1,15 @@
+/* Light and atmosphere are separate depth planes; the portraits never move. */
+.spatial-gate{--radiance:1;--threshold-scale:1;--threshold-y:0vh;--threshold-gain:1;--seam-gain:1;--edge-fire:0;--flare:0;--flare-scale:.2}
+.gate-radiance{position:absolute;inset:0;z-index:2;overflow:hidden;pointer-events:none;opacity:var(--radiance)}
+.gate-radiance img{width:100%;height:100%;max-width:none;object-fit:cover;object-position:50% 48%;transform:translate3d(0,var(--threshold-y),0) scale(var(--threshold-scale));filter:brightness(var(--threshold-gain));will-change:transform}
+.gate-seam{filter:brightness(var(--seam-gain))}
+.gate-shutter:before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;opacity:var(--edge-fire);mix-blend-mode:screen;background:radial-gradient(ellipse 10vw 68% at var(--rim-origin) 48%,#ffdf9655, #c8792412 48%,transparent 78%)}
+.gate-shutter--left{--rim-origin:calc(50% - var(--split))}
+.gate-shutter--right{--rim-origin:calc(50% + var(--split))}
+.gate-shutter:after{z-index:2}
+.gate-flare{position:absolute;left:0;right:0;top:48%;height:2px;z-index:2;opacity:var(--flare);pointer-events:none;mix-blend-mode:screen;transform:scaleX(var(--flare-scale));background:linear-gradient(90deg,transparent,#d79c4122 20%,#ffe4a388 42%,#fffef4 50%,#ffe4a388 58%,#d79c4122 80%,transparent)}
+.gate-flare:before{content:'';position:absolute;inset:-7px 0;filter:blur(8px);background:inherit}
+.gate-flare:after{content:'';position:absolute;inset:-45px 26%;background:radial-gradient(ellipse,#ffffdd88,transparent 67%)}
+.gate-effects{position:absolute;inset:0;width:100%;height:100%;z-index:5;pointer-events:none;mix-blend-mode:screen;contain:strict}
+@media(max-width:700px){.gate-radiance img{object-position:50% 48%}.gate-shutter:before{background:radial-gradient(ellipse 16vw 65% at var(--rim-origin) 48%,#ffdf9640,transparent 78%)}}
+@media(prefers-reduced-motion:reduce){.gate-radiance,.gate-effects,.gate-flare,.gate-shutter:before{display:none!important}.gate-seam{filter:none}.gate-radiance img{transform:none;filter:none}}

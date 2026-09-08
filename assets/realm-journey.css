@@ -1,0 +1,86 @@
+/* The mountain remains a single distant plane. Foreground mist crosses it faster. */
+.gate-world{pointer-events:none}
+.gate-world>.gate-realm-distance{object-position:50% 43%;transform:translate3d(0,calc(var(--realm-depth,0) * -2.5vh + var(--journey,0) * -4vh),0) scale(calc(1.02 + var(--realm-depth,0) * .14 + var(--journey,0) * .06));filter:saturate(.48);will-change:transform}
+.gate-realm-mist{position:absolute;inset:-10% -16% -14%;mix-blend-mode:screen;opacity:calc(.2 + var(--realm-depth,0) * .64);transform:translate3d(calc(var(--realm-depth,0) * -3vw),calc(var(--realm-depth,0) * 12vh + var(--journey,0) * 9vh),0) scale(calc(1.1 + var(--realm-depth,0) * .25));will-change:transform;z-index:1}
+.gate-realm-mist img{height:100%;width:100%;max-width:none;object-fit:cover;filter:brightness(1.5);mask-image:linear-gradient(transparent,#000 18%,#000 80%,transparent)}
+.gate-realm-scar{position:absolute;width:90px;left:50%;top:62%;bottom:-35%;z-index:2;mix-blend-mode:screen;opacity:calc(var(--realm-depth,0) * .22);transform:translateX(-50%);mask-image:linear-gradient(transparent,#000 45%,#000)}
+.gate-realm-scar img{width:100%;height:100%;object-fit:fill}
+.gate-world:after{z-index:3;background:linear-gradient(0deg,#080a0a 0%,#080a0aec 12%,#080a0a91 34%,#080a0a66 61%,#080a0a08)}
+.gate-arrival{transform:translateY(calc((1 - var(--realm-copy)) * 24px - var(--journey,0) * 35px))}
+
+/* The remaining fracture is a visual thread from the realm into its history. */
+.realm-handoff{position:relative;isolation:isolate;padding:56px 8.4% 0;background:#080a0a;text-align:center}
+.journey-scar{position:absolute;pointer-events:none;z-index:-1;left:50%;top:-185px;width:100px;height:530px;transform:translateX(-50%);object-fit:fill;mix-blend-mode:screen;opacity:calc(.17 + var(--journey,0) * .12);mask-image:linear-gradient(transparent,#000 24%,#000 74%,transparent)}
+.realm-handoff>p{font:9px/1.6 var(--label);letter-spacing:.24em;text-transform:uppercase;color:#b4a88c;margin:0 0 48px}
+.realm-handoff>p span{display:block;margin-top:12px;color:#ddd6c8;font:italic 29px/1.2 var(--display);letter-spacing:0;text-transform:none}
+.bloodline-page .realm-handoff .chapter-strip{padding:0;min-height:86px;gap:28px;justify-content:center;background:transparent;border-top:0;border-bottom:1px solid #b89a6233}
+.realm-handoff .chapter-strip>a{display:flex;align-items:center;gap:15px;min-height:52px;padding:12px 14px;font:10px/1.4 var(--label);letter-spacing:.08em;color:#cfb77f;white-space:normal}
+.realm-handoff .chapter-strip>a>span{margin:0;color:#ab976b}
+.realm-handoff .chapter-strip b{margin:0;font-weight:400;color:#b8bcb0;transition:color .2s}
+.realm-handoff .chapter-strip a:hover b{color:#f2e4c4}
+.bloodline-page .premise{position:relative;isolation:isolate;padding-top:90px}
+.premise-scar{position:absolute;pointer-events:none;z-index:-1;left:50%;top:-35px;width:105px;height:78%;min-height:510px;object-fit:fill;transform:translateX(-50%);opacity:.12;mix-blend-mode:screen;mask-image:linear-gradient(transparent,#000 15%,#000 78%,transparent)}
+.premise-art{border:0;box-shadow:none;transform:translateY(calc((1 - var(--journey,1)) * 12px))}
+.premise-art:before{display:none}
+.premise-art img{filter:saturate(.65) brightness(.76)}
+.premise-art:after{background:linear-gradient(0deg,#080a0aef,transparent 48%),linear-gradient(90deg,#080a0a4a,transparent 30%)}
+
+/* A new consequence after the reveal: an awakening bought with a promise. */
+.pact-cost{min-height:950px;isolation:isolate;border:0;background:#080a0a}
+.pact-cost .pact-art{width:65%;top:0;bottom:0}
+.pact-cost .pact-art img{object-position:44% 48%;filter:saturate(.65) brightness(.62);height:100%;max-width:none}
+.pact-cost .pact-shade{background:linear-gradient(90deg,#080a0a00 14%,#080a0a33 36%,#080a0aec 63%,#080a0a 75%),linear-gradient(0deg,#080a0a,transparent 18%,transparent 78%,#080a0a)}
+.pact-cost .pact-copy{margin:105px 8.4% 105px 55%;max-width:520px}
+.pact-cost h2{font-size:clamp(56px,5.8vw,84px);line-height:.98;margin:0 0 34px;letter-spacing:-.045em}
+.pact-cost h2 em{color:#c5a87b}
+.pact-cost .pact-copy>p:not(.eyebrow){font:20px/1.55 var(--display);max-width:385px;color:#b1b5a8}
+.pact-cost .pact-copy>p:not(.eyebrow)+p{color:#8e9488;font-size:18px}
+.pact-terms{display:grid;grid-template-columns:1.3fr 1fr;gap:28px;border-block:1px solid #ba9c6336;padding:25px 0;margin:34px 0 26px;max-width:410px}
+.pact-terms dt{font:9px/1.4 var(--label);letter-spacing:.15em;color:#ae936b;margin-bottom:12px}
+.pact-terms dd{font:21px/1.25 var(--display);color:#d2cfbd;margin:0}
+.pact-art-label{position:absolute;left:8.4%;bottom:9%;font:8px var(--label);letter-spacing:.2em;color:#9c8c6e}
+
+@media(max-width:900px){
+ .realm-handoff{padding-inline:6%}
+ .bloodline-page .realm-handoff .chapter-strip{gap:6px;flex-wrap:nowrap}
+ .realm-handoff .chapter-strip>a{font-size:9px;gap:10px;padding-inline:6px}
+ .pact-cost .pact-copy{margin-left:51%;margin-right:6%}
+ .pact-cost h2{font-size:66px}
+ .pact-terms{gap:17px}
+ .pact-terms dd{font-size:19px}
+}
+@media(max-width:640px){
+ .gate-realm-distance{object-position:48% 43%}
+ .gate-realm-mist{inset:0 -75% -6%;opacity:calc(.13 + var(--realm-depth,0) * .46)}
+ .gate-realm-mist img{object-fit:contain}
+ .gate-realm-scar{width:70px}
+ .realm-handoff{padding:35px 26px 0}
+ .realm-handoff>p{font-size:8px;letter-spacing:.18em;margin-bottom:26px}
+ .realm-handoff>p span{font-size:27px;margin-top:10px}
+ .bloodline-page .realm-handoff .chapter-strip{flex-direction:row;align-items:stretch;gap:12px;min-height:88px;padding:0 0 18px}
+ .realm-handoff .chapter-strip>a{flex:1;flex-direction:column;align-items:flex-start;gap:8px;padding:8px 0;font-size:9px;line-height:1.45}
+ .realm-handoff .chapter-strip b{max-width:100px}
+ .journey-scar{top:-110px;width:75px;height:430px;opacity:.19}
+ .bloodline-page .premise{padding-top:62px}
+ .premise-scar{left:auto;right:8px;transform:none;top:15px;width:65px;height:65%;opacity:.13}
+ .premise-art{margin:0;aspect-ratio:1/1.1}
+ .pact-cost{min-height:0;display:block;padding-top:390px}
+ .pact-cost .pact-art{width:100%;height:570px;top:0;bottom:auto;mask-image:linear-gradient(#000 0%,#000 52%,transparent 100%)}
+ .pact-cost .pact-art img{object-position:50% 33%;filter:saturate(.6) brightness(.63)}
+ .pact-cost .pact-shade{background:linear-gradient(0deg,#080a0a 0%,#080a0a 41%,#080a0a88 59%,#080a0a00 79%,#080a0a)}
+ .pact-cost .pact-copy{margin:0;padding:0 26px 70px;max-width:none}
+ .pact-cost h2{font-size:clamp(51px,14vw,76px);line-height:1;margin-bottom:25px}
+ .pact-cost .pact-copy>p:not(.eyebrow){font-size:21px}
+ .pact-cost .pact-copy>p:not(.eyebrow)+p{font-size:19px}
+ .pact-cost .pact-copy .eyebrow{margin-bottom:21px}
+ .pact-terms{gap:20px;padding-block:22px;margin-block:27px 18px;max-width:none}
+ .pact-terms dt{font-size:9px}
+ .pact-terms dd{font-size:21px}
+ .pact-art-label{left:26px;top:338px;bottom:auto;font-size:7px}
+}
+@media(prefers-reduced-motion:reduce){
+ .gate-world>.gate-realm-distance,.gate-realm-mist,.gate-arrival,.premise-art{transform:none!important;will-change:auto}
+ .gate-realm-mist{opacity:.25}
+ .journey-scar{opacity:.2}
+ .realm-handoff .chapter-strip b{transition:none}
+}
