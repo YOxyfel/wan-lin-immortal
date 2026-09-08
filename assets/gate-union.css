@@ -28,8 +28,6 @@
 .is-enhanced .gate-sound{display:inline-flex}
 .gate-sound:hover,.gate-sound[aria-pressed=true]{background:#241e148c;border-color:#c8ad7688;color:#fff0cb}
 .gate-sound:focus-visible,.gate-replay:focus-visible,.gate-skip:focus-visible{outline:2px solid #e8cc94;outline-offset:4px}
-.spatial-gate.is-enhanced.is-revisited{height:100svh;min-height:0}
-.is-revisited .gate-stage{position:relative;height:100svh;min-height:0}
 @media(max-width:700px){
  .gate-person a{font-size:10px;line-height:1.35;min-height:46px;gap:5px;padding:10px 8px;letter-spacing:.045em;max-width:100%;text-align:left}
  .gate-person--immortal a{text-align:right}
@@ -56,8 +54,6 @@
 @media(prefers-reduced-motion:reduce){
  .gate-sound{display:none!important}
  .gate-shutter img{filter:none}
- .spatial-gate.is-enhanced.is-revisited{min-height:640px}
- .is-revisited .gate-stage{min-height:640px}
 }
 
 .gate-person,.gate-meta,.gate-scroll{transition:opacity .25s}
@@ -65,3 +61,5 @@
 @media(prefers-reduced-motion:reduce){.gate-person,.gate-meta,.gate-scroll{transition:none}}
 
 @media(max-width:700px) and (orientation:portrait){.gate-spirit--mortal,.gate-spirit--immortal{width:76vw;top:23%}}
+
+.gate-spirit--united{filter:brightness(calc(1 + var(--impact,0) * .35))}

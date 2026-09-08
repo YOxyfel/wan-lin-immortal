@@ -6,7 +6,7 @@
 export function createGateAudio(button) {
   const clamp = value => Math.max(0, Math.min(1, Number(value) || 0));
   const ease = (a, b, value) => { const t = clamp((value - a) / (b - a)); return t * t * (3 - 2 * t); };
-  const impactAt = .65;
+  const impactAt = .60;
   let context = null, compressor = null, noiseBuffer = null, graph = null;
   let enabled = false, active = false, destroyed = false, unavailable = false;
   let progress = 0, impactPlayed = false, operation = 0, idleSuspension = null;
@@ -131,10 +131,10 @@ export function createGateAudio(button) {
     if (!graph || !context) return;
     const now = context.currentTime;
     const merge = ease(.16, .53, progress);
-    const quiet = 1 - ease(.49, .55, progress);
+    const quiet = 1 - ease(.44, .54, progress);
     const build = .35 + ease(.025, .43, progress) * .65;
     const tail = ease(.71, .8, progress) * (1 - ease(.84, 1, progress));
-    const set = (parameter, value) => parameter.setTargetAtTime(value, now, .065);
+    const set = (parameter, value) => parameter.setTargetAtTime(value, now, progress >= .44 && progress < impactAt ? .018 : .065);
     set(graph.mortal.oscillator.frequency, 82.4 + merge * 27.6);
     set(graph.immortal.oscillator.frequency, 164.8 - merge * 54.8);
     set(graph.halo.oscillator.frequency, 330 - merge * 110);
@@ -154,30 +154,30 @@ export function createGateAudio(button) {
     const bassGain = group.node(context.createGain());
     bass.type = 'sine';
     bass.frequency.setValueAtTime(104, now);
-    bass.frequency.exponentialRampToValueAtTime(39, now + 1.3);
+    bass.frequency.exponentialRampToValueAtTime(39, now + .62);
     bassGain.gain.setValueAtTime(0, now);
-    bassGain.gain.linearRampToValueAtTime(.46, now + .075);
-    bassGain.gain.exponentialRampToValueAtTime(.001, now + 1.75);
+    bassGain.gain.linearRampToValueAtTime(.46, now + .008);
+    bassGain.gain.exponentialRampToValueAtTime(.001, now + .95);
     bass.connect(bassGain);
     bassGain.connect(group.output);
     bass.start(now);
-    bass.stop(now + 1.8);
+    bass.stop(now + 1);
     const breath = group.source(context.createBufferSource());
     const filter = group.node(context.createBiquadFilter());
     const breathGain = group.node(context.createGain());
     breath.buffer = noiseBuffer;
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(500, now);
-    filter.frequency.exponentialRampToValueAtTime(2200, now + .35);
-    filter.frequency.exponentialRampToValueAtTime(170, now + 1.7);
+    filter.frequency.setValueAtTime(1800, now);
+    filter.frequency.exponentialRampToValueAtTime(2200, now + .025);
+    filter.frequency.exponentialRampToValueAtTime(170, now + .72);
     breathGain.gain.setValueAtTime(0, now);
-    breathGain.gain.linearRampToValueAtTime(.29, now + .28);
-    breathGain.gain.exponentialRampToValueAtTime(.001, now + 1.8);
+    breathGain.gain.linearRampToValueAtTime(.29, now + .014);
+    breathGain.gain.exponentialRampToValueAtTime(.001, now + .8);
     breath.connect(filter);
     filter.connect(breathGain);
     breathGain.connect(group.output);
     breath.start(now);
-    breath.stop(now + 1.85);
+    breath.stop(now + .85);
   }
 
   async function activate() {

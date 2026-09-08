@@ -35,6 +35,15 @@ export function createRiftEffects(canvas, { reducedMotion = false } = {}) {
     phase: random(),
     bend: .75 + random() * .3,
   }));
+  // One seeded burst, sampled by progress rather than elapsed time. Replays
+  // reuse the same streaks and the effect cannot flash repeatedly while held.
+  const fragments = Array.from({ length: 40 }, (_, index) => ({
+    angle: index / 40 * Math.PI * 2 + (random() - .5) * .12,
+    reach: .60 + random() * .40,
+    length: .045 + random() * .075,
+    width: .6 + random() * 1.2,
+    brightness: .48 + random() * .52,
+  }));
   let width = 0;
   let height = 0;
   let count = 48;
@@ -103,12 +112,12 @@ export function createRiftEffects(canvas, { reducedMotion = false } = {}) {
     const cx = Number.isFinite(frame.chestX) ? frame.chestX : width * .5;
     const cy = Number.isFinite(frame.chestY) ? frame.chestY : height * .48;
     const t = (performance.now() - epoch) * .001;
-    const gathering = ease(.22, .53, p);
-    const streamEnergy = ease(.24, .33, p) * (1 - ease(.51, .60, p));
+    const gathering = ease(.22, .60, p);
+    const streamEnergy = ease(.24, .33, p) * (1 - ease(.57, .605, p));
     const edgeEnergy = (.09 + .19 * ease(.02, .18, p) + charge * .19)
       * (1 - ease(.25, .42, p));
     const ambientEnergy = (1 - ease(.18, .38, p)) * .32;
-    const halfGap = width * (ease(.12, .50, p) * .30 + ease(.64, .80, p) * .27);
+    const halfGap = width * (ease(.12, .50, p) * .30 + ease(.60, .76, p) * .27);
     const scale = Math.min(width, height);
     context.globalCompositeOperation = 'screen';
     context.lineCap = 'round';
@@ -154,8 +163,8 @@ export function createRiftEffects(canvas, { reducedMotion = false } = {}) {
         const strand = strands[i];
         const { side, level, phase, bend } = strand;
         const spread = strandCount / 2 - 1;
-        const offset = mix(-.22, .26, level / spread) * height;
-        const reach = width * mix(.28, .12, gathering);
+        const offset = mix(-.22, .26, level / spread) * height * (1 - .86 * ease(.42, .60, p));
+        const reach = width * mix(.28, .015, gathering * gathering);
         const curl = Math.sin(t * .38 + phase * 6.28) * scale * .009;
         const path = [
           { x: cx + side * reach, y: cy + offset },
@@ -189,33 +198,65 @@ export function createRiftEffects(canvas, { reducedMotion = false } = {}) {
       }
     }
 
-    // The final two streams become a held chest light, then one expanding
-    // pressure wave. Its timing follows progress, so it never loops or flashes.
-    const core = ease(.45, .55, p) * (1 - ease(.70, .81, p));
-    const release = ease(.64, .80, p);
+    // The held core breaks only once. A fast front and trailing red/gold
+    // fragments supply the impact; the united figure remains visible behind it.
+    const core = ease(.45, .58, p) * (1 - ease(.77, .87, p));
+    const release = clamp((p - .60) / .20);
     if (core > .003) {
-      const radius = scale * (.035 + release * .18);
-      halo(cx, cy, radius, core * (.57 + release * .28),
+      halo(cx, cy, scale * .046, core * .64,
         '#ffffee', 'rgba(255, 201, 116, .56)');
       halo(cx, cy, Math.max(3, scale * .008), core * .88,
         '#ffffff', 'rgba(255, 245, 203, .75)');
     }
     if (release > 0 && release < 1) {
-      const envelope = Math.sin(release * Math.PI) * .30;
-      const radius = mix(scale * .022, Math.hypot(width, height) * .58, release);
+      const attack = ease(0, .025, release);
+      const envelope = attack * Math.pow(1 - release, 1.7);
+      const travel = 1 - Math.pow(1 - release, 3);
+      const reach = Math.hypot(width, height) * .58;
+      const radius = mix(scale * .016, reach, travel);
+      const flash = attack * (1 - ease(.04, .34, release));
+      halo(cx, cy, scale * mix(.085, .30, travel), flash * .92,
+        '#fffffa', 'rgba(255, 219, 157, .72)');
+
       const gradient = context.createLinearGradient(cx - radius, cy, cx + radius, cy);
-      gradient.addColorStop(0, 'rgba(204, 81, 58, .5)');
-      gradient.addColorStop(.5, 'rgba(255, 246, 213, .9)');
-      gradient.addColorStop(1, 'rgba(230, 180, 84, .5)');
+      gradient.addColorStop(0, 'rgba(238, 75, 50, .85)');
+      gradient.addColorStop(.5, 'rgba(255, 249, 224, 1)');
+      gradient.addColorStop(1, 'rgba(248, 192, 81, .85)');
       context.strokeStyle = gradient;
-      context.globalAlpha = envelope * .24;
-      context.lineWidth = 10 + release * 14;
+      context.globalAlpha = envelope * .18;
+      context.lineWidth = mix(15, 2, travel);
       context.beginPath();
-      context.ellipse(cx, cy, radius, radius * .58, 0, 0, Math.PI * 2);
+      context.ellipse(cx, cy, radius, radius * .70, 0, 0, Math.PI * 2);
       context.stroke();
-      context.globalAlpha = envelope;
-      context.lineWidth = .8;
+      context.globalAlpha = envelope * .82;
+      context.lineWidth = mix(2.3, .6, travel);
       context.stroke();
+
+      const fragmentCount = width < 700 ? 24 : fragments.length;
+      for (let i = 0; i < fragmentCount; i += 1) {
+        // Spread the phone subset around the entire burst rather than one side.
+        const fragment = fragments[Math.floor(i * fragments.length / fragmentCount)];
+        const dx = Math.cos(fragment.angle);
+        const dy = Math.sin(fragment.angle);
+        const head = radius * fragment.reach;
+        const tail = Math.max(scale * .012, head - reach * fragment.length * (1 - release));
+        const x = cx + dx * head;
+        const y = cy + dy * head * .85;
+        const tx = cx + dx * tail;
+        const ty = cy + dy * tail * .85;
+        const tint = dx < 0 ? '239, 82, 54' : '255, 194, 88';
+        const trail = context.createLinearGradient(tx, ty, x, y);
+        trail.addColorStop(0, `rgba(${tint}, 0)`);
+        trail.addColorStop(.5, `rgba(${tint}, .75)`);
+        trail.addColorStop(1, 'rgba(255, 248, 220, 1)');
+        context.strokeStyle = trail;
+        context.globalAlpha = envelope * fragment.brightness * .92;
+        context.lineWidth = fragment.width;
+        context.beginPath();
+        context.moveTo(tx, ty);
+        context.lineTo(x, y);
+        context.stroke();
+      }
     }
     context.globalAlpha = 1;
     context.globalCompositeOperation = 'source-over';

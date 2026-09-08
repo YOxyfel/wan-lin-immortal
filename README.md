@@ -24,7 +24,7 @@ A production by **Oxyfel Games**.
 
 - Cinematic dark-xianxia design (obsidian / imperial-gold / jade / cinnabar palette, Cinzel + Cormorant fonts).
 - Scroll-triggered awakening: a spatial gate opens, red/gold spirits merge, and a layered realm leads into the story.
-- Optional cinematic sound, Skip/Replay, reduced-motion support, and session-aware return navigation.
+- Optional cinematic sound, Skip/Replay, reduced-motion support, and automatic replay after refreshing or returning to the top.
 - Paced story chapters and scroll-driven reveals.
 - Filterable 87-image art archive with keyboard-operated lightbox and focus management.
 - Nine-chapter concept-art prologue with manual and automatic playback.
@@ -93,4 +93,4 @@ The September 2026 redesign preserves existing routes, lore, art, credits, conta
 
 Verified at 1440×960 and 390×844: all eight pages, local asset loading, horizontal overflow, main landmarks, in-page anchors, FAQ, mobile navigation, gallery categories, lightbox keyboard controls/focus return, and story playback. The story also supports scrolling through complete chapters at 844×390. `npm run build` bundles the shared JavaScript and CSS and retains the dynamically selected gallery/story artwork in the static output.
 
-The awakening was also verified at 320×568 and 667×375, including touch entry, keyboard Sound/Skip/Replay, reduced-motion interruption, session returns, and browser Back restoration. Sound starts disabled and requires explicit activation.
+The awakening was also verified at 320×568 and 667×375, including touch entry, keyboard Sound/Skip/Replay, reduced-motion interruption, refresh, return-to-top replay, and browser Back restoration. Sound starts disabled and requires explicit activation.
