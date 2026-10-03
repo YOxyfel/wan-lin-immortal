@@ -94,3 +94,11 @@ The September 2026 redesign preserves existing routes, lore, art, credits, conta
 Verified at 1440×960 and 390×844: all eight pages, local asset loading, horizontal overflow, main landmarks, in-page anchors, FAQ, mobile navigation, gallery categories, lightbox keyboard controls/focus return, and story playback. The story also supports scrolling through complete chapters at 844×390. `npm run build` bundles the shared JavaScript and CSS and retains the dynamically selected gallery/story artwork in the static output.
 
 The awakening was also verified at 320×568 and 667×375, including touch entry, keyboard Sound/Skip/Replay, reduced-motion interruption, refresh, return-to-top replay, and browser Back restoration. Sound starts disabled and requires explicit activation.
+
+## Continuous 3D journey (October 2026)
+
+The homepage uses one Three.js stage and one native-scroll timeline. The two portraits stay at the threshold; the collision, fused figure and automatic takeover have been removed. The same world becomes a rotating ink scroll and returns to 3D. Reduced motion and unavailable WebGL provide an illustrated story path.
+
+Run `npm install` and `npm run dev` for local development; `npm run build` produces `dist`. GitHub Pages deploys that built folder through `.github/workflows/pages.yml` on pushes to `main`. Source files containing package imports must not be published directly as static files.
+
+The original gate mesh is `assets/models/threshold.glb`; regenerate it with Blender using `tools/build-gate.py`. Stone texture: `Images/Journey/threshold-stone.webp`, generated with the built-in image tool from a prompt specifying tileable charcoal basalt, ivory chisel hatching and restrained antique gold veins. The existing character artwork is retained. See `design-qa.md` for review evidence and measurement limits.

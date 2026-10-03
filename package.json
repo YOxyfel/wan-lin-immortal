@@ -14,5 +14,9 @@
   "devDependencies": {
     "tailwindcss": "^3.4.17",
     "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "gsap": "3.13.0",
+    "three": "0.180.0"
   }
 }

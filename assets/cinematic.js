@@ -1,7 +1,8 @@
-import { initSpatialGate } from './spatial-gate.js';
 
 export function initCinematic({ images, initLightbox }) {
-  initSpatialGate();
+  if (document.querySelector('[data-world-journey]')) {
+    import('./world-journey.js').then(({ initWorldJourney }) => initWorldJourney());
+  }
   const archive = document.querySelector('[data-archive]');
   if (archive) {
     const filters = [...document.querySelectorAll('[data-filter]')];
