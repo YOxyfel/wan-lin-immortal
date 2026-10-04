@@ -4,14 +4,14 @@ const vertex=`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*m
 const fragment=`
 precision highp float;
 varying vec2 vUv;
-uniform sampler2D art,lower,flow;
+uniform sampler2D art,lower;
 uniform vec2 crop,center;
 uniform float time,kind,effort;
 float hash(float n){return fract(sin(n*127.1)*43758.5453);}
 float bell(vec2 p,vec2 c,vec2 radius){vec2 d=(p-c)/radius;return exp(-dot(d,d)*2.);}
 vec2 sway(vec2 q){
  float wind=sin(time*1.25)+sin(time*2.1)*.32;
- if(kind<.5){q.x+=wind*.008*smoothstep(.1,.95,q.y)*(1.-smoothstep(.22,.46,q.x));q.x+=sin(time*1.9+q.x*7.)*.005*(1.-smoothstep(.06,.25,q.y));}
+ if(kind<.5){q.x+=wind*.008*smoothstep(.58,.95,q.y)*(1.-smoothstep(.22,.46,q.x));q.x+=sin(time*1.9+q.x*7.)*.005*(1.-smoothstep(.06,.25,q.y));}
  else if(kind<1.5){float logs=smoothstep(.43,.68,q.x)*smoothstep(.22,.7,q.y);q.x+=sin(time*1.45+q.y*4.)*.006*logs;q.y+=sin(time*2.4)*.004*bell(q,vec2(.6,.37),vec2(.30,.30));}
  else if(kind<2.5){q.x+=wind*.008*smoothstep(.3,1.,q.y)*(1.-smoothstep(.2,.4,q.x));float breath=sin(time*1.35)*.0035;q.y+=breath*bell(q,vec2(.5,.53),vec2(.4,.35));q.x+=sin(time*1.7+q.y*8.)*.004*bell(q,vec2(.5,.82),vec2(.25,.3));}
  else {float breath=sin(time*1.1)*.0025;q.y+=breath*bell(q,vec2(.62,.40),vec2(.4,.3));q.x+=sin(time*.9)*.0015*bell(q,vec2(.53,.32),vec2(.18,.18));q.x+=sin(time*1.6+q.y*8.)*.003*bell(q,vec2(.75,.77),vec2(.22,.2));}
@@ -19,7 +19,8 @@ vec2 sway(vec2 q){
 }
 vec3 readArt(vec2 q){
  q=clamp(q,.002,.998);vec3 result=texture2D(art,q).rgb;
- if(kind<.5){vec4 motion=(texture2D(flow,q)-.5)*.70;vec2 a=clamp(q-effort*motion.xy,.002,.998),b=clamp(q-(1.-effort)*motion.zw,.002,.998);vec3 up=texture2D(art,vec2(a.x/3.,a.y)).rgb,down=texture2D(lower,vec2(b.x/3.,b.y)).rgb;result=mix(up,down,smoothstep(.42,.58,effort));}
+ // Preserve the drawn anatomy. Two clean manga poses replace the invalid image morph.
+ if(kind<.5){vec2 uv=vec2(q.x/3.,q.y);result=effort>.5?texture2D(lower,uv).rgb:texture2D(art,uv).rgb;}
  else if(kind<2.5)result=texture2D(art,vec2((q.x+kind)/3.,q.y)).rgb;
  return result;
 }
@@ -53,23 +54,21 @@ void main(){
 `;
 
 export async function createLivingScenes(){
- const loader=new T.TextureLoader();const [art,lower,uncle,buffer]=await Promise.all([
+ const loader=new T.TextureLoader();const [art,lower,uncle]=await Promise.all([
   loader.loadAsync(new URL('../Images/Prologue/runtime/training.webp',import.meta.url).href),
   loader.loadAsync(new URL('../Images/Prologue/runtime/training-down.webp',import.meta.url).href),
-  loader.loadAsync(new URL('../Images/Prologue/runtime/uncle.webp',import.meta.url).href),
-  fetch(new URL('./motion/pushup-flow.bin',import.meta.url)).then(r=>{if(!r.ok)throw Error('Pose vectors failed');return r.arrayBuffer()})
+  loader.loadAsync(new URL('../Images/Prologue/runtime/uncle.webp',import.meta.url).href)
  ]);
  // These illustrated textures are sampled in their existing display colour space.
  for(const t of [art,lower,uncle]){t.minFilter=T.LinearFilter;t.magFilter=T.LinearFilter;t.generateMipmaps=false}
- const flow=new T.DataTexture(new Uint8Array(buffer),192,192,T.RGBAFormat);flow.magFilter=flow.minFilter=T.LinearFilter;flow.needsUpdate=true;
- const metrics=window.livingSceneMetrics={ready:false,frames:0,active:[],effects:['anatomy anchored push-ups','bamboo and log sway','radiating sun','rain and splashes','fire tongues and embers','uncle breathing and ash']};
+ const metrics=window.livingSceneMetrics={ready:false,frames:0,active:[],effects:['clean authored push-up poses','bamboo and log sway','radiating sun','rain and splashes','fire tongues and embers','uncle breathing and ash']};
  const descriptors=[['.strength',0],['.shelter',1],['.silence',2],['.home',3]],views=[];
  for(const [selector,kind]of descriptors){const host=document.querySelector(selector),canvas=document.createElement('canvas');canvas.className='living-art';canvas.setAttribute('aria-hidden','true');host.prepend(canvas);
-  try{const renderer=new T.WebGLRenderer({canvas,alpha:false,antialias:false,powerPreference:'low-power'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.4));const camera=new T.OrthographicCamera(-1,1,1,-1,0,2);camera.position.z=1;const scene=new T.Scene();const uniforms={art:{value:kind===3?uncle:art},lower:{value:lower},flow:{value:flow},time:{value:0},kind:{value:kind},effort:{value:0},crop:{value:new T.Vector2(1,1)},center:{value:new T.Vector2(.5,.5)}};const material=new T.ShaderMaterial({vertexShader:vertex,fragmentShader:fragment,uniforms,depthTest:false,depthWrite:false});scene.add(new T.Mesh(new T.PlaneGeometry(2,2),material));views.push({host,kind,renderer,scene,camera,uniforms,width:0,height:0});host.classList.add('living-ready');canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();host.classList.remove('living-ready');metrics.contextLost=true})}catch(e){canvas.remove();console.warn('Living illustration fallback',e)}
+  try{const renderer=new T.WebGLRenderer({canvas,alpha:false,antialias:false,powerPreference:'low-power'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.4));const camera=new T.OrthographicCamera(-1,1,1,-1,0,2);camera.position.z=1;const scene=new T.Scene();const uniforms={art:{value:kind===3?uncle:art},lower:{value:lower},time:{value:0},kind:{value:kind},effort:{value:0},crop:{value:new T.Vector2(1,1)},center:{value:new T.Vector2(.5,.5)}};const material=new T.ShaderMaterial({vertexShader:vertex,fragmentShader:fragment,uniforms,depthTest:false,depthWrite:false});scene.add(new T.Mesh(new T.PlaneGeometry(2,2),material));views.push({host,kind,renderer,scene,camera,uniforms,width:0,height:0});host.classList.add('living-ready');canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();host.classList.remove('living-ready');metrics.contextLost=true})}catch(e){canvas.remove();console.warn('Living illustration fallback',e)}
  }
  metrics.ready=true;
  function update(p,now){metrics.active=[];if(document.hidden)return;for(const v of views){const eligible=v.kind===3?p>.377&&p<.565:p>.525&&p<.863;if(!eligible)continue;const rect=v.host.getBoundingClientRect();if(rect.bottom<0||rect.top>innerHeight||rect.right<0||rect.left>innerWidth)continue;const width=Math.round(v.host.clientWidth),height=Math.round(v.host.clientHeight);if(!width||!height)continue;if(width!==v.width||height!==v.height){v.renderer.setSize(width,height,false);v.width=width;v.height=height;const ratio=width/height,imageRatio=v.kind===3?1672/941:1;const sx=Math.min(1,ratio/imageRatio),sy=Math.min(1,imageRatio/ratio);v.uniforms.crop.value.set(sx,sy);v.uniforms.center.value.set(sx*.5+(1-sx)*(innerWidth<700?.80:.65),sy*.5+(1-sy)*.45)}
-   v.uniforms.time.value=now/1000;const cycle=(now/2450+p*11)%1;const smooth=x=>x*x*(3-2*x);v.uniforms.effort.value=cycle<.43?smooth(cycle/.43):cycle<.54?1:cycle<.93?1-smooth((cycle-.54)/.39):0;v.renderer.render(v.scene,v.camera);metrics.active.push(v.kind);metrics.frames++;metrics.effort=v.uniforms.effort.value;
+   v.uniforms.time.value=now/1000;const cycle=(now/2400)%1;v.uniforms.effort.value=cycle>.42&&cycle<.76?1:0;v.renderer.render(v.scene,v.camera);metrics.active.push(v.kind);metrics.frames++;metrics.effort=v.uniforms.effort.value;
   }}
  return {update,metrics};
 }
