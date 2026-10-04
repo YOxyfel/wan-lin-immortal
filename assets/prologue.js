@@ -17,8 +17,8 @@ function opacity(el,value){el.style.opacity=value.toFixed(4);el.style.visibility
 let wasAttack=false,shockTime=-1;
 function render(now){requestAnimationFrame(render);if(document.hidden||reduced)return;const dt=Math.min(.06,(now-last)/1000);last=now;const rect=root.getBoundingClientRect();target=clamp(-rect.top/Math.max(1,root.offsetHeight-innerHeight));if(rect.bottom<0)return;p=lerp(p,target,1-Math.exp(-dt*17));if(Math.abs(p-target)<.00005)p=target;window.prologueProgress=p;root.dataset.progress=p.toFixed(4);
  const intro=target>.004?1:ease(0,3.5,(now-start)/1000);opacity(parts.intro,visible(-.01,0,.045,.075,p)*intro);
- opacity(parts.world,1-ease(.358,.382,p));const rush=ease(.307,.357,p);parts.world.style.transform=`translate3d(${lerp(0,innerWidth*.09,rush)}px,${lerp(0,innerHeight*.06,rush)}px,0) scale(${lerp(1,1.10,rush)})`;
- if(p>.208&&p<.285&&!wasAttack){wasAttack=true;shockTime=now;hit(58,1.4,.15)}if(p<.195){wasAttack=false;shockTime=-1;voicePlayed=false}const shock=shockTime<0?0:(1-clamp((now-shockTime)/1700));parts.world.style.translate=shock?`${Math.sin(now*.065)*shock*3}px ${Math.sin(now*.083)*shock*2}px`:'0px 0px';
+ opacity(parts.world,1-ease(.358,.382,p));parts.world.style.transform="none";
+ if(p>.208&&p<.285&&!wasAttack){wasAttack=true;shockTime=now;hit(58,1.4,.15)}if(p<.195){wasAttack=false;shockTime=-1;voicePlayed=false}const shock=shockTime<0?0:(1-clamp((now-shockTime)/1700));parts.world.style.translate="0px 0px";
  opacity(parts.attack,visible(.226,.25,.297,.32,p));
  const black=Math.max(visible(.356,.38,.386,.403,p),visible(.513,.527,.531,.548,p),visible(.845,.862,.873,.888,p));opacity(parts.black,black);
  opacity(parts.home,visible(.377,.399,.544,.565,p));parts.home.style.transform=`scale(${lerp(1,1.035,ease(.39,.51,p))})`;
