@@ -95,10 +95,42 @@ Verified at 1440×960 and 390×844: all eight pages, local asset loading, horizo
 
 The awakening was also verified at 320×568 and 667×375, including touch entry, keyboard Sound/Skip/Replay, reduced-motion interruption, refresh, return-to-top replay, and browser Back restoration. Sound starts disabled and requires explicit activation.
 
-## Continuous 3D journey (October 2026)
+## Cinderfall prologue (October 2026)
 
-The homepage uses one Three.js stage and one native-scroll timeline. The two portraits stay at the threshold; the collision, fused figure and automatic takeover have been removed. The same world becomes a rotating ink scroll and returns to 3D. Reduced motion and unavailable WebGL provide an illustrated story path.
+The homepage opens with **Cinderfall**: one continuous, scroll-driven 3D story built with Three.js. Everything in the
+valley is generated in code, with no external 3D assets or paid image services: the timber houses with curved tile
+roofs, the props, the pines and bamboo, villagers, Ashen Wolves, the sky, the storm and the fire.
 
-Run `npm install` and `npm run dev` for local development; `npm run build` produces `dist`. GitHub Pages deploys that built folder through `.github/workflows/pages.yml` on pushes to `main`. Source files containing package imports must not be published directly as static files.
+Story beats (scroll position `u`, 0 → 140, see `assets/cinderfall/timeline.js`):
 
-The original gate mesh is `assets/models/threshold.glb`; regenerate it with Blender using `tools/build-gate.py`. Stone texture: `Images/Journey/threshold-stone.webp`, generated with the built-in image tool from a prompt specifying tileable charcoal basalt, ivory chisel hatching and restrained antique gold veins. The existing character artwork is retained. See `design-qa.md` for review evidence and measurement limits.
+| u | Beat |
+| --- | --- |
+| 0–10 | An ink drop blooms on rice paper, 玄 is brush-written, the valley is drawn in ink and bleeds into colour |
+| 10–36 | Morning in Cinderfall Hamlet, over Wuhen's shoulder: the uncle waves from his herb shop, neighbours greet him, the garrison marches out early |
+| 36–46 | The old road: fields, the shrine, the bridge, the mushrooms at the edge of the pines |
+| 46–56 | The sky turns: black clouds out of a clear sky, gold and violet lights at war above them, lightning, a light falls into the forest |
+| 56–66 | He turns. Dolly zoom on the village in flames, cinnabar ink |
+| 66–86 | He runs back through the same street, now burning, to his uncle's door: a hand under the fallen beam |
+| 86–96 | The painted close-up and the uncle's last words |
+| 96–117 | Six years in ink (the manuscript) |
+| 117–133 | Six years later: the ruined street at dawn, the old road, the forest, the oldest roots |
+| 133–140 | The scroll. "His story has only begun." → demo |
+
+Code (`assets/cinderfall/`):
+
+- `boot.js`: scroll → `u`, captions, title calligraphy, manuscript, HUD, **Watch** autoplay, sound, fallbacks
+- `timeline.js`: every keyframe (camera modes, light, sky, fire, ink cuts); edit pacing here
+- `engine.js`: renderer, lights, camera director, cast and wolf behaviour, effects binding
+- `layout.js`: the road, terrain height, house placements; `world.js` assembles the valley
+- `architecture.js`, `props.js`, `vegetation.js`, `terrain.js`, `sky.js`, `people.js`, `beasts.js`, `fx.js`
+- `materials.js`: shared materials; every surface can char, glow, collapse (burning night) and break (ruins)
+- `post.js`: bloom, grade, ink-sketch / watercolour transitions, painted plates; `ink.js`: the ink overlay
+- `audio.js`: opt-in procedural sound; `life.js`: the animated manuscript panels
+
+Assets (`Images/Cinderfall/`) are regenerated with `python tools/gen_textures.py`, `python tools/prepare_wuhen.py`
+(Wuhen's over-the-shoulder card from `Images/Prologue/shoulder.png`) and `python tools/glyphs.py` (calligraphy
+outlines from Noto Serif CJK, SIL Open Font License). Debug: `?debug=1` pauses the loop and `window.__cf.frame(u)`
+renders any story position; `?q=low|high` forces quality; `?motion=off` shows the static story.
+
+The earlier prologue scripts (`assets/prologue*.js`, `village-scene.js`) are no longer loaded by `index.html`.
+A copy of the previous homepage is in `../website-before-cinderfall/`. See `cinderfall-review.md` for verification notes.

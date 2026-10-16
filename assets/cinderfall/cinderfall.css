@@ -1,0 +1,79 @@
+/* Cinderfall prologue stage. Layers: world (0) · ink (10) · captions (11) · title / last page (12) · hud (13) */
+#prologue { position: relative; }
+#prologue .stage { background: #e9e2d1; }
+#world { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+#ink { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+#prologue .memory, #prologue .quote { display: none !important; }
+
+#loading.loading { background: transparent; color: #3a352d; z-index: 14; align-content: end; padding-bottom: 7vh; pointer-events: none; font: italic 15px "Cormorant Garamond", Georgia, serif; letter-spacing: .04em; }
+#loading.loading small { color: #7b6f5b; margin-top: 6px; }
+
+/* ------------------------------------------------------------ title */
+.cf-title { position: absolute; inset: 0; z-index: 12; pointer-events: none; color: #1f1c18; }
+.cf-seal { position: absolute; left: 50%; top: 42%; width: min(25vw, 31vh); height: min(26.5vw, 33vh); transform: translate(-50%, -50%); overflow: visible; filter: drop-shadow(0 0 1px #0004); }
+.cf-title-text { position: absolute; left: 50%; top: calc(42% + min(20vw, 25vh)); transform: translateX(-50%); width: min(92vw, 900px); text-align: center; }
+.cf-title h1 { font: 500 clamp(40px, 6.4vw, 92px)/1 "Cormorant Garamond", Georgia, serif; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 14px; filter: blur(calc((1 - var(--reveal, 0)) * 7px)); -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--reveal, 0) * 140% - 40%), transparent calc(var(--reveal, 0) * 140%)); mask-image: linear-gradient(90deg, #000 calc(var(--reveal, 0) * 140% - 40%), transparent calc(var(--reveal, 0) * 140%)); }
+.cf-title .eyebrow { color: #8a2a1e; letter-spacing: .42em; opacity: var(--reveal, 0); }
+.cf-sub { font: italic clamp(18px, 1.8vw, 26px) "Cormorant Garamond", Georgia, serif; margin-top: 18px; opacity: calc(var(--reveal, 0) * 1.2 - .2); }
+.cf-hint { font: 500 9px "Manrope", Arial, sans-serif; letter-spacing: .3em; margin-top: 26px; color: #6d6150; opacity: var(--hint, 0); }
+.cf-title.waiting .cf-hint { opacity: calc(var(--hint, 0) * .5); }
+.cf-stamp { position: absolute; right: calc(50% - min(44vw, 420px)); top: -6px; display: grid; gap: 1px; padding: 6px 5px; background: #a3261b; color: #f3e8d4; font: 700 15px/1.05 "Noto Serif TC", "Songti TC", "SimSun", serif; border-radius: 2px; box-shadow: inset 0 0 0 2px #f3e8d455; transform: rotate(3deg) scale(calc(.6 + var(--reveal, 0) * .4)); opacity: calc(var(--reveal, 0) * 1.5 - .5); }
+.cf-stamp i { font-style: normal; display: block; }
+
+/* ------------------------------------------------------------ captions */
+.cf-captions { position: absolute; inset: 0; z-index: 11; pointer-events: none; }
+.cf-cap { position: absolute; bottom: 15vh; left: 7vw; max-width: min(620px, 80vw); color: #f1e9d8; visibility: hidden; opacity: 0; }
+.cf-cap .eyebrow { color: #d8c7a5; margin-bottom: 16px; text-shadow: 0 1px 14px #000a; }
+.cf-cap p { font: 400 clamp(32px, 4.2vw, 64px)/1.04 "Cormorant Garamond", Georgia, serif; letter-spacing: -.01em; text-shadow: 0 2px 28px #000b, 0 0 2px #0006;
+  filter: blur(calc((1 - var(--reveal, 0)) * 8px));
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--reveal, 0) * 150% - 50%), transparent calc(var(--reveal, 0) * 150%));
+  mask-image: linear-gradient(90deg, #000 calc(var(--reveal, 0) * 150% - 50%), transparent calc(var(--reveal, 0) * 150%)); }
+.cf-cap p em { font-style: italic; color: #f0b48f; }
+.cf-cap.small p { font-size: clamp(26px, 3vw, 46px); }
+.cf-cap.big p { font-size: clamp(44px, 6.4vw, 104px); line-height: .98; }
+.cf-cap.right { left: auto; right: 7vw; text-align: right; }
+.cf-cap.center { left: 50%; bottom: auto; top: 50%; transform: translate(-50%, -50%); text-align: center; width: max-content; max-width: 90vw; }
+.cf-cap.red .eyebrow { color: #f08a63; }
+.cf-cap.red p { color: #fff1e3; text-shadow: 0 0 40px #ff3a0a66, 0 2px 30px #000c; }
+.cf-cap.ink { color: #1f1c18; }
+.cf-cap.ink p { text-shadow: 0 0 22px #efe6d2cc, 0 0 2px #efe6d2; }
+.cf-cap.ink p em { color: #8a2a1e; }
+.cf-cap.ink .eyebrow { color: #8a2a1e; text-shadow: 0 0 14px #efe6d2; }
+.cf-cap.red.ink p { color: #8e1d10; text-shadow: 0 0 26px #efe6d2f0, 0 0 4px #efe6d2; }
+.cf-cap.red.ink .eyebrow { color: #8e1d10; }
+/* the last words: low and centred, written like a line of verse */
+.cf-cap.words { left: 50%; right: auto; bottom: 12vh; transform: translateX(-50%); text-align: center; width: max-content; max-width: 88vw; }
+.cf-cap.words p { font-size: clamp(30px, 3.6vw, 56px); font-style: italic; }
+/* the last page: the line under the sign */
+.cf-cap.end { left: 50%; right: auto; bottom: auto; top: calc(42% + min(19vw, 24vh)); transform: translateX(-50%); text-align: center; width: max-content; max-width: 90vw; }
+.cf-cap.end p { font-size: clamp(30px, 3.8vw, 60px); }
+
+/* ------------------------------------------------------------ the last page */
+.cf-end { position: absolute; inset: 0; z-index: 12; pointer-events: none; visibility: hidden; opacity: 0; }
+.cf-end .cf-seal { position: absolute; left: 50%; top: 42%; width: min(25vw, 31vh); height: min(26.5vw, 33vh); transform: translate(-50%, -50%); overflow: visible; filter: drop-shadow(0 0 12px #d8a24a66); }
+.cf-end .cf-stamp { position: absolute; left: calc(50% + min(15vw, 19vh)); top: calc(42% + min(8vw, 10vh)); right: auto; transform: rotate(4deg) scale(calc(.6 + var(--reveal, 0) * .4)); opacity: var(--reveal, 0); }
+.cf-next { position: absolute; left: 50%; bottom: 7vh; transform: translateX(-50%); font: 500 10px "Manrope", Arial, sans-serif; letter-spacing: .32em; color: #6d6150; text-decoration: none; pointer-events: auto; opacity: var(--reveal, 0); }
+
+/* ------------------------------------------------------------ hud */
+.hud { z-index: 13; }
+.hud-actions { display: flex; gap: 22px; align-items: center; }
+.hud button { font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; padding: 6px 0; }
+#watch { border: 1px solid currentColor; border-radius: 99px; padding: 6px 14px; }
+#watch[aria-pressed="true"] { background: #a3261b; border-color: #a3261b; color: #f3e8d4; }
+.meter { position: absolute; left: 0; bottom: 0; height: 2px; width: 100% !important; transform-origin: 0 50%; transform: scaleX(0); background: #a3261b; z-index: 13; }
+
+@media (max-width: 700px) {
+  .hud .hud-actions { display: flex; }
+  #chapter { max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cf-cap { left: 6vw; right: 6vw; bottom: 17vh; max-width: none; }
+  .cf-cap.right { right: 6vw; left: 6vw; }
+  .cf-cap.center { left: 50%; right: auto; }
+  .cf-seal { width: 52vw; height: 55vw; top: 36%; }
+  .cf-title-text { top: calc(36% + 34vw); }
+  .cf-stamp { display: none; }
+  .cf-end .cf-seal { width: 52vw; height: 55vw; top: 36%; }
+  .cf-cap.end { top: calc(36% + 34vw); }
+  .cf-cap.words { bottom: 16vh; }
+  .hud-actions { gap: 14px; }
+  .hud #sound { display: none; }
+}

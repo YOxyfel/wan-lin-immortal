@@ -15,12 +15,11 @@ function rigidFlight(){
   velocity.z-=EARTH_GRAVITY*step;position.addScaledVector(velocity,step);
   const speed=spin.length();if(speed>0)rotation.premultiply(new T.Quaternion().setFromAxisAngle(spin.clone().divideScalar(speed),speed*step)).normalize();
   const axis=new T.Vector3(1,0,0).applyQuaternion(rotation);
-  for(const key of ['x','y']){
-   const extent=Math.abs(axis[key])*.367+.022,limit=.48-extent;
-   if(Math.abs(position[key])<=limit)continue;
-   const sign=Math.sign(position[key]);position[key]=sign*limit;
-   const normal=new T.Vector3();normal[key]=-sign;
-   const arm=axis.clone().multiplyScalar(Math.sign(axis[key])*sign*.367);
+  for(const end of [-1,1]){
+   const arm=axis.clone().multiplyScalar(end*.367),tip=position.clone().add(arm),radius=Math.hypot(tip.x,tip.y),limit=.48-.022;
+   if(radius<=limit)continue;
+   const normal=new T.Vector3(-tip.x/radius,-tip.y/radius,0);
+   position.addScaledVector(normal,radius-limit);
    const contactVelocity=velocity.clone().add(new T.Vector3().crossVectors(spin,arm)),closing=contactVelocity.dot(normal);
    if(closing>=-.002)continue;
    const torque=new T.Vector3().crossVectors(arm,normal),denominator=1+torque.dot(inverseInertia(torque));
@@ -45,10 +44,10 @@ export function departurePose(t){
 }
 function stoneTexture(){
  const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d');g.fillStyle='#0e1010';g.fillRect(0,0,512,512);
- for(let row=0;row<8;row++)for(let col=-1;col<9;col++){const x=col*64+(row%2)*32,y=row*64,tone=36+(row*19+col*31+512)%22;g.fillStyle=`rgb(${tone},${tone-2},${tone-5})`;g.fillRect(x+2,y+2,60,60);g.strokeStyle='#52504a36';g.lineWidth=2;g.strokeRect(x+5,y+5,54,54);}
+ for(let row=0;row<8;row++)for(let col=-1;col<9;col++){const x=col*64+(row%2)*32,y=row*64,tone=58+(row*19+col*31+512)%22;g.fillStyle=`rgb(${tone},${tone-2},${tone-5})`;g.fillRect(x+2,y+2,60,60);g.strokeStyle='#52504a36';g.lineWidth=2;g.strokeRect(x+5,y+5,54,54);}
  for(let i=0;i<6500;i++){const x=(i*73.17)%512,y=(i*47.63)%512;g.fillStyle=i%2?'#00000035':'#aca89b13';g.fillRect(x,y,1+i%3,1);}
  for(let i=0;i<70;i++){g.strokeStyle='#05080739';g.beginPath();g.moveTo(i*8,0);g.bezierCurveTo(i*8-4,130,i*8+7,340,i*8+2,512);g.stroke();}
- const map=new T.CanvasTexture(c);map.colorSpace=T.SRGBColorSpace;map.wrapS=map.wrapT=T.RepeatWrapping;map.repeat.set(1,62.5);map.anisotropy=4;return map;
+ const map=new T.CanvasTexture(c);map.colorSpace=T.SRGBColorSpace;map.wrapS=map.wrapT=T.RepeatWrapping;map.repeat.set(1,18.75);map.anisotropy=4;return map;
 }
 
 function grainTexture(paper=false){
@@ -75,9 +74,11 @@ export function createScrollDeparture(){
   const bronze=new T.MeshStandardMaterial({color:0xb48b51,roughness:.35,metalness:.65});
   const paper=new T.MeshStandardMaterial({map:grainTexture(true),roughness:.9});
   const ribbon=new T.MeshStandardMaterial({color:0x65281f,roughness:.85});
-  const stone=stoneTexture(),wellMaterial=new T.MeshStandardMaterial({map:stone,bumpMap:stone,bumpScale:.016,color:0x9e9c94,roughness:1,side:T.DoubleSide,transparent:true});
+  const stone=stoneTexture(),wellMaterial=new T.MeshStandardMaterial({map:stone,bumpMap:stone,bumpScale:.016,color:0xd1d3cf,roughness:1,side:T.DoubleSide,transparent:true});
  const well=new T.Group();scene.add(well);
- for(const [x,y,turn]of [[-.48,0,Math.PI/2],[.48,0,-Math.PI/2],[0,.48,0],[0,-.48,0]]){const wall=new T.Mesh(new T.PlaneGeometry(.96,60,1,1),wellMaterial);wall.rotation.x=Math.PI/2;wall.rotateOnWorldAxis(new T.Vector3(0,0,1),turn);wall.position.set(x,y,-30);well.add(wall)}
+ // A cylindrical stone shaft and repeated courses establish a well seen from above.
+ const shaft=new T.Mesh(new T.CylinderGeometry(.48,.48,60,48,1,true),wellMaterial);shaft.rotation.x=Math.PI/2;shaft.position.z=-30;well.add(shaft);
+ const lip=new T.Mesh(new T.TorusGeometry(.49,.045,8,48),new T.MeshStandardMaterial({color:0x655c49,roughness:1}));well.add(lip);
  scene.fog=new T.Fog(0x000000,12,95);
  const actor=new T.Group();scene.add(actor);
   function cylinder(radius,length,material,x=0,y=0){const m=new T.Mesh(new T.CylinderGeometry(radius,radius,length,40,1),material);m.rotation.z=Math.PI/2;m.position.set(x,y,0);actor.add(m);return m}
@@ -104,7 +105,7 @@ export function createScrollDeparture(){
     resize();const pose=departurePose(t);
     actor.position.copy(pose.position);actor.position.z-=distance;
     actor.quaternion.copy(pose.rotation);actor.scale.set(.1,slender*.18,slender*.18);
-    well.position.z=-distance*.85;wellMaterial.opacity=smooth(.17,.26,t)*(1-smooth(.60,.80,t));
+    well.position.z=-distance*.85;camera.position.set(.055,.10,0);camera.up.set(0,1,0);camera.lookAt(0,-.08,-distance-2);wellMaterial.opacity=smooth(.17,.26,t)*(1-smooth(.60,.80,t));
     scene.fog.near=distance+.8;scene.fog.far=distance+12;
     for(const m of materials)m.opacity=1-smooth(.92,1,t);
     const age=(now-impactAt)/1000,energy=Math.max(0,1-age/.45);
