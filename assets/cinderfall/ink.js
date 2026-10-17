@@ -662,8 +662,9 @@ export function writeGlyph(svg, glyph, medians, { color = '#a3201a', id = 'g' + 
     try {
       const greys = await Promise.all(medians.map((pts, i) => roughen(strokeMap(pts, lens[i]))));
       const fulls = await Promise.all(greys.map(fullOf));
-      // (decoded now, so showing them later costs nothing)
-      await Promise.all([...greys, ...fulls].map(u => { const im = new Image(); im.src = u; return im.decode().catch(() => {}); }));
+      // (decoded now, so showing them later costs nothing; not waited for long: a page that is not being drawn, in a
+      // hidden pane or tab, has its decodes held back until it is)
+      await Promise.all([...greys, ...fulls].map(u => { const im = new Image(); im.src = u; return Promise.race([im.decode().catch(() => {}), new Promise(r => setTimeout(r, 400))]); }));
       layers.forEach((L, i) => { L.imW.setAttribute('href', greys[i]); L.imF.setAttribute('href', fulls[i]); });
       ready = true;
       apply(want);
