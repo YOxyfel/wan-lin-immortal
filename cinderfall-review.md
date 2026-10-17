@@ -405,3 +405,38 @@ what can be read at scroll speed). This round builds its foundations and the fir
 - **The last words** (85.0–92.2): one locked setup over the boy's shoulder down onto his uncle's face, turned up to him
   on the floor, their hands between them; pushing in slowly while he speaks. As the old man's hand falls the story
   clock all but stops (the fire and the embers hang) and the tear lands where their hands met (`metrics.tearUV`).
+
+## Round 8: the score (17 October 2026)
+
+- **A score generated in the browser** (`score.js`, mixed in `audio.js`; plays only with the sound on). Nothing is
+  recorded: a guzheng (each string a delay line plucked a seventh of the way along, tuned to within a cent, the left
+  hand's presses, slides and vibrato, harmonics, tremolo, sweeps), a dizi with its membrane's buzz and a xiao, a choir
+  (voices drawn through the formants of a, o and u for bass, tenor, alto and soprano, three singers a note across the
+  stereo), taiko and war drums, an opera gong whose pitch falls (or rises, at the pillar), bells, drones, a hall.
+- **Themes**: his uncle's, in D major pentatonic (the guzheng's own tuning). It is stated whole at the door over his
+  face, ends open on the fifth, and is brought home only on the first page. The boy has his own tune on the dizi in
+  the street; the dread is the one note outside the scale (G sharp, a tritone from home: the smith's iron, the pines,
+  the burning, the crag); sorrow is the same notes centred on B (the gate, the night after). What fell from the sky
+  has a motif of four harmonics: its light fleeing west, the mote, the dell, and at the pillar it meets his uncle's
+  theme in the bells.
+- **How it follows the scroll**: drones and pads follow the story position both ways; melodies start when the story
+  crosses their cue and then play at their own tempo, so a reader can stop to read and the music breathes on (one
+  melody at a time; one arriving as another ends waits for it); sounds locked to the picture fire as the story
+  crosses them: the launch's drums at each stretch of the climb, the clash of blades on the shadow screen, the three
+  sheets, then the music stops dead with everything else at the breach; every blow of the duel above the clouds (the
+  engine reports them: `metrics.blowN`), heard muffled through the clouds from the ground, in full over the sea; the
+  dive's roll accelerating into the strike under a swell drawn in toward it; a drum on each bolt into the ground on
+  the run home; the years as a music box the scroll turns (the first year the whole theme, its last note the first
+  mark; each mark after a string higher); a drum on every heel strike of the walk out, a new chord on each cut of the
+  world, and on the missed beat, nothing but a bell.
+- **The soundscape, brought up to the story**: the hunt's old cues at 129–131 (the bow, the boar, the ground giving
+  way) played over the walk out and are gone; footsteps now fall on his own heel strikes (`metrics.step`) instead of
+  the scroll's speed, leaves in the forest; the heartbeat at his uncle's side stops as the hand falls; the falling
+  star and its impact have their sound where they now are (54.0, 54.42); the hum of what fell is in D; the streams
+  run; no birds on the morning of the sixth autumn. Everything is scheduled on the audio clock (no timers), so the
+  whole of it can be rendered offline.
+- **Checked by rendering, not by ear**: the Watch path rendered offline (`_score-check.html`, not committed; an
+  OfflineAudioContext stepped every 20 ms with the duel's blows from `duel.js` on the story clock): no clipping (a
+  limiter at the end of the chain, peaks at about −1 dBFS at the strike and the pillar), quiet passages around −30 dB,
+  the breach silent to −64 dB but for the one high A. The site with the sound on stepped through the morning, the
+  launch, the duel and the walk out without an error. How it sounds has to be judged by listening.

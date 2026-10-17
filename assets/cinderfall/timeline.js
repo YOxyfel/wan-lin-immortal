@@ -10,6 +10,8 @@
 import { track, curve1, curveMono, smooth, band, clamp, lerp } from './util.js';
 import { P } from './palettes.js';
 export const TOTAL = 145;
+// autoplay pace (units per second) by story position: slower where the story breathes
+export const PACE = [[0, 0.55], [4, 0.75], [10, 0.9], [15, 0.6], [19, 0.85], [31, 0.7], [36, 1.1], [42, 0.6], [46.5, 0.42], [49.4, 0.34], [56, 0.32], [61.5, 0.32], [66, 0.9], [77, 0.55], [80.6, 0.42], [84.6, 0.3], [92.4, 0.42], [98, 0.38], [103.5, 0.44], [107.6, 0.42], [112, 0.45], [124, 0.45], [125.8, 0.42], [130.45, 0.5], [131, 0.42], [133.4, 0.36], [136, 0.3], [141, 0.38], [145, 0.4]];
 // Held moments: at each [story position, scroll length] the story slows to a fifth of its pace for that much scroll,
 // so the reader waits on it — the forest falls silent, the storm stands over the valley, the glow below, the boy who
 // cannot move, the open door, the hand that falls, the morning he goes farther, the rim of the dell, the crystal.

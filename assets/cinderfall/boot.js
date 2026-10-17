@@ -1,6 +1,6 @@
 // Cinderfall prologue: scroll → scroll position su → story position u (held moments stretch it) → world, ink overlay,
 // captions, title and the last page.
-import { TOTAL, TOTAL_U, uToS, sToU, inkCut, inkfx, fx, INK_CUTS, timeRate } from './timeline.js';
+import { TOTAL, TOTAL_U, uToS, sToU, inkCut, inkfx, fx, INK_CUTS, timeRate, PACE } from './timeline.js';
 import { createInkOverlay, writeGlyph } from './ink.js';
 import { GLYPHS } from './glyphs.js';
 import { createAudio } from './audio.js';
@@ -58,8 +58,6 @@ const CAPTIONS = [
   { a: 142.6, b: 146.0, pos: 'end', eyebrow: 'THE FIRST PAGE OF SOMETHING MORE', text: 'His story has only begun.' },
 ];
 const CHAPTERS = [[0, '01 / AN ORDINARY MORNING'], [46.5, '02 / THE SKY TURNS'], [61.6, '03 / CINDERFALL BURNS'], [84.4, '04 / A FINAL WARNING'], [108.3, '05 / THE YEARS BETWEEN'], [124, '06 / WHAT FELL THAT NIGHT']];
-// autoplay pace (units per second) by story position: slower where the story breathes
-const PACE = [[0, 0.55], [4, 0.75], [10, 0.9], [15, 0.6], [19, 0.85], [31, 0.7], [36, 1.1], [42, 0.6], [46.5, 0.42], [49.4, 0.34], [56, 0.32], [61.5, 0.32], [66, 0.9], [77, 0.55], [80.6, 0.42], [84.6, 0.3], [92.4, 0.42], [98, 0.38], [103.5, 0.44], [107.6, 0.42], [112, 0.45], [124, 0.45], [125.8, 0.42], [130.45, 0.5], [131, 0.42], [133.4, 0.36], [136, 0.3], [141, 0.38], [145, 0.4]];
 const paceAt = u => { let p = PACE[0][1]; for (const [a, v] of PACE) if (u >= a) p = v; return p; };
 // where the screen is paper-light, so the HUD and captions switch to ink
 // (the night after the soul gives the world back its colour, until the light floods it white, is dark)
@@ -444,7 +442,7 @@ async function boot() {
     // height, for the captions that ride on the lower one)
     setVar(document.documentElement, '--cf-quiet', inView ? smooth(48.466, 48.47, u) * (1 - smooth(48.95, 49.3, u)) : 0);
     setVar(document.documentElement, '--cf-bar', engine && inView ? engine.metrics.bars || 0 : 0);
-    audio.update(u, now, Math.abs(target - su) * 10, engine ? engine.metrics.wind ?? 0.5 : 0.4);
+    audio.update(u, now, Math.abs(target - su) * 10, engine ? engine.metrics.wind ?? 0.5 : 0.4, engine ? engine.metrics : undefined);
     if (forceTime == null) forced = null;
   }
   // ---------------------------------------------------------------- keep the frame rate

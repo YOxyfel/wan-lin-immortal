@@ -1284,6 +1284,9 @@ export async function createEngine(canvas) {
       lightning.strike(time, M, M.clone().add(V3(Math.cos(a1) * 420, -380 - (q % 5) * 40, Math.sin(a1) * 420)), { seed: q * 31 + 7, strength: 0.9, width: 2.6, branches: 8, levels: 6, color: new THREE.Color(0.66, 0.5, 1.0) });
       if (lastBlow.kind !== 1) lightning.strike(time + 0.02, M, M.clone().add(V3(Math.cos(a2) * 520, 90 + (q % 3) * 60, Math.sin(a2) * 520)), { seed: q * 17 + 3, strength: 0.65, width: 2.0, branches: 6, levels: 6, color: new THREE.Color(1.0, 0.82, 0.5) });
     }
+    // (and for the score: a count of the blows struck, the last one's kind, how much of the fight is in view)
+    if (lastBlow && lastBlow.t > lastBlowT) { metrics.blowN = (metrics.blowN || 0) + 1; metrics.blowKind = lastBlow.kind; }
+    metrics.duelK = clashK;
     if (lastBlow) lastBlowT = lastBlow.t;
     // where it came down beyond the ridges: the flash under the deck and the ring through it
     S.uHit.value.set(STAR_C.x, 0, STAR_C.z, !inB && u >= STAR[1] && u < STAR[1] + 2.4 ? (u - STAR[1]) / 2.4 : -1);
@@ -1859,6 +1862,7 @@ export async function createEngine(canvas) {
     const fromAbove = rw > 0.5 && u > 96.2;
     // (at the end the lens goes past his eyes into the page in his hands: he stays, so the scroll stays in them)
     const wShow = wVis && !debug.noHero && aw < 0.995 && (camToMC > 0.75 || (inB && u > 138.9) || (inB && B.allowNear && B.allowNear(u))) && !fromAbove;
+    metrics.step = null;
     if (wShow || wuhen) {
       const h = getWuhen();
       h.group.position.copy(P);
@@ -1867,6 +1871,9 @@ export async function createEngine(canvas) {
       h.uniforms.uKK.value.x = 0.34 * kk; h.uniforms.uKK.value.z = 0.32 * kk;
       if (!inB) h.setAge(0);
       driveHero(h, wShow, dt, time, { speed, wave, run, kneel, reach, draw, lie, ...hs }, jumped);
+      // (his gait, for his footsteps: the left heel strikes at phase 0, the right at 0.5; near: how close the lens is to
+      // where he is this frame — his head's anchor is still where the last frame left it, a world away on a cut)
+      if (h.group.visible && h.state.lastState) metrics.step = { phase: h.state.phase, speed: Math.max(0, h.state.lastState.speed || 0), run: h.state.lastState.run || 0, near: clamp(1 - (camera.position.distanceTo(P) - 3) / 30) };
       if (held.visible && h.group.visible) {
         hangBasket();
         // (where it hangs as his fingers are about to open: the basket falls from there)
