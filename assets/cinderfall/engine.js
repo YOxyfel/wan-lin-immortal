@@ -2,7 +2,7 @@
 // Two places: the valley of Cinderfall (u < 108) and, beyond the ridges, the Forbidden Forest.
 import * as THREE from 'three';
 import { installFog, injectFog, FOGU } from './atmosphere.js';
-import { createMaterials, U, TOON } from './materials.js';
+import { createMaterials, U, TOON, liteAll } from './materials.js';
 import { buildWorld } from './world.js';
 import { createSky, createMist } from './sky.js';
 import { createRanges, groundAt } from './ranges.js';
@@ -159,38 +159,76 @@ export async function createEngine(canvas) {
   const crystalLight = new THREE.PointLight(0x58e0d8, 0, 6, 1.5);
   if (A.crystal) crystalLight.position.copy(A.crystal).add(V3(0, 0.3, 0));
   scene.add(crystalLight);
-  // ---------------------------------------------------------------- one set of lights for the whole story
-  // Every lit material is compiled for the number of lights in the scene, and again whenever that number changes (on
-  // Windows that is a fraction of a second per material). Two lights live in a group that comes and goes: the camp's
-  // fire and the scroll's glow, in the forest. Entering the forest changed the count, so every lit material there was
-  // compiled again on the way in; and while the forest was prepared three counted those two lights twice, so it had
-  // already been compiled once for a count that never happens. They are stood in for by two lights kept in the scene
-  // from the start, at zero while their group is not shown: the count never changes.
-  const standIns = [0, 1].map(() => { const l = new THREE.PointLight(0xffffff, 0, 1, 2); l.name = 'stand-in'; scene.add(l); return l; });
-  const anchored = [];
-  function anchorLights() {
-    const found = [];
-    scene.traverse(o => { if (o.isPointLight && o.parent && o.parent !== scene && o.name !== 'stand-in') found.push(o); });
-    for (const l of found) {
-      const parent = l.parent;
-      parent.remove(l);
-      let st = standIns.find(x => !x.userData.taken);
-      if (!st) { st = new THREE.PointLight(0xffffff, 0, 1, 2); st.name = 'stand-in'; scene.add(st); console.warn('one light more than the stand-ins: lit materials will be compiled again'); }
-      st.userData.taken = true;
-      anchored.push({ l, parent, st });
-    }
+  // ---------------------------------------------------------------- the lights, pooled
+  // On Windows the browser prepares each lit material's shader the first time it is drawn, one at a time, and every
+  // point light in the scene adds ~11 ms to each (measured on an RTX 4080 desktop: 356 ms a material with the story's
+  // 16 point lights, 241 ms with 6). The story's lights (eight fires, two in the house, his face, the crystal, the
+  // blade, the crag, the camp fire and the scroll) are kept as they are, for the story to drive, but three does not
+  // see them: each frame the few that light most of what is on screen are given to POOL real lights, fading as they
+  // swap, so nothing pops (at a cut they are set at once); and the number three compiles for never changes, in the
+  // valley or the forest.
+  const POOL = quality.low ? 4 : 5;
+  const pool = Array.from({ length: POOL }, () => { const light = new THREE.PointLight(0xffffff, 0, 1, 2); light.name = 'pool'; scene.add(light); return { light, v: null, want: null, w: 0 }; });
+  const virtual = [];
+  // (every point light found is taken over: called once the valley is built, and again once the forest is)
+  function poolLights() {
+    scene.traverse(o => { if (o.isPointLight && o.name !== 'pool' && !o.userData.cfVirtual) { o.userData.cfVirtual = true; o.userData.cfWP = new THREE.Vector3(); virtual.push(o); } });
+    for (const l of virtual) l.visible = false;
   }
-  // (each frame: where its group puts it, and dark unless its group is shown)
-  function syncLights() {
-    for (const { l, parent, st } of anchored) {
-      let on = l.visible, p = parent;
-      while (on && p && p !== scene) { if (!p.visible) on = false; p = p.parent; }
-      if (p !== scene) on = false;
-      st.intensity = on ? l.intensity : 0;
-      if (!on) continue;
-      parent.updateWorldMatrix(true, false);
-      st.position.copy(l.position).applyMatrix4(parent.matrixWorld);
-      st.color.copy(l.color); st.distance = l.distance; st.decay = l.decay;
+  const _frus = new THREE.Frustum(), _pm = new THREE.Matrix4(), _sph = new THREE.Sphere(), _cand = [];
+  const _fwd = V3(), _sp = V3(), _lastCam = V3(1e9, 0, 0), _lastFwd = V3();
+  // (points along the view, metres ahead of the camera, where each light's worth is taken)
+  const VIEW_D = [0, 2.5, 6, 12, 24];
+  let poolT = performance.now();
+  function syncPool() {
+    const now = performance.now(), raw = Math.max(0, (now - poolT) / 1000), dt = Math.min(0.1, raw);
+    poolT = now;
+    camera.updateMatrixWorld();
+    _pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    _frus.setFromProjectionMatrix(_pm);
+    camera.getWorldDirection(_fwd);
+    // a cut (the camera somewhere else from one frame to the next) or a long gap: the lights are set at once, no fading
+    const cut = raw > 0.3 || _lastCam.distanceTo(camera.position) > 4 || _lastFwd.dot(_fwd) < 0.87;
+    _lastCam.copy(camera.position); _lastFwd.copy(_fwd);
+    // what each light is worth on screen: how brightly it lights what is in front of the camera (its strength and
+    // three's own falloff, at the brightest of a few points along the view)
+    _cand.length = 0;
+    for (const l of virtual) {
+      l.userData.cfOn = false;
+      if (!(l.intensity > 0)) continue;
+      let p = l.parent;
+      while (p && p !== scene && p.visible) p = p.parent;
+      if (p !== scene) continue;
+      l.updateWorldMatrix(true, false);
+      const wp = l.userData.cfWP.setFromMatrixPosition(l.matrixWorld);
+      const range = l.distance > 0 ? l.distance : Infinity;
+      if (!_frus.intersectsSphere(_sph.set(wp, Math.min(range, 400)))) continue;
+      let lit = 0;
+      for (const d of VIEW_D) {
+        const r = Math.max(0.5, _sp.copy(camera.position).addScaledVector(_fwd, d).distanceTo(wp));
+        let f = 1 / Math.max(Math.pow(r, l.decay), 0.01);
+        if (range < Infinity) { const x = Math.min(1, r / range); f *= (1 - x ** 4) ** 2; }
+        lit = Math.max(lit, f);
+      }
+      let score = l.intensity * (0.3 * l.color.r + 0.59 * l.color.g + 0.11 * l.color.b) * lit;
+      if (!cut && pool.some(sl => sl.v === l)) score *= 1.5;   // (a light already shown keeps its place unless clearly beaten)
+      l.userData.cfOn = true; l.userData.cfScore = score;
+      _cand.push(l);
+    }
+    _cand.sort((a, b) => b.userData.cfScore - a.userData.cfScore);
+    const best = _cand.slice(0, POOL);
+    for (const sl of pool) sl.want = best.includes(sl.v) ? sl.v : null;
+    for (const l of best) if (!pool.some(sl => sl.want === l)) { const sl = pool.find(x => x.want === null && x.w <= 0) || pool.find(x => x.want === null); if (sl) sl.want = l; }
+    // fade: out before a slot changes hands, then in (at a cut, straight to where they should be)
+    for (const sl of pool) {
+      if (cut) { sl.v = sl.want; sl.w = sl.v ? 1 : 0; }
+      else if (sl.v !== sl.want) { sl.w -= dt * 8; if (sl.w <= 0) { sl.w = 0; sl.v = sl.want; } }
+      else if (sl.v) sl.w = Math.min(1, sl.w + dt * 8);
+      const L = sl.light, v = sl.v;
+      if (!v || !v.userData.cfOn) { L.intensity = 0; continue; }
+      L.position.copy(v.userData.cfWP);
+      L.color.copy(v.color); L.distance = v.distance; L.decay = v.decay;
+      L.intensity = v.intensity * sl.w;
     }
   }
   const fireClusters = Object.values(H).map(h => ({ p: h.roofTop.clone().lerp(h.porchFront || h.center, 0.35).add(V3(0, 1.2, 0)), delay: Math.max(0, Math.min(0.55, (h.def.z + 40) / 260)), burn: h.def.burn ?? 1 }));
@@ -431,8 +469,9 @@ export async function createEngine(canvas) {
 
   // ---------------------------------------------------------------- the Forbidden Forest (built after the valley is on screen)
   let B = null, bPromise = null, ghosts = [];
-  // (gate: an async function the build waits on between its stages, so it holds back while the reader is scrolling)
-  function prepareForest({ gate = null } = {}) {
+  // (gate: an async function the build waits on between its stages; idle: one waited on while its programs compile in
+  // the browser's threads, before they are asked about)
+  function prepareForest({ gate = null, idle = null } = {}) {
     if (!bPromise) bPromise = import('./forest.js').then(async m => {
       // the characters first, then the forest
       getWuhen(); getElder(); getFar();
@@ -445,10 +484,13 @@ export async function createEngine(canvas) {
       b.root.visible = false;
       scene.add(b.root);
       injectFog(b.root);
-      // its lights to the stand-ins, then the shader programs of everything new (the characters, the forest), compiled
-      // in the browser's threads: with one light count everywhere, the whole scene at once (a group compiled on its
-      // own has its lights counted twice by three)
-      anchorLights();
+      // its lights to the pool, then the shader programs of everything new (the characters, the forest), compiled in
+      // the browser's threads: with one light count everywhere, the whole scene at once (a group compiled on its own
+      // has its lights counted twice by three). Started first, and only asked about once the page has had its turn
+      // (`idle`: each question is a round trip to the GPU process).
+      poolLights(); liteAll(b.root); for (const g of [wuhen, elder, far, ...gh]) if (g && g.group) liteAll(g.group);
+      try { renderer.compile(scene, camera); } catch (e) { console.warn('forest precompile', e); }
+      if (idle) await idle();
       await renderer.compileAsync(scene, camera);
       ghosts = gh;
       B = b;
@@ -1983,7 +2025,7 @@ export async function createEngine(canvas) {
   }
 
   function render() {
-    syncLights();
+    syncPool();
     post.render(() => sky.renderClouds(camera));
     metrics.frames++;
   }
@@ -1997,10 +2039,10 @@ export async function createEngine(canvas) {
   injectFog(scene);
   update(0, 0, 0.016);
   // the valley's shader programs: their compiling is started here and goes on in the browser's own threads while the
-  // page draws (the opening plays meanwhile); compiled() waits for them afterwards. (Asking whether each is done is a
-  // round trip to the GPU process, so it is not asked while the opening plays.) The first draw of every look the
-  // story takes is the rehearsal's (warmUp).
-  anchorLights();
+  // page draws (the first drop falls meanwhile); compiled() waits for them afterwards. (Asking whether each is done is
+  // a round trip to the GPU process, so it is not asked while the drop falls.) The first draw of every look the story
+  // takes is the rehearsal's (warmUp).
+  poolLights(); liteAll(scene);
   try { renderer.compile(scene, camera); } catch (e) { console.warn('precompile', e); }
   const compiled = () => renderer.compileAsync(scene, camera).catch(e => console.warn('precompile', e));
 
@@ -2013,11 +2055,12 @@ export async function createEngine(canvas) {
   // goes up, not only those in view. Each position is drawn twice a moment apart, so the strikes and bursts fired on
   // the way have their shapes. The story's own clock is used, and what the storm keeps of it is reset afterwards.
   const WARM_US = [
-    0, 1.5, 4, 5.5, 7, 10, 14, 18, 22, 26.5, 30, 34, 38, 42, 44, 46, 46.8, 47.5, 48.5, 50, 51.4, 53, 54.02, 54.1, 54.45, 54.6,
-    55.3, 56, 57.5, 58.8, 60.5, 62, 62.65, 64, 65.5, 66.7, 68.4, 70.5, 72.7, 75.1, 77, 78.6, 79.5, 81, 83, 84.5, 86, 88,
-    90, 91.5, 92.1, 92.5, 93.5, 95, 96.5, 98, 100, 101.3, 102.4, 103.6, 105, 106.5, 107.5, 108.05, 108.2, 108.3, 108.4, 109, 110,
-    110.7, 111.5, 112.5, 114, 115.5, 117, 118.5, 120, 121.5, 123, 124.5, 126, 128, 129.1, 129.6, 130.5, 131.1, 132.5,
-    134, 136, 137.5, 139.3, 139.45, 139.7, 140.2, 141.2, 141.8, 143, 144.5,
+    0, 1.5, 1.95, 4, 5.5, 7, 10, 14, 18, 22, 26.5, 30, 34, 38, 42, 44, 46, 46.8, 47.5, 48.5, 50, 51.4, 51.75, 53,
+    53.75, 54.02, 54.1, 54.45, 54.6, 55.3, 56, 57.5, 58.8, 60.5, 62, 62.65, 64, 65.5, 66.7, 68.4, 70.5, 72.7, 75.1,
+    77, 78.6, 79.5, 81, 83, 84.5, 86, 88, 90, 91.5, 92.1, 92.5, 93.5, 95, 96.5, 98, 100, 101.3, 102.4, 103.6, 105,
+    106.5, 107.5, 108.05, 108.2, 108.3, 108.4, 109, 110, 110.7, 111.5, 112.5, 112.6, 114, 115.5, 117, 117.1, 118.5,
+    118.7, 120, 120.3, 121.5, 121.9, 123, 123.35, 124.5, 126, 128, 129.1, 129.6, 130.5, 131.1, 132.5, 134, 136,
+    137.5, 139.3, 139.45, 139.7, 140.2, 141.2, 141.8, 143, 144.5,
   ];
   const SWEEP_US = new Set([4, 48.5, 54.6, 64, 79.5, 98, 105, 112.5, 131.1, 139.45]);
   function renderUnculled() {
@@ -2040,9 +2083,12 @@ export async function createEngine(canvas) {
       }
     } finally { gl.deleteSync(f); }
   }
-  async function warmUp({ onProgress = null, us = WARM_US, sweep = SWEEP_US, scale = 0.35 } = {}) {
+  // (pause: { due(), play() } — the page's turn: when it has something to show, the GPU is let finish everything asked
+  // of it first, then the page has the screen to itself until play() resolves. stats: each position's own cost, the
+  // GPU waited for after every one, for measuring)
+  async function warmUp({ onProgress = null, pause = null, stats = null, us = WARM_US, sweep = SWEEP_US, scale = 0.35 } = {}) {
     const nextFrame = () => new Promise(r => { let done = false; const go = () => { if (!done) { done = true; r(); } }; requestAnimationFrame(go); setTimeout(go, 60); });
-    anchorLights();
+    poolLights();
     const pr = renderer.getPixelRatio();
     renderer.setPixelRatio(Math.min(pr, scale));
     resize();
@@ -2052,6 +2098,7 @@ export async function createEngine(canvas) {
         // (the story's clock, never running backwards: each position's second look is a moment after its first)
         const u = us[i], t = Math.max(performance.now() / 1000, tPrev + 0.4);
         tPrev = t + 0.35;
+        const t0 = performance.now(), p0 = renderer.info.programs.length;
         try {
           // (drawn, not compiled ahead: compiling "the scene" prepares every material, seen or not, for this position's
           // light, hundreds of programs nothing would ever draw; drawing compiles exactly what the reader will see)
@@ -2060,9 +2107,11 @@ export async function createEngine(canvas) {
           update(u + 0.01, t + 0.35, 0.016);
           render();
         } catch (e) { console.warn('rehearsal', u, e); }
+        if (stats) { const t1 = performance.now(); await gpuDone(30000); stats.push({ u, cpu: t1 - t0, all: performance.now() - t0, programs: renderer.info.programs.length - p0 }); }
         if (onProgress) onProgress((i + 1) / us.length, u);
         // (a slice of work, then a frame for the page; every so often the GPU is let catch up)
-        if (i % 12 === 11) { await gpuDone(); slice = performance.now(); }
+        if (pause && pause.due()) { await gpuDone(); await pause.play(); slice = performance.now(); }
+        else if (i % 12 === 11) { await gpuDone(); slice = performance.now(); }
         else if (performance.now() - slice > 28) { await nextFrame(); slice = performance.now(); }
       }
     } finally {

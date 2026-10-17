@@ -345,8 +345,11 @@ const GLSL_ROCK_NORMAL = `
 `;
 
 const GLSL_LEAF_LIGHT = `
+#ifndef CF_DIRECT
+#define CF_DIRECT RE_Direct_Physical
+#endif
 void RE_Direct_Flora(const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight) {
-  RE_Direct_Physical(directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight);
+  CF_DIRECT(directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight);
   float bk = saturate(dot(-geometryNormal, directLight.direction)*.6 + .4);
   float fw = pow(saturate(dot(-geometryViewDir, directLight.direction)), 5.);
   reflectedLight.directDiffuse += directLight.color*material.diffuseColor*uTransCol*uTrans*(bk*.35 + fw*1.6);

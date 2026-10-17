@@ -4,7 +4,8 @@ import { TOTAL, TOTAL_U, uToS, sToU, inkCut, inkfx, fx, INK_CUTS } from './timel
 import { createInkOverlay, writeGlyph } from './ink.js';
 import { GLYPHS } from './glyphs.js';
 import { createAudio } from './audio.js';
-import { clamp, lerp, smooth, band } from './util.js';
+import { createRitual } from './ritual.js';
+import { clamp, lerp, smooth, band, easeInOut } from './util.js';
 
 const $ = s => document.querySelector(s);
 const root = $('#prologue'), stage = root.querySelector('.stage');
@@ -64,6 +65,34 @@ const paceAt = u => { let p = PACE[0][1]; for (const [a, v] of PACE) if (u >= a)
 // (the night after the soul gives the world back its colour, until the light floods it white, is dark)
 const lightAt = u => u < 5.4 || (u > 62.6 && u < 94.6) || (u > 107.62 && u < 124.4) || u > 141.0;
 
+// The brush's pace along one stroke of the sign: about 820 units of it a second along a straight, slowing into each
+// turn (where the line bends by more than 60°) and pressing there a moment; a dot takes a moment however short.
+// Returns the stroke's time in seconds and, for 0..1 of that time, how far along it the brush is (0..1 of its length).
+function brushPace(pts, { speed = 820, press = 0.14, least = 0.36 } = {}) {
+  const runs = [];
+  let run = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const ax = pts[i][0] - pts[i - 1][0], ay = pts[i][1] - pts[i - 1][1];
+    if (i > 1) {
+      const bx = pts[i - 1][0] - pts[i - 2][0], by = pts[i - 1][1] - pts[i - 2][1];
+      if ((ax * bx + ay * by) / (Math.hypot(ax, ay) * Math.hypot(bx, by)) < 0.5) { runs.push(run); run = 0; }
+    }
+    run += Math.hypot(ax, ay);
+  }
+  runs.push(run);
+  const L = runs.reduce((a, b) => a + b, 0), parts = [];
+  let at = 0;
+  runs.forEach((r, j) => {
+    if (j) parts.push({ s: press, a: at, b: at });
+    parts.push({ s: Math.max(least / runs.length, r / speed), a: at, b: at + r / L });
+    at += r / L;
+  });
+  const dur = parts.reduce((a, q) => a + q.s, 0);
+  // (along a straight the brush sets off slowly, is quickest midway and slows again: speed 1 − 0.6 cos 2πx)
+  const along = x => x - Math.sin(2 * Math.PI * x) * 0.6 / (2 * Math.PI);
+  return { dur, at(p) { let t = clamp(p) * dur; for (const q of parts) { if (t <= q.s) return q.a + (q.b - q.a) * along(t / q.s); t -= q.s; } return 1; } };
+}
+
 async function boot() {
   root.dataset.ready = 'loading';
   // ---------------------------------------------------------------- DOM scaffolding
@@ -86,15 +115,31 @@ async function boot() {
     [[660, 690], [780, 800], [870, 930]],
   ];
   const seal = writeGlyph(sealSvg, GLYPHS['玄'], XUAN, { color: '#efe6d2' });
-  // the last page: the same sign, written again
+  // the last page: the same sign, written again (its maps made later, while the screen is still)
   const end = el('div', 'cf-end', `<svg class="cf-seal" aria-hidden="true"></svg><span class="cf-stamp" aria-hidden="true"><i>江</i><i>無</i><i>痕</i></span><a class="cf-next" href="#demo">THE DEMO <span aria-hidden="true">↓</span></a>`);
   end.setAttribute('aria-hidden', 'true');
   stage.appendChild(end);
-  const endSeal = writeGlyph(end.querySelector('svg'), GLYPHS['玄'], XUAN, { color: '#e2c27a' });
+  const endSeal = writeGlyph(end.querySelector('svg'), GLYPHS['玄'], XUAN, { color: '#e2c27a', defer: true });
   const inkCanvas = $('#ink');
   let ink = null;
   try { ink = createInkOverlay(inkCanvas, new URL('Images/Cinderfall/noise.webp', document.baseURI).href); } catch (e) { console.warn('ink overlay unavailable', e); }
   const audio = createAudio();
+
+  // ---------------------------------------------------------------- the opening, written while the story is prepared
+  // (ritual.js: each beat waits for its share of the preparation, and the preparation waits while a beat plays)
+  const pace = XUAN.map(pts => brushPace(pts));
+  const DROP = 3.1;
+  // how far the preparation has to be for each beat (0..1); measured on a Windows desktop, the rehearsal is most of it
+  const BEATS = [
+    { id: 'drop', dur: DROP, at: 0.1 },
+    ...pace.map((p, k) => ({ id: `s${k}`, dur: p.dur, at: [0.15, 0.25, 0.37, 0.5, 0.63][k] })),
+    { id: 'title', dur: 1.7, at: 0.75 },
+    { id: 'stamp', dur: 0.75, at: 0.85 },
+    { id: 'sub', dur: 1.0, at: 0.93 },
+    { id: 'hint', dur: 1.3, at: 1 },
+  ];
+  const ritual = createRitual(BEATS);
+  let replaying = false;
 
   // ---------------------------------------------------------------- engine (three.js is code-split)
   let engine = null, ready = false, storyU = 0;
@@ -111,57 +156,78 @@ async function boot() {
       ink.render(6, { ...base, blots: [] });
     } catch (e) { console.warn('ink rehearsal', e); }
   }
-  // Getting ready. A short loading screen while the valley is built; then the curtain lifts and the opening plays (the
-  // drop, the sign written, the title) while its shader programs compile in the browser's own threads and nothing
-  // heavy runs on the page; then, under the finished title, the forest beyond the ridges is built and every look the story takes is
-  // rehearsed (drawn once, unseen), so the driver's own compiling and every upload happen here and not on the way.
-  // Measured on a desktop GPU, doing these on the way froze the page for 0.1–0.6 s at a time at nearly every key
-  // moment of a first read. Until it is done the hint under the title says so, with a line of progress; a reader who
+  // Getting ready: the opening is the loading screen. While the page loads, an ink dot breathes where the first drop
+  // will land (animated by the compositor, so it keeps going while the valley is built). Then the drop falls and the ink
+  // blooms while the valley's shader programs compile in the browser's own threads; then the sign is written stroke by
+  // stroke and the title after it, each beat as soon as its share of the rest is done: the forest beyond the ridges
+  // built, and every look the story takes rehearsed (drawn once, unseen), so the driver's own compiling and every
+  // upload happen here and not on the way. Measured on a desktop GPU, doing these on the way froze the page for
+  // 0.1–0.6 s at a time at nearly every key moment of a first read; done here, each freeze falls while the screen is
+  // still, between beats. Until it is done the line under the title says so, over a line of progress; a reader who
   // scrolls meanwhile is taken straight to where they are once it is. `?noforest` skips the forest and `?warm=0` the
-  // rehearsal (for debugging).
-  const loadText = loading.querySelector('small');
-  const hint = title.querySelector('.cf-hint'), hintHTML = hint ? hint.innerHTML : '';
-  // (--p: the loading screen's line; --q: the line under the title while the story is prepared)
-  const progress = (text, p) => { if (loadText && text && loadText.textContent !== text) loadText.textContent = text; root.style.setProperty('--p', clamp(p).toFixed(3)); };
-  const prep = q => root.style.setProperty('--q', clamp(q).toFixed(3));
+  // rehearsal (for debugging); `?prepstats` times each step (window.__cf.prep).
+  const hint = title.querySelector('.cf-hint'), hintHTML = hint ? hint.innerHTML : '', WAIT_HTML = 'PREPARING THE STORY';
+  let hintWait = null;
+  // (--q: the line under the title; no transition, it moves in steps, between the still moments)
+  const reach = v => { ritual.reach(v); root.style.setProperty('--q', ritual.progress.toFixed(3)); };
   // (a frame for the page between pieces of work; in a background tab, where no frames come, a moment instead)
   const nextFrame = () => new Promise(res => { let done = false; const go = () => { if (!done) { done = true; res(); } }; requestAnimationFrame(go); setTimeout(go, 60); });
-  let opened = false;
-  import('./engine.js').then(m => { progress('PREPARING CINDERFALL', 0.35); return m.createEngine($('#world')); }).then(async e => {
-    if (ink) warmInk();
-    progress('', 1);
+  const stats = params.has('prepstats') ? [] : null;
+  // (?trace: every frame's interval and the browser's long frames, for measuring how smooth the opening plays)
+  const trace = params.has('trace') ? { frames: [], long: [] } : null;
+  if (trace) try { new PerformanceObserver(l => { for (const e of l.getEntries()) if (trace.long.length < 4000) trace.long.push([Math.round(e.startTime), Math.round(e.duration), Math.round(e.blockingDuration || 0)]); }).observe({ type: 'long-animation-frame', buffered: true }); } catch {}
+  const marks = [];
+  const mark = name => marks.push([name, Math.round(performance.now())]);
+  reach(0);
+  // the ink's own shader, drawn once while nothing moves yet (its first draw is its compile)
+  if (ink) warmInk();
+  mark('boot');
+  (async () => {
+    const m = await import('./engine.js');
+    mark('modules');
+    reach(0.03);
+    const e = await m.createEngine($('#world'));
     window.__cf.engine = e;
-    // the curtain lifts
-    if (hint) hint.textContent = 'PREPARING THE STORY';
-    prep(0);
-    opened = true;
-    introAt = performance.now();
-    root.dataset.ready = 'opening';
-    loading.classList.add('loaded');
-    // the opening plays undisturbed (or until the reader moves on)
-    const startSu = uFromScroll();
-    await new Promise(res => { const check = () => (performance.now() - introAt > 5800 || Math.abs(uFromScroll() - startSu) > 0.3 || autoplay ? res() : setTimeout(check, 100)); check(); });
-    // (the valley's programs have been compiling in the browser's threads all this while)
+    mark('engine');
+    // the sign's maps, and the filter that writes it, ready before anything moves
+    await seal.prepare();
+    seal.set(1e-4); await nextFrame(); await nextFrame(); seal.set(0);
+    mark('seal');
+    reach(0.1);
+    // the first drop falls while the valley's programs compile in the browser's threads
+    await ritual.play();
+    mark('dropped');
     await e.compiled();
+    mark('compiled');
+    // (the last page's sign: its maps made now, while the screen is still)
+    await endSeal.prepare();
+    reach(0.15);
+    await ritual.play();
     let built = false;
     if (!/[?&]noforest\b/.test(location.search)) {
       let stages = 0;
-      await e.prepareForest({ gate: async () => { stages++; prep(Math.min(0.25, stages * 0.025)); await nextFrame(); } });
+      await e.prepareForest({
+        gate: async () => { stages++; reach(lerp(0.15, 0.27, Math.min(1, stages / 11))); await ritual.play(); },
+        idle: async () => { mark('forest built'); reach(0.28); await ritual.play(); },
+      });
       built = !!e.forest;
     }
-    if (!/[?&]warm=0\b/.test(location.search)) {
-      prep(0.25);
-      await e.warmUp({ onProgress: k => prep(0.25 + k * 0.75) });
-    }
-    prep(1);
-    if (hint) hint.innerHTML = hintHTML;
+    mark('forest');
+    reach(0.3);
+    await ritual.play();
+    if (!/[?&]warm=0\b/.test(location.search)) await e.warmUp({ onProgress: k => reach(lerp(0.3, 0.99, k)), pause: ritual, stats });
+    mark('rehearsed');
     engine = e;
     ready = true;
     su = target = autoU = uFromScroll(); suV = 0;
     root.dataset.ready = 'true';
     if (built) root.dataset.forest = 'true';
     addEventListener('resize', () => engine.resize());
-  }).catch(err => {
+    // the rest of the title, then the hint
+    reach(1);
+    await ritual.play();
+    mark('done');
+  })().catch(err => {
     console.error('Cinderfall failed to start', err);
     document.body.classList.add('failed', 'reduced-motion');
     root.dataset.ready = 'fallback';
@@ -172,14 +238,18 @@ async function boot() {
   // su: position along the scroll (0..TOTAL_U); the story position u = uToS(su)
   const uFromScroll = () => clamp(-root.getBoundingClientRect().top / scrollable()) * TOTAL_U;
   const scrollToU = (su, behavior = 'auto') => scrollTo({ top: root.offsetTop + (su / TOTAL_U) * scrollable(), behavior });
-  let su = uFromScroll(), suV = 0, target = su, last = performance.now(), introAt = performance.now();
+  let su = uFromScroll(), suV = 0, target = su, last = performance.now();
   let autoplay = false, autoU = 0, forced = null, rendered = false;
   const watchBtn = $('#watch');
   const setAuto = on => { autoplay = on; autoU = target; watchBtn.textContent = on ? 'Pause' : 'Watch'; watchBtn.setAttribute('aria-pressed', String(on)); };
   watchBtn.addEventListener('click', () => setAuto(!autoplay));
   for (const ev of ['wheel', 'touchstart', 'keydown']) addEventListener(ev, e => { if (autoplay && (ev !== 'keydown' || ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key))) setAuto(false); }, { passive: true });
   $('#sound').addEventListener('click', async () => { const on = await audio.toggle(); $('#sound').textContent = on ? 'Sound on' : 'Sound off'; $('#sound').setAttribute('aria-pressed', String(on)); });
-  $('#replay').addEventListener('click', () => { setAuto(false); scrollToU(0); su = target = 0; suV = 0; introAt = performance.now(); });
+  // (the opening again, a little quicker; not while the story is still being prepared, when it is playing anyway)
+  $('#replay').addEventListener('click', () => {
+    setAuto(false); scrollToU(0); su = target = 0; suV = 0;
+    if (ready && ritual.finished && !replaying) { replaying = true; ritual.replay(1.5).then(() => { replaying = false; }); }
+  });
   for (const a of document.querySelectorAll('a[href="#demo"]')) a.addEventListener('click', () => setAuto(false));
   // codex dialog
   const codex = $('.codex');
@@ -194,10 +264,36 @@ async function boot() {
     get u() { return uToS(su); },
     setU(v) { forced = v; su = target = sToU(v); suV = 0; scrollToU(su); },
     engine: null,
+    // how the preparation went: when each step ended, each beat's start and end, and (with ?prepstats) each rehearsed
+    // position's own cost
+    get prep() { return { marks, stats, trace, beats: ritual.log }; },
     async frame(v, t = 1, dtF) { forced = v; su = target = sToU(v); suV = 0; frame(performance.now(), t, dtF); },
   };
 
   const op = (n, v) => { n.style.opacity = v.toFixed(3); n.style.visibility = v > 0.002 ? 'visible' : 'hidden'; };
+  // where a sign sits on the screen, for the ink drawn under it: its centre (the overlay's uv, y up) and the bloom's
+  // radius (in the overlay's units, the screen's shorter side 1), 0.64 of the sign's height; read again on a resize
+  const endSvg = end.querySelector('svg');
+  const sealBox = new Map();
+  let boxW = 0, boxH = 0;
+  function sealAt(svgEl) {
+    if (boxW !== innerWidth || boxH !== innerHeight) { boxW = innerWidth; boxH = innerHeight; sealBox.clear(); }
+    let b = sealBox.get(svgEl);
+    if (!b) {
+      const r = svgEl.getBoundingClientRect();
+      b = r.height > 0 ? { x: (r.left + r.width / 2) / innerWidth, y: 1 - (r.top + r.height / 2) / innerHeight, r: 0.64 * r.height / Math.min(innerWidth, innerHeight) } : { x: 0.5, y: 0.58, r: 0.21 };
+      sealBox.set(svgEl, b);
+    }
+    return b;
+  }
+  // (a custom property set only when it changes: between the opening's beats nothing on the page is touched)
+  const vars = new WeakMap();
+  const setVar = (n, name, v) => {
+    const s = (+v).toFixed(4);
+    let m = vars.get(n);
+    if (!m) vars.set(n, m = {});
+    if (m[name] !== s) { m[name] = s; n.style.setProperty(name, s); }
+  };
 
   function frame(now, forceTime, forceDt) {
     const dt = forceDt ?? Math.min(0.08, (now - last) / 1000);
@@ -225,9 +321,11 @@ async function boot() {
     root.dataset.u = u.toFixed(3);
     storyU = u;
     const time = forceTime ?? now / 1000;
-    // (the opening — the drop, the sign written, the title — waits for the loading screen to lift: played under it,
-    // it stuttered with every heavy task of the loading)
-    const intro = opened ? (now - introAt) / 1000 : 0;
+    // (the opening — the drop, the sign written, the title — beat by beat, as ritual.js plays them; each beat's own
+    // time stays at its end once it is over, so between beats nothing moves)
+    const td = ritual.at('drop', now) * DROP;
+    const dropping = ritual.started('drop');
+    if (dropping && td > 0.75 && !loading.classList.contains('loaded')) loading.classList.add('loaded');
 
     // ---------------------------------------------------------------- world
     rendered = !!(engine && inView);
@@ -241,25 +339,26 @@ async function boot() {
     if (ink) {
       const cut = inkCut(u);
       const blots = [];
-      // opening: a single drop lands and blooms while the title is written
-      const dropT = clamp((intro - 0.35) / 0.75);
+      // opening: a single drop falls where the dot breathed, splashes and blooms (the sign is written into it; the
+      // bloom is placed and sized by the sign's own box, so the two agree on any screen)
+      const so = sealAt(sealSvg), dropT = clamp(td / 0.75);
       // (the bloom lifts with the flood that carries the title away and never comes back: its own lift, not the
       // cut's, which reads 0 again once the cut is over)
       const openLift = smooth(INK_CUTS[0][2], INK_CUTS[0][3], u);
       const opening = openLift < 0.999;
-      const bloomR = opening ? smooth(1.05, 3.4, intro) * 0.19 + smooth(1.4, 6, intro) * 0.02 : 0;
+      const bloomR = opening ? (smooth(0.7, 2.9, td) * 0.905 + smooth(1.0, 3.1, td) * 0.095) * so.r : 0;
       let drop = [0.5, 0.58, 0, 0];
-      if (opening && intro < 1.1) drop = [0.5, lerp(1.15, 0.58, dropT * dropT), 0.022, 0];
-      else if (opening && intro < 1.7) drop = [0.5, 0.58, 0.03, clamp((intro - 1.1) / 0.6)];
-      if (opening) blots.push({ x: 0.5, y: 0.58, r: bloomR, a: 1 - openLift });
+      if (opening && dropping && td < 0.75) drop = [so.x, lerp(1.15, so.y, dropT * dropT), 0.022, 0];
+      else if (opening && dropping && td < 1.35) drop = [so.x, so.y, 0.03, clamp((td - 0.75) / 0.6)];
+      if (opening && bloomR > 0) blots.push({ x: so.x, y: so.y, r: bloomR, a: 1 - openLift });
       // his hand falls: a tear, landing where their hands met
       if (u > 91.45 && u < 92.05) drop = [0.5, inkfx.drop(u), 0.018, 0];
       else if (u >= 92.05 && u < 92.65) drop = [0.5, 0.56, 0.026, inkfx.splash(u)];
       // the first page: the last drop, and the sign written in gold inside its bloom
-      const endK = u > 140.9;
-      if (u > 140.95 && u < 141.55) drop = [0.5, inkfx.endDrop(u), 0.022, 0];
-      else if (u >= 141.55 && u < 142.15) drop = [0.5, 0.58, 0.03, inkfx.endSplash(u)];
-      if (endK) blots.push({ x: 0.5, y: 0.58, r: smooth(141.5, 142.6, u) * 0.19 + smooth(142, 145, u) * 0.02, a: 1 });
+      const endK = u > 140.9, se = endK ? sealAt(endSvg) : null;
+      if (u > 140.95 && u < 141.55) drop = [se.x, lerp(se.y, 1.12, (inkfx.endDrop(u) - 0.58) / 0.54), 0.022, 0];
+      else if (u >= 141.55 && u < 142.15) drop = [se.x, se.y, 0.03, inkfx.endSplash(u)];
+      if (endK) blots.push({ x: se.x, y: se.y, r: (smooth(141.5, 142.6, u) * 0.905 + smooth(142, 145, u) * 0.095) * se.r, a: 1 });
       inkCanvas.style.opacity = (u > 61 && u < 67 ? inkfx.splatFade(u) : 1).toFixed(3);
       // the crossing: the light goes down beyond the ridge and floods the world white; out of where it went down the
       // gold thread is written across the page, and the Forbidden Forest is painted in ink in its wake; then the eye
@@ -273,16 +372,37 @@ async function boot() {
           pts: [S, [S[0] + 0.15, Math.min(0.95, S[1] + 0.36)], [D[0] + 0.24, D[1] + 0.36], D] };
         land = { reveal: smooth(108.1, 109.6, u), alpha: smooth(107.98, 108.2, u), clear: smooth(109.75, 110.55, u), zoom: 1 + 1.6 * Math.pow(smooth(109.5, 110.6, u), 1.4), center: D, sun: S };
       }
-      ink.render(time, { blots, flood: cut.flood, floodC: [0.5, cut.y], floodLift: cut.lift, drop, splat: u > 61.5 && u < 67 ? inkfx.splat(u) : 0, splatSeed: 3, stroke, land });
+      ink.render(time, { blots, flood: cut.flood, floodC: [0.5, u < 9 ? so.y : cut.y], floodLift: cut.lift, drop, splat: u > 61.5 && u < 67 ? inkfx.splat(u) : 0, splatSeed: 3, stroke, land });
     }
     // ---------------------------------------------------------------- title and the last page
     const titleShow = u < 5.2 ? 1 - smooth(3.6, 4.9, u) : 0;
     op(title, titleShow);
     if (titleShow > 0) {
-      seal.set(smooth(1.6, 4.4, intro) + smooth(0.2, 2.5, u));
-      title.style.setProperty('--reveal', String(clamp(smooth(2.3, 4.4, intro) + smooth(0.2, 2.6, u))));
-      title.style.setProperty('--hint', String(smooth(4.6, 5.6, intro) * (1 - smooth(0.4, 1.4, u))));
-      title.classList.toggle('waiting', !ready);
+      // the sign, stroke by stroke at the brush's pace (or written on by the scroll, for a reader who goes on first)
+      let written = 0;
+      for (let k = 0; k < pace.length; k++) {
+        const q = ritual.at(`s${k}`, now);
+        if (q <= 0) break;
+        const [a, b] = seal.bounds[k];
+        written = a + (b - a) * pace[k].at(q);
+      }
+      seal.set(Math.max(written, smooth(0.2, 2.5, u)));
+      // the title written in from the left, the line above it after; the stamp pressed; the line under it
+      const byScroll = smooth(0.2, 2.6, u);
+      const qt = ritual.at('title', now), qs = ritual.at('stamp', now);
+      setVar(title, '--reveal', Math.max(easeInOut(qt), byScroll));
+      setVar(title, '--eyebrow', Math.max(smooth(0.45, 1, qt), byScroll));
+      // (pressed: down from a little above the paper, a touch past, back)
+      const press = Math.max(qs, byScroll);
+      setVar(title, '--stamp-s', press < 0.7 ? lerp(1.3, 0.97, Math.pow(press / 0.7, 1.6)) : lerp(0.97, 1, smooth(0.7, 1, press)));
+      setVar(title, '--stamp-a', smooth(0, 0.3, press));
+      setVar(title, '--sub', Math.max(smooth(0, 1, ritual.at('sub', now)), byScroll));
+      // the line under the title: while the story is prepared it says so, over a line of progress (full once it is
+      // ready); then, as the last beat, the hint
+      const qh = ritual.at('hint', now), hs = ritual.started('hint');
+      const wait = !replaying && (hs ? qh < 0.35 : true);
+      if (hint && wait !== hintWait) { hintWait = wait; title.classList.toggle('waiting', wait); hint.innerHTML = wait ? WAIT_HTML : hintHTML; }
+      setVar(title, '--hint', wait ? (hs ? 1 - qh / 0.35 : 1) : (hs ? smooth(0.35, 1, qh) : 0) * (1 - smooth(0.4, 1.4, u)));
     }
     const endShow = smooth(141.4, 141.8, u);
     op(end, endShow);
@@ -382,6 +502,7 @@ async function boot() {
     requestAnimationFrame(loop);
     const iv = now - lastLoop;
     lastLoop = now;
+    if (trace && trace.frames.length < 30000) trace.frames.push([Math.round(now), Math.round(iv * 10) / 10]);
     if (document.hidden || debug) return;
     const t0 = performance.now();
     frame(now);

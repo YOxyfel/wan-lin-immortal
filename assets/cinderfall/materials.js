@@ -49,6 +49,59 @@ float cfToonNL( float x ) {
   }
 }
 
+// ---------------------------------------------------------------- a cheaper highlight for the world
+// On Windows the browser prepares each lit material's shader the first time it is drawn, one at a time; three's
+// physically based highlight (GGX), written out for every light, is most of what makes that slow. World surfaces —
+// buildings, ground, foliage, props — take three's own Blinn-Phong highlight instead, with the same diffuse and toon
+// term, and keep everything else (the sky's light and reflections, normal maps, wetness, fog, ink). Characters, metals
+// and fur keep the full model.
+const LITE_GLSL = `
+#ifndef CF_LITE_FN
+#define CF_LITE_FN
+void RE_Direct_Lite( const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {
+#ifdef CF_TOON_FN
+	float dotNL = cfToonNL( dot( geometryNormal, directLight.direction ) );
+#else
+	float dotNL = saturate( dot( geometryNormal, directLight.direction ) );
+#endif
+	vec3 irradiance = dotNL * directLight.color;
+	vec3 h = normalize( directLight.direction + geometryViewDir );
+	float a = max( material.roughness * material.roughness, 0.05 );
+	float shin = max( 2.0 / ( a * a ) - 2.0, 1.0 );
+	vec3 F = F_Schlick( material.specularColor, material.specularF90, saturate( dot( geometryViewDir, h ) ) );
+	reflectedLight.directSpecular += irradiance * F * ( 0.25 * RECIPROCAL_PI * ( shin * 0.5 + 1.0 ) * pow( saturate( dot( geometryNormal, h ) ), shin ) );
+	reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );
+}
+#endif
+#define CF_DIRECT RE_Direct_Lite
+#undef RE_Direct
+#define RE_Direct RE_Direct_Lite
+`;
+const FULL_SHADE = new Set(['hero-skin', 'hero-cloth', 'hero-hair', 'villager']);
+export function liteShade(m) {
+  if (m.userData.cfLite) return m;
+  m.userData.cfLite = true;
+  const inner = m.onBeforeCompile;
+  m.onBeforeCompile = function (sh, r) {
+    inner.call(this, sh, r);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <lights_physical_pars_fragment>', '#include <lights_physical_pars_fragment>\n' + LITE_GLSL);
+  };
+  const key = m.customProgramCacheKey();
+  m.customProgramCacheKey = () => key + '|lite';
+  return m;
+}
+export function liteAll(root) {
+  root.traverse(o => {
+    const ms = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+    for (const m of ms) {
+      if (!m || !m.isMeshStandardMaterial || m.userData.cfLite || m.userData.cfFull) continue;
+      if (FULL_SHADE.has(m.name) || m.metalness >= 0.5 || m.clearcoat > 0 || m.sheen > 0 || m.transmission > 0 || m.iridescence > 0) continue;
+      if (/fur/.test(m.customProgramCacheKey())) continue;
+      liteShade(m);
+    }
+  });
+}
+
 // Images are copied verbatim into the build, so resolve them from the page rather than the bundle.
 const base = new URL('Images/Cinderfall/', document.baseURI).href;
 export const texURL = name => base + name + '.webp';

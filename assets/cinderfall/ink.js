@@ -496,7 +496,7 @@ export function createInkOverlay(canvas, noiseURL) {
 // the filter on the strokes themselves the browser re-ran the turbulence every frame of the writing, 0.1–0.5 s a
 // frame; and each filter's region, taken from its stroke's centre line, cut the strokes off: the top bar of 玄 was
 // never written and its dot was a sliver.)
-export function writeGlyph(svg, glyph, medians, { color = '#a3201a', id = 'g' + Math.random().toString(36).slice(2) } = {}) {
+export function writeGlyph(svg, glyph, medians, { color = '#a3201a', id = 'g' + Math.random().toString(36).slice(2), defer = false } = {}) {
   const NS = 'http://www.w3.org/2000/svg';
   const VB = [0, -60, 1000, 1060], W = 95;              // viewBox; half the stroke width
   const MW = 800, MH = 848;                              // the maps' size (0.8 px a unit)
@@ -601,11 +601,19 @@ export function writeGlyph(svg, glyph, medians, { color = '#a3201a', id = 'g' + 
     ct.appendChild(fa);
     f.append(lum, ct);
     defs.appendChild(f);
-    const im = document.createElementNS(NS, 'image');
-    for (const [k, v] of [['x', VB[0]], ['y', VB[1]], ['width', VB[2]], ['height', VB[3]], ['preserveAspectRatio', 'none']]) im.setAttribute(k, v);
-    im.style.display = 'none';
-    mask.appendChild(im);
-    return { im, fa, fid: f.id, state: 'off', c: null, grey: null, full: null };
+    // (two images, both given their maps once they are made and only shown or hidden after: the stroke being
+    // written, its map under the threshold; the stroke done, a plain image. Swapping one image's source instead left
+    // the stroke blank for a moment while the new one was taken up.)
+    const mk = () => {
+      const im = document.createElementNS(NS, 'image');
+      for (const [k, v] of [['x', VB[0]], ['y', VB[1]], ['width', VB[2]], ['height', VB[3]], ['preserveAspectRatio', 'none']]) im.setAttribute(k, v);
+      im.style.display = 'none';
+      mask.appendChild(im);
+      return im;
+    };
+    const imW = mk(), imF = mk();
+    imW.setAttribute('filter', `url(#${f.id})`);
+    return { imW, imF, fa, state: 'off', c: null };
   });
   let want = 0, ready = false;
   function apply(t) {
@@ -615,9 +623,8 @@ export function writeGlyph(svg, glyph, medians, { color = '#a3201a', id = 'g' + 
       const state = p <= 0 ? 'off' : p >= 1 ? 'full' : 'writing';
       if (state !== L.state) {
         L.state = state;
-        if (state === 'off') L.im.style.display = 'none';
-        else if (state === 'full') { L.im.setAttribute('href', L.full); L.im.removeAttribute('filter'); L.im.style.display = ''; }
-        else { L.im.setAttribute('href', L.grey); L.im.setAttribute('filter', `url(#${L.fid})`); L.im.style.display = ''; }
+        L.imW.style.display = state === 'writing' ? '' : 'none';
+        L.imF.style.display = state === 'full' ? '' : 'none';
       }
       if (state !== 'writing') return;
       // revealed where grey >= 1 - 0.95 p: alpha = K (grey - thr) + 1, clamped
@@ -648,20 +655,27 @@ export function writeGlyph(svg, glyph, medians, { color = '#a3201a', id = 'g' + 
       im.src = greyUrl;
     });
   }
-  // made at once (the page is loading); until they are ready nothing is shown, then whatever was asked for last
-  (async () => {
+  // made at once (the page is loading), or when asked for (`defer`); until they are ready nothing is shown, then
+  // whatever was asked for last
+  let made = null;
+  const prepare = () => made || (made = (async () => {
     try {
       const greys = await Promise.all(medians.map((pts, i) => roughen(strokeMap(pts, lens[i]))));
       const fulls = await Promise.all(greys.map(fullOf));
       // (decoded now, so showing them later costs nothing)
       await Promise.all([...greys, ...fulls].map(u => { const im = new Image(); im.src = u; return im.decode().catch(() => {}); }));
-      layers.forEach((L, i) => { L.grey = greys[i]; L.full = fulls[i]; });
+      layers.forEach((L, i) => { L.imW.setAttribute('href', greys[i]); L.imF.setAttribute('href', fulls[i]); });
       ready = true;
       apply(want);
     } catch (e) { console.warn('glyph maps', e); }
-  })();
+  })());
+  if (!defer) prepare();
   return {
     // progress 0..1 across all strokes in order
     set(t) { want = t; if (ready) apply(t); },
+    // where each stroke begins and ends, as progress
+    bounds: lens.map((l, i) => [acc[i] / total, (acc[i] + l) / total]),
+    // the maps made (resolves once they are; starts making them if they were deferred)
+    prepare,
   };
 }

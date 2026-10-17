@@ -119,6 +119,8 @@ Story beats (scroll position `u`, 0 → 140, see `assets/cinderfall/timeline.js`
 Code (`assets/cinderfall/`):
 
 - `boot.js`: scroll → `u`, captions, title calligraphy, manuscript, HUD, **Watch** autoplay, sound, fallbacks
+- `ritual.js`: the opening as the loading screen (the drop, the sign stroke by stroke, the title), taking turns with
+  the story's preparation so every freeze of it falls on a still screen
 - `timeline.js`: every keyframe (camera modes, light, sky, fire, ink cuts); edit pacing here
 - `engine.js`: renderer, lights, camera director, cast and wolf behaviour, effects binding
 - `layout.js`: the road, terrain height, house placements; `world.js` assembles the valley
@@ -131,8 +133,9 @@ Assets (`Images/Cinderfall/`) are regenerated with `python tools/gen_textures.py
 (Wuhen's over-the-shoulder card from `Images/Prologue/shoulder.png`) and `python tools/glyphs.py` (calligraphy
 outlines from Noto Serif CJK, SIL Open Font License). Debug: `?debug=1` pauses the loop and `window.__cf.frame(u)`
 renders any story position; `?q=low|high` forces quality; `?motion=off` shows the static story; `?res=fixed` turns off
-the resolution governor; `?warm=0` skips the rehearsal under the title (every look of the story drawn once, unseen, so
-nothing is compiled or uploaded mid-story) and `?noforest` the forest build.
+the resolution governor; `?warm=0` skips the rehearsal during the opening (every look of the story drawn once, unseen,
+so nothing is compiled or uploaded mid-story) and `?noforest` the forest build; `?prepstats` times each rehearsed
+position on its own and `?trace` records every frame of the opening (both read from `window.__cf.prep`).
 
 The earlier prologue scripts (`assets/prologue*.js`, `village-scene.js`) are no longer loaded by `index.html`.
 A copy of the previous homepage is in `../website-before-cinderfall/`. See `cinderfall-review.md` for verification notes.

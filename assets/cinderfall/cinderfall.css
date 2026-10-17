@@ -7,26 +7,30 @@
 #ink { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
 #prologue .memory, #prologue .quote { display: none !important; }
 
-#loading.loading { background: transparent; color: #3a352d; z-index: 14; align-content: end; padding-bottom: 7vh; pointer-events: none; font: italic 15px "Cormorant Garamond", Georgia, serif; letter-spacing: .04em; }
-#loading.loading small { color: #7b6f5b; margin-top: 6px; }
-/* while it loads: an ink dot breathing where the first drop will land (animated by the compositor, so it stays smooth
-   while the page works), and a hairline of progress under the words */
+#loading.loading { background: transparent; color: #3a352d; z-index: 14; pointer-events: none; }
+/* (its words are read out, not shown: the line under the title says what is happening, over a line of progress) */
+#loading.loading > * { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* while the page loads: an ink dot breathing where the first drop will land (animated by the compositor, so it stays
+   smooth while the valley is built); gone as the drop lands on it */
 #loading.loading::before { content: ''; position: absolute; left: 50%; top: 42%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: #1f1c18; opacity: .5; animation: cf-breathe 2.6s ease-in-out infinite; }
 @keyframes cf-breathe { 0%, 100% { transform: scale(.55); opacity: .28; } 50% { transform: scale(1); opacity: .62; } }
-#loading.loading::after { content: ''; position: absolute; left: 50%; bottom: calc(7vh - 16px); width: min(46vw, 240px); height: 1px; transform: translateX(-50%); background: linear-gradient(90deg, #7b6f5b calc(var(--p, 0) * 100%), #7b6f5b26 0); }
+#loading.loading.loaded { transition-duration: .3s; }
 
 /* ------------------------------------------------------------ title */
 .cf-title { position: absolute; inset: 0; z-index: 12; pointer-events: none; color: #1f1c18; }
 .cf-seal { position: absolute; left: 50%; top: 42%; width: min(25vw, 31vh); height: min(26.5vw, 33vh); transform: translate(-50%, -50%); overflow: visible; filter: drop-shadow(0 0 1px #0004); }
 .cf-title-text { position: absolute; left: 50%; top: calc(42% + min(20vw, 25vh)); transform: translateX(-50%); width: min(92vw, 900px); text-align: center; }
 .cf-title h1 { font: 500 clamp(40px, 6.4vw, 92px)/1 "Cormorant Garamond", Georgia, serif; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 14px; -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--reveal, 0) * 140% - 40%), transparent calc(var(--reveal, 0) * 140%)); mask-image: linear-gradient(90deg, #000 calc(var(--reveal, 0) * 140% - 40%), transparent calc(var(--reveal, 0) * 140%)); }
-.cf-title .eyebrow { color: #8a2a1e; letter-spacing: .42em; opacity: var(--reveal, 0); }
-.cf-sub { font: italic clamp(18px, 1.8vw, 26px) "Cormorant Garamond", Georgia, serif; margin-top: 18px; opacity: calc(var(--reveal, 0) * 1.2 - .2); }
+.cf-title .eyebrow { color: #8a2a1e; letter-spacing: .42em; opacity: var(--eyebrow, 0); }
+.cf-sub { font: italic clamp(18px, 1.8vw, 26px) "Cormorant Garamond", Georgia, serif; margin-top: 18px; opacity: var(--sub, 0); }
 .cf-hint { font: 500 9px "Manrope", Arial, sans-serif; letter-spacing: .3em; margin-top: 26px; color: #6d6150; opacity: var(--hint, 0); }
-.cf-title.waiting .cf-hint { opacity: calc(var(--hint, 0) * .5); }
-/* while the story is prepared: a line of progress under the hint */
+.cf-title.waiting .cf-hint { opacity: calc(var(--hint, 0) * .55); }
+/* while the story is prepared: a line of progress under the words (no transition: it moves in steps, between the
+   opening's beats, while the screen is still) */
 .cf-title.waiting .cf-hint::after { content: ''; display: block; width: min(42vw, 220px); height: 1px; margin: 12px auto 0; background: linear-gradient(90deg, currentColor calc(var(--q, 0) * 100%), #6d615033 0); }
-.cf-stamp { position: absolute; right: calc(50% - min(44vw, 420px)); top: -6px; display: grid; gap: 1px; padding: 6px 5px; background: #a3261b; color: #f3e8d4; font: 700 15px/1.05 "Noto Serif TC", "Songti TC", "SimSun", serif; border-radius: 2px; box-shadow: inset 0 0 0 2px #f3e8d455; transform: rotate(3deg) scale(calc(.6 + var(--reveal, 0) * .4)); opacity: calc(var(--reveal, 0) * 1.5 - .5); }
+.cf-stamp { position: absolute; right: calc(50% - min(44vw, 420px)); top: -6px; display: grid; gap: 1px; padding: 6px 5px; background: #a3261b; color: #f3e8d4; font: 700 15px/1.05 "Noto Serif TC", "Songti TC", "SimSun", serif; border-radius: 2px; box-shadow: inset 0 0 0 2px #f3e8d455; }
+/* (the title's: pressed onto the paper, as ritual.js plays it) */
+.cf-title .cf-stamp { transform: rotate(3deg) scale(var(--stamp-s, 1.3)); opacity: var(--stamp-a, 0); }
 .cf-stamp i { font-style: normal; display: block; }
 
 /* ------------------------------------------------------------ captions */
@@ -78,10 +82,12 @@
   .cf-cap { left: 6vw; right: 6vw; bottom: 17vh; max-width: none; }
   .cf-cap.right { right: 6vw; left: 6vw; }
   .cf-cap.center { left: 50%; right: auto; }
-  .cf-seal { width: 52vw; height: 55vw; top: 36%; }
-  .cf-title-text { top: calc(36% + 34vw); }
+  /* (the sign higher and a little smaller; the ink under it follows its box, and the dot where the drop lands) */
+  .cf-seal { width: 44vw; height: 46.5vw; top: 36%; }
+  #loading.loading::before { top: 36%; }
+  .cf-title-text { top: calc(36% + 37vw); }
   .cf-stamp { display: none; }
-  .cf-end .cf-seal { width: 52vw; height: 55vw; top: 36%; }
+  .cf-end .cf-seal { width: 44vw; height: 46.5vw; top: 36%; }
   .cf-cap.end { top: calc(36% + 34vw); }
   .cf-cap.words { bottom: 16vh; }
   .hud-actions { gap: 14px; }
