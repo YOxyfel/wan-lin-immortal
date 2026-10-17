@@ -141,6 +141,8 @@ export function createVillageLife(world) {
       c.root.visible = (isDay || isNight) && u < 104;
       if (!c.root.visible) continue;
       if (c.role === 'uncle') {
+        // (in the morning he stands at his door with the basket: the engine's own figure of him; on his bench after)
+        if (u < 19.6) { c.root.visible = false; continue; }
         c.root.position.copy(c.home); c.root.rotation.y = c.homeRot;
         // seated on his bench; he raises a hand as the boy passes
         poseSeen(c, 'sitwave', time, band(15.6, 16.2, 18, 18.8, u));

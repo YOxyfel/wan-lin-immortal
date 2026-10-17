@@ -39,6 +39,8 @@ export const SLOWMO = [
   [48.466, 48.468, 48.95, 49.3, 0.17],
   // (the dive: the lens tipping over at the top, weightless for a moment before it falls)
   [52.5, 52.56, 52.68, 52.8, 0.3],
+  // (his uncle's hand falls; the tear: the fire and the embers all but stop while it falls)
+  [91.4, 91.55, 92.0, 92.2, 0.08],
 ];
 // The cinema bars, at the key moments only: [in from, in by, out from, out by]. They close in as the tension builds
 // and leave on the beat; what is marked as breaking the frame passes over them.
@@ -102,11 +104,13 @@ export const BEATS = {
 
 // ------------------------------------------------------------------ Wuhen in the village (road z)
 export const mcZ = curveMono([
-  [0, 66], [12, 66], [14, 63.5], [16.2, 50], [17.6, 46.4], [19.2, 41.6], [21.5, 35], [24, 25], [25.8, 18.6], [26.9, 15.6], [29, 2.2], [31, -12], [33, -27],
+  [0, 44.2], [18.2, 44.2], [19.7, 40.2], [21.5, 35], [24, 25], [25.8, 18.6], [26.9, 15.6], [29, 2.2], [31, -12], [33, -27],
   [35.6, -43.5], [37.5, -66], [39.2, -90], [40.8, -118], [42.3, -146], [43.6, -151.6], [56, -152], [62, -152],
   [66, -152], [68, -136], [70, -104], [71.6, -72], [72.8, -46], [74.2, -20], [75.6, 6], [77, 30], [78.4, 40.5], [80, 43], [145, 43.2],
 ]);
 export const porchBlend = track([[77.6, 0], [79.4, 0.55], [80.8, 1.0]]);
+// the morning: on his uncle's porch for the basket, then down into the street (0..1, 1 on the porch)
+export const morningK = track([[0, 1], [18.2, 1], [19.5, 0]]);
 // inside the uncle's house: 0 door → 1 the spot where he finds him, then the rush and the kneel
 export const enterK = track([[80.8, 0], [82.6, 1]], t => t);
 export const rushK = track([[82.7, 0], [83.5, 1]]);
@@ -213,6 +217,8 @@ export const STRIKE_B = 139.44;
 // ------------------------------------------------------------------ camera
 export const cam = {
   aerial: T([[0, 1], [9.6, 1], [13.6, 0]]),
+  // (the crane comes down to the herb shop's porch, where his uncle stands at the door with the basket)
+  morning: T([[9.6, 0], [12.6, 1], [18.5, 1], [19.6, 0]]),
   // (the crane up behind him waits until the lens is through the gate, so it never rises into the gate's roof)
   montage: T([[35.75, 0], [36.95, 1], [41.2, 1], [42.6, 0]]),
   sky: T([[0, 0], [145, 0]]),

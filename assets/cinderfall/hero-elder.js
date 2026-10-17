@@ -145,8 +145,9 @@ export function createElder() {
     const pt = ease(clamp(s.point || 0));
     if (pt > 0 && s.pointDir) {
       group.getWorldQuaternion(_wq).invert();
-      rig.copyPose(Pt, Pc); pointArm(K, Pt, c, _d.copy(s.pointDir).applyQuaternion(_wq));
-      rig.blendBones(Pc, Pt, pt, K.armBones.R);
+      // (with his left hand: the sun is on his left as he faces the street)
+      rig.copyPose(Pt, Pc); pointArm(K, Pt, c, _d.copy(s.pointDir).applyQuaternion(_wq), 'L');
+      rig.blendBones(Pc, Pt, pt, K.armBones.L);
     }
     // (his eyes on the boy)
     if (s.lookAt) {

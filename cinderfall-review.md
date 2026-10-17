@@ -395,3 +395,13 @@ what can be read at scroll speed). This round builds its foundations and the fir
   crosses the lens, he stops and looks after it, and the lens leaves him for the first time, rising up the giant
   beside him as the qi begins. The mote is the only new shader program, rehearsed at 129.8.
 - **Captions**: "Every winter, he measured himself against the tree."; the static story text matches.
+- **His uncle at his door** (9.6–19.6, `engine.js` `MORNING_SHOTS`): the crane now comes down to the herb shop's porch,
+  where the old man stands in the doorway with the basket (the dying uncle's own figure, standing: `hero-elder.js`
+  `standPose`). Over the boy's shoulder, his face in the morning light, held for about three seconds (the only face
+  the film holds on); close on their hands as the basket passes from his to the boy's, both on the handle for a
+  moment; wider as he points up at the sun ("Home before dark."); the boy goes down into the street. His height has
+  been marked on the door frame every year since he was small (eleven marks on the right-hand post), the rhyme of the
+  marks he makes in the forest. The villager figure of the uncle on his bench appears only after the boy has gone.
+- **The last words** (85.0–92.2): one locked setup over the boy's shoulder down onto his uncle's face, turned up to him
+  on the floor, their hands between them; pushing in slowly while he speaks. As the old man's hand falls the story
+  clock all but stops (the fire and the embers hang) and the tear lands where their hands met (`metrics.tearUV`).

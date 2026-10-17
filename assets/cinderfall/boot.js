@@ -360,8 +360,9 @@ async function boot() {
       else if (opening && dropping && td < 1.35) drop = [so.x, so.y, 0.03, clamp((td - 0.75) / 0.6)];
       if (opening && bloomR > 0) blots.push({ x: so.x, y: so.y, r: bloomR, a: 1 - openLift });
       // his hand falls: a tear, landing where their hands met
-      if (u > 91.45 && u < 92.05) drop = [0.5, inkfx.drop(u), 0.018, 0];
-      else if (u >= 92.05 && u < 92.65) drop = [0.5, 0.56, 0.026, inkfx.splash(u)];
+      const tu = (engine && engine.metrics.tearUV) || [0.5, 0.56];
+      if (u > 91.45 && u < 92.05) drop = [tu[0], lerp(tu[1], 1.12, (inkfx.drop(u) - 0.58) / 0.54), 0.018, 0];
+      else if (u >= 92.05 && u < 92.65) drop = [tu[0], tu[1], 0.026, inkfx.splash(u)];
       // the first page: the last drop, and the sign written in gold inside its bloom
       const endK = u > 140.9, se = endK ? sealAt(endSvg) : null;
       if (u > 140.95 && u < 141.55) drop = [se.x, lerp(se.y, 1.12, (inkfx.endDrop(u) - 0.58) / 0.54), 0.022, 0];

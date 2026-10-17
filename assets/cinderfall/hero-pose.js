@@ -469,21 +469,21 @@ export function reachArmL(K, P, c, target) {
   return P;
 }
 
-// pointing with the right hand: the arm out along a direction (group space), the index finger straight
-export function pointArm(K, P, c, dir) {
-  const r = K.rig;
+// pointing: the arm (s 'R' or 'L') out along a direction (group space), the index finger straight
+export function pointArm(K, P, c, dir, s = 'R') {
+  const r = K.rig, m = s === 'L' ? 1 : -1;
   r.fk(P);
-  const sh = r.wp[K.I.upperArmR];
+  const sh = r.wp[K.I['upperArm' + s]];
   const d = dir.clone().normalize();
   const reach = (K.dims().lUA + K.dims().lFA) * 0.92;
   const grip = sh.clone().addScaledVector(d, reach);
-  const side = V(0, 1, 0).cross(d);
-  if (side.lengthSq() < 1e-6) side.set(1, 0, 0);
-  side.normalize();
-  K.e(P, 'clavicleR', 0, -6, 12);
   // (the palm turned in toward his middle)
-  K.arm(P, 'R', grip, V(-0.6, -0.8, 0.1), d, side, 0.5);
-  K.fingers(P, 'R', 'point');
+  const inward = V(0, 1, 0).cross(d);
+  if (inward.lengthSq() < 1e-6) inward.set(1, 0, 0);
+  inward.normalize().multiplyScalar(-m);
+  K.e(P, 'clavicle' + s, 0, 6 * m, -12 * m);
+  K.arm(P, s, grip, V(0.6 * m, -0.8, 0.1), d, inward, 0.5);
+  K.fingers(P, s, 'point');
   return P;
 }
 

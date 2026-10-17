@@ -28,7 +28,7 @@ import { createAuras } from './weapons.js';
 import { addValleySakura } from './valley-flora.js';
 import { createSect, CRAG } from './sect.js';
 import { createPost } from './post.js';
-import { pauseAt, sToU, env, cam, fx, mcZ, porchBlend, enterK, rushK, kneelK, handDrop, turnYaw, brokenAt, worldBAt, STRIKES, STAR, STRIKE_B, inkfx, forest as FT, barsAt, SILENCE } from './timeline.js';
+import { pauseAt, sToU, env, cam, fx, mcZ, porchBlend, morningK, enterK, rushK, kneelK, handDrop, turnYaw, brokenAt, worldBAt, STRIKES, STAR, STRIKE_B, inkfx, forest as FT, barsAt, SILENCE } from './timeline.js';
 import { roadX, roadY, heightAt, streamZ, BRIDGE_Z } from './layout.js';
 import { clamp, lerp, smooth, band, rng, track } from './util.js';
 
@@ -466,6 +466,7 @@ export async function createEngine(canvas) {
       elder.group.visible = false;
       elder.stale = true;
       world.root.add(elder.group);
+      debug.elder = elder;
       // his soul: a golden copy of him that sits up out of him, rises, and comes apart into light
       spirit = createSpirit(elder);
       world.root.add(spirit.group);
@@ -559,8 +560,8 @@ export async function createEngine(canvas) {
   const debug = { noInk: false, noPost: false, hero: null };
   debug.where = () => ({ sect: sect.center.toArray(), top: sect.top, uncle: UH.uncleSpot.toArray(), kneel: UH.kneelSpot.toArray(), door: UH.door.toArray(), mush: A.mushrooms.toArray(), cam: camera.position.toArray(), dir: camera.getWorldDirection(V3()).toArray(), soul: soulP.toArray(), orbVis: soulOrb.mesh.visible, orbI: soulOrb.uniforms.uI.value, scr: soulP.clone().project(camera).toArray(), far: far ? far.group.position.toArray() : null, farVis: far ? far.group.visible : null, fov: camera.fov, P: metrics.P ? metrics.P.toArray() : null, gate: A.gate ? A.gate.center.toArray() : null });
   debug.uncleFire = () => A.fire.filter(f => f.house === 'uncle').map(f => [+f.p.x.toFixed(2), +f.p.y.toFixed(2), +f.p.z.toFixed(2), f.s]);
-  const aerialPos = [V3(70, 118, 250), V3(34, 78, 168), V3(4, 30, 106), V3(-1.2, 5.2, 74)];
-  const aerialLook = [V3(-8, 6, -80), V3(-4, 4, -30), V3(0, 2.5, 50), V3(0.4, 1.4, 58)];
+  const aerialPos = [V3(70, 118, 250), V3(34, 78, 168), V3(6, 30, 100), V3(1.5, 6.5, 58)];
+  const aerialLook = [V3(-8, 6, -80), V3(-4, 4, -30), V3(3, 2.5, 46), V3(5.8, 2.2, 44.3)];
   // ---------------------------------------------------------------- after he dies: one continuous move
   // 1 the rise: it sits up out of him and stands over the boy; the camera backs past his shoulder, out of the open door
   //   and the porch into the street (92.4-95.4), and up in front of the house as it comes up out of the broken roof
@@ -745,8 +746,47 @@ export async function createEngine(canvas) {
     const r = V3(-h.z, 0, h.x), lo = smooth(45.95, 46.6, u);
     return P.clone().addScaledVector(h, lerp(0.45, 0.3, lo)).addScaledVector(r, lerp(0.13, 0.16, lo)).add(V3(0, lerp(1.42, 1.12, lo), 0));
   }
+  // ---------------------------------------------------------------- the morning at his uncle's door (9.6–19.6)
+  // The crane comes down to the herb shop: his uncle stands at the door in the morning sun, the basket in his hand; his
+  // face (the only face the film holds on); the basket passes from his hand to the boy's, both on the handle for a
+  // moment; he points at the sun ("Home before dark."); the boy goes down into the street.
+  const PLAT = UH.frame.plat;
+  const UNCLE_AT = V3(6.5, PLAT, 44.0), BOY_AT = V3(5.62, PLAT, 44.06);
+  const BASKET_TOP = V3(6.08, PLAT + 0.98, 43.84);
+  // (where he points: up at the morning sun, on his left as he faces the street)
+  const SUN_UP = V3(-0.25, 0.62, 0.74).normalize();
+  // (the shots: over the boy's shoulder on his uncle's face, slowly in; close on the hands at the handle; wider over his
+  // shoulder as the old man points at the sun; back as the boy turns and goes) [u, lens, look, fov]
+  const MORNING_SHOTS = [
+    [[9.6, V3(1.8, 3.4, 40.2), V3(6.0, 2.3, 44.2), 44], [12.6, V3(2.4, 3.05, 40.9), V3(6.0, 2.35, 44.15), 42], [13.3, V3(4.58, 2.8, 44.52), V3(6.52, 2.64, 44.0), 30], [15.45, V3(4.8, 2.76, 44.42), V3(6.52, 2.63, 44.0), 26]],
+    [[15.45, V3(5.96, 2.3, 42.9), BASKET_TOP.clone().add(V3(0, 0.07, 0)), 35], [16.6, V3(5.96, 2.26, 43.0), BASKET_TOP.clone().add(V3(-0.12, -0.02, 0)), 36]],
+    [[16.6, V3(4.15, 2.92, 44.95), V3(6.35, 2.65, 44.0), 36], [18.15, V3(4.25, 2.9, 44.9), V3(6.3, 2.68, 44.0), 35], [18.8, V3(3.4, 2.8, 46.3), V3(4.6, 1.8, 43.2), 42], [19.6, V3(2.4, 2.75, 45.6), V3(1.2, 1.5, 38.0), 46]],
+  ];
+  const morningShot = (() => {
+    const shots = MORNING_SHOTS.map(keys => ({ u0: keys[0][0], u1: keys[keys.length - 1][0], pos: new THREE.CatmullRomCurve3(keys.map(k => k[1]), false, 'centripetal'), look: new THREE.CatmullRomCurve3(keys.map(k => k[2]), false, 'centripetal'), t: monoKeys(keys.map((k, i) => [k[0], i / (keys.length - 1)])), fov: monoKeys(keys.map(k => [k[0], k[3]])) }));
+    const out = { pos: V3(), look: V3(), fov: 46 };
+    return u => { let s = shots[0]; for (const x of shots) if (u >= x.u0) s = x; const t = clamp(s.t(u)); s.pos.getPoint(t, out.pos); s.look.getPoint(t, out.look); out.fov = s.fov(u); return out; };
+  })();
+  // the basket: in his uncle's hand, then the boy's (his left takes the handle beside the old man's right)
+  const uncleBasket = held.clone(true);
+  uncleBasket.visible = false;
+  world.root.add(uncleBasket);
+  // his height marked on the door frame each year since he was small (the right-hand post, facing the street)
+  {
+    const markM = new THREE.MeshStandardMaterial({ color: 0x2a1d14, roughness: 0.9 });
+    const g = new THREE.BoxGeometry(0.008, 0.007, 0.075);
+    [0.94, 1.03, 1.12, 1.2, 1.28, 1.35, 1.42, 1.49, 1.55, 1.6, 1.66].forEach((h, i) => {
+      const m = new THREE.Mesh(g, markM);
+      m.position.set(6.862, PLAT + h, 45.09 + ((i * 7) % 3 - 1) * 0.008);
+      m.rotation.set(((i * 5) % 3 - 1) * 0.04, 0, 0);
+      world.root.add(m);
+    });
+  }
   function valleyP(u) {
     let P = roadPoint(mcZ(u));
+    // (on the porch in the morning; down the steps into the street)
+    const mo = morningK(u);
+    if (mo > 0) P.lerp(BOY_AT, mo);
     const mk = mushK(u);
     if (mk > 0) {
       const y0 = P.y;
@@ -789,6 +829,9 @@ export async function createEngine(canvas) {
     if (A.stall && stallK(u) > 0) turnTo(h, A.stall.clone().sub(P).setY(0).normalize(), smooth(25.6, 26.3, u) * (1 - smooth(27.3, 27.9, u)) * 0.75);
     const pb = porchBlend(u);
     if (pb > 0.05) turnTo(h, UH.center.clone().sub(P).setY(0).normalize(), Math.min(1, pb * 1.6));
+    // (in the morning, to his uncle at the door; then round to the street)
+    const mo = morningK(u);
+    if (mo > 0) turnTo(h, V3(1, 0, 0), smooth(0.35, 1, mo));
     const ek = enterK(u);
     if (ek > 0) turnTo(h, UH.uncleSpot.clone().sub(P).setY(0).normalize(), smooth(0, 0.6, ek));
     return h;
@@ -798,7 +841,8 @@ export async function createEngine(canvas) {
     const C = world.cast;
     const at = (who, y) => who.root.position.clone().add(V3(0, y, 0));
     const looks = [
-      [band(14.8, 15.8, 18, 19.2, u), () => at(C.uncle, 1.0)],
+      [band(9.6, 11.0, 18.1, 18.6, u), () => (elder && elder.group.visible ? elder.anchors.head() : UNCLE_AT.clone().add(V3(0, 1.52, 0)))],
+      [band(16.62, 16.85, 17.75, 18.0, u) * 0.6, () => BOY_AT.clone().addScaledVector(SUN_UP, 30)],
       [band(19.4, 20.4, 21.6, 22.6, u), () => at(C.laundry, 1.45)],
       [band(22.6, 23.6, 24.4, 25.4, u), () => at(C.kids[0], 0.85)],
       [band(25.3, 26.0, 27.4, 28.0, u), () => (A.stall ? A.stall.clone() : at(C.smith, 1.5))],
@@ -1450,8 +1494,28 @@ export async function createEngine(canvas) {
       // (the storm's eye drawing breath over him at the edge of the pines: his hair lifts toward it)
       lift: inB ? 0 : 3.2 * band(47.34, 47.44, 47.8, 48.6, u) };
     const elderOn = !inB && u > 80 && u < 99;
-    if (elderOn || elder) {
+    const morningOn = !inB && u < 19.6;
+    if (morningOn) {
+      // his uncle at the door in the morning
       const e = getElder();
+      if (e.mode !== 'morning') { if (!e.night) e.night = { p: e.group.position.clone(), q: e.group.quaternion.clone(), s: e.group.scale.clone() }; e.group.position.copy(UNCLE_AT); e.group.rotation.set(0, -Math.PI / 2, 0); e.group.scale.set(1, 1, 1); e.stale = true; }
+      const give = smooth(16.12, 16.24, u);
+      const es = { stand: 1, hold: (1 - give) * smooth(9.0, 9.5, u), holdTarget: BASKET_TOP.clone().add(V3(0.06, 0, 0)), point: band(16.65, 16.95, 17.75, 18.05, u), pointDir: SUN_UP,
+        lookAt: wuhen && wuhen.group.visible ? wuhen.anchors.head() : BOY_AT.clone().add(V3(0, 1.58, 0)), speak: band(15.6, 15.8, 17.85, 18.0, u) * 0.8, wind: windV };
+      driveHero(e, true, dt, time, es, jumped || e.mode !== 'morning');
+      e.mode = 'morning';
+      // (the basket in his hand until the boy has it)
+      uncleBasket.visible = u < 16.16;
+      if (uncleBasket.visible) {
+        e.group.updateMatrixWorld(true);
+        uncleBasket.position.copy(e.anchors.handR()).add(V3(-0.06, -0.35, 0));
+        uncleBasket.quaternion.identity();
+      }
+    } else uncleBasket.visible = false;
+    if (!morningOn && (elderOn || elder)) {
+      const e = getElder();
+      if (e.mode === 'morning' && e.night) { e.group.position.copy(e.night.p); e.group.quaternion.copy(e.night.q); e.group.scale.copy(e.night.s); e.stale = true; }
+      e.mode = 'night';
       // speaking: he turns to the boy, then talks while the captions run; the hand lifts, holds, falls
       const es = { speak: smooth(83.2, 84.6, u) * 0.3 + band(85, 85.4, 91.2, 91.6, u) * 0.7, reach: smooth(84.6, 85.8, u), drop: handDrop(u), eyes: 1, reachTarget: UH.handSpot, wind: windV };
       driveHero(e, elderOn, dt, time, es, jumped);
@@ -1471,7 +1535,10 @@ export async function createEngine(canvas) {
       run = Math.max(band(65.5, 66.5, 78.6, 79.6, u), band(82.6, 82.8, 83.4, 83.6, u) * 0.7);
       kneel = kneelK(u);
       reach = smooth(84.6, 85.8, u) * (1 - handDrop(u) * 0.6);
-      wave = Math.max(band(15.9, 16.5, 17.7, 18.4, u), band(29.3, 29.8, 30.6, 31.1, u) * 0.85);
+      wave = band(29.3, 29.8, 30.6, 31.1, u) * 0.85;
+      // (in the morning his left hand goes to the basket's handle beside his uncle's)
+      hs.reachL = band(15.72, 15.98, 16.2, 16.5, u);
+      hs.reachLTarget = BASKET_TOP.clone().add(V3(-0.07, 0, 0));
       wVis = u < 96.2;
       // by the old pines he squats and picks one of the mushrooms he came for, stands and holds it up before his eyes;
       // then the sky turns, and he turns with it, the mushroom forgotten in his fist at his chest
@@ -1505,6 +1572,8 @@ export async function createEngine(canvas) {
     }
     lastZ = mcZ(u);
     metrics.P = P;
+    // (where the boy's and his uncle's hands met, on the screen: the tear lands there)
+    if (!inB && u > 91.3 && u < 92.7) { const hp = UH.handSpot.clone().project(camera); metrics.tearUV = [hp.x * 0.5 + 0.5, hp.y * 0.5 + 0.5]; } else metrics.tearUV = null;
     const right = V3().crossVectors(heading, UP).normalize();
     wPrev = P.clone();
     // a warm rim from the fires behind him (real lights do most of the work)
@@ -1513,7 +1582,7 @@ export async function createEngine(canvas) {
     const rimAmt = inB ? (u > 124 && u < 131.5 ? 0.2 : 0) : Math.max(fireAmt * 0.45 * (0.3 + facingFire * 0.7), flash * 0.4, 0.42 * band(54.45, 54.75, 57.9, 58.8, u));
     // (by firelight the silver hair's highlights are held down: a hot white highlight would be drawn as flame in ink)
     const kk = 1 - 0.75 * smooth(56, 60, u) * (inB ? 0 : 1);
-    held.visible = !inB && u < 65.6;
+    held.visible = !inB && u >= 16.16 && u < 65.6;
     // (the one he picked: in his fist from the moment his fingers close on it, turned in them as he looks at it, into
     // the basket once the eye has left him)
     heldMush.visible = !inB && u > 44.82 && u < 48.4;
@@ -1533,7 +1602,6 @@ export async function createEngine(canvas) {
     let look = P.clone().addScaledVector(heading, 9).add(V3(0, lerp(1.42, 1.25, run), 0)).addScaledVector(right, -0.4 * (1 - portrait));
     if (!inB) {
       const greet = (who, a, b, c, d, w = 0.35) => { const k2 = band(a, b, c, d, u) * w; if (k2 > 0 && who) look.lerp(who.clone().add(V3(0, 1.3, 0)), k2); };
-      greet(world.cast.uncle.root.position, 14.8, 15.8, 18, 19.2, 0.42);
       greet(world.cast.laundry.root.position, 19.4, 20.4, 21.6, 22.6, 0.3);
       greet(world.cast.kids[0].root.position, 22.6, 23.6, 24.4, 25.4, 0.25);
       // the smith's stall: his eyes go to the weapons; the camera comes round close behind his shoulder to see them
@@ -1559,8 +1627,17 @@ export async function createEngine(canvas) {
         if (u < 85.0) {
           if (!roomIn) { const r = [[82.85, L(0.47, 1.62, 4.55)], [83.25, L(0.55, 1.62, 3.7)], [83.8, L(0.6, 1.66, 3.45)], [84.3, L(0.85, 1.78, 2.85)], [84.65, L(1.9, 1.72, 2.95)], [85.0, L(2.85, 1.66, 3.55)]]; roomIn = { c: new THREE.CatmullRomCurve3(r.map(x => x[1]), false, 'centripetal') }; const lens = roomIn.c.getLengths(r.length * 40); roomIn.k = monoKeys(r.map((x, j) => [x[0], lens[j * 40] / lens[(r.length - 1) * 40]])); }
           pos.lerp(roomIn.c.getPointAt(clamp(roomIn.k(u))), smooth(82.85, 83.1, u) * indoor);
-        } else pos.lerp(L(lerp(2.85, 2.4, push), lerp(1.66, 1.48, push), lerp(3.55, 3.2, push)), kw);
-        look.lerp(L(lerp(0.2, 0.5, push), lerp(0.42, 0.26, push), lerp(1.3, 1.1, push)), kw);
+          look.lerp(L(lerp(0.2, 0.5, push), lerp(0.42, 0.26, push), lerp(1.3, 1.1, push)), kw);
+        } else {
+          // the last words: one locked setup low by his uncle's head, his face the size it was at his door that
+          // morning, lit by the fire; the boy is only his hands, holding the old man's; pushing in, slowly
+          const lw = smooth(84.6, 85.0, u) > 0 ? 1 : 0;
+          const ws = smooth(85.0, 92.1, u);
+          // (beside the boy's head, over his right shoulder, down onto the old man's face turned up to him, their
+          // hands between)
+          pos.lerp(V3(lerp(9.42, 9.52, ws), lerp(1.98, 1.9, ws), lerp(44.92, 44.8, ws)), kw * lw);
+          look.lerp(V3(lerp(9.92, 9.95, ws), lerp(1.37, 1.35, ws), 44.37), kw * lw);
+        }
       }
     }
     // reveal: after the turn the eye falls on the burning village below
@@ -1573,6 +1650,10 @@ export async function createEngine(canvas) {
     // the opening: aerial, then the crane down
     const aw = cam.aerial(u);
     if (aw > 0) { const t = clamp(u / 13.6); pos.lerp(along(aerialPos, t), aw); look.lerp(along(aerialLook, t), aw); }
+    // the morning at his uncle's door
+    const mnw = inB ? 0 : cam.morning(u);
+    const mShot = mnw > 0 ? morningShot(u) : null;
+    if (mShot) { pos.lerp(mShot.pos, mnw); look.lerp(mShot.look, mnw); }
     // the old road: low behind him off his left shoulder, the fields opening out on the left; as he steps up onto the
     // bridge the lens swings round behind him and rises outside its right-hand parapet, above the water, and looks
     // back over his shoulder upstream: the river valley, the mill, the hills beyond the crown; off the bridge it
@@ -1705,7 +1786,7 @@ export async function createEngine(canvas) {
     if (stormRoll && !debug.cam) camera.rotateZ(stormRoll);
     // (on a phone the rise keeps a little of its width while it is still in the room, so the light fits the frame)
     // (the forest's shots may keep their own focal lengths)
-    const fov0 = bShot && bShot.fovW > 0 ? lerp(cam.fov(u), bShot.fov, bShot.fovW) : cam.fov(u);
+    const fov0 = bShot && bShot.fovW > 0 ? lerp(cam.fov(u), bShot.fov, bShot.fovW) : mShot ? lerp(cam.fov(u), mShot.fov, mnw) : cam.fov(u);
     camera.fov = lerp(fov0, stormFov, stw) + portrait * 12 * (1 - zoomK) * (1 - rw * (1 - 0.7 * band(92.0, 92.6, 94.8, 95.6, u))) * (1 - gw) + portrait * 14 * fcw;
     // (at the stall the lens narrows on the weapons)
     if (!inB) camera.fov = lerp(camera.fov, 33 + portrait * 10, band(25.45, 26.25, 27.3, 28.0, u) * 0.85);
