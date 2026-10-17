@@ -265,4 +265,28 @@ shown around every drop and flood.
   once a batch) and lowers the resolution only when that is over budget; stalls never count. Guessing from frame
   intervals, it had cut the resolution to 60% on a desktop whose GPU had ten milliseconds to spare.
 - Checked headless (software GL): no console errors; no shader program created after the rehearsal anywhere in the
-  story; the seal written stroke by stroke and whole at the end. Then measured again on the desktop above.
+  story; the seal written stroke by stroke and whole at the end.
+
+### Round 5, second pass: the shaders themselves (17 October 2026)
+
+Measured again on the same desktop, the first version of the rehearsal took 66 s, in single blocking tasks of up to
+15 s. Compiling each of the page's 375 shader programs again, alone and uncached, put a number on the cause: 80 s in
+all, 0.39 s for each lit material (its fragment shader is about 90 KB: three writes out the lighting for every light in
+the scene, 14 to 18 point lights here). That is the lag of a first read, wherever it falls. What made it so many:
+
+- Light counts. Lit programs were compiled for 14, 16 and 18 point lights. The forest's camp fire and the scroll's
+  glow live in the forest's group, so entering the forest changed the count and everything there was compiled again;
+  and the forest's preparation compiled it group by group, which makes three count a group's own lights twice
+  (18, a count that never happens: 49 programs, 21 s). Now two stand-in lights are in the scene from the start; once
+  the forest exists its two lights are bound to them (`engine.js` `anchorLights`, synced before every frame, dark while
+  their group is hidden), so the count never changes; and the forest is compiled with the whole scene, once.
+- Duplicates. 69 programs had byte-for-byte the same code as another (22 s): each kind of tree and plant was keyed by
+  its name (pine bark, maple bark, fern, bamboo…) though most differ only in uniforms, and each grass clump by its
+  head colour (a uniform). Vegetation is now keyed by the code it generates (its transformation run over three's own
+  shader template and hashed, `flora-core.js` `codeKey`), clumps by nothing (`decor.js`).
+- Order. The valley's programs are started as soon as it is built and compile in the browser's threads while the
+  opening plays (they are not asked about meanwhile: each question is a round trip to the GPU process). The rehearsal
+  draws each position instead of asking three to compile "the scene" for it, which prepares every material, seen or
+  not, for that position's light: 593 programs before, against the ~370 a read used.
+- Checked headless (low quality): 13 point lights at every position from the opening to the strike, one light count in
+  every program, 256 programs (252 distinct) for the whole story against ~370 before.

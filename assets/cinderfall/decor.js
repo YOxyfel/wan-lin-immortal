@@ -109,7 +109,8 @@ vGC = aColor; vTip = aTip; vHead = aHead;`);
       .replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'vec4 diffuseColor = vec4(mix(vGC * mix(.45, 1.15, vTip), uHeadCol, vHead), 1.);')
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1., .72, .36) * vWake * vTip * vTip * 1.6;');
   };
-  mat.customProgramCacheKey = () => 'cf-clump-' + key;
+  // (the head colour is a uniform: one program for every clump, not one per colour)
+  mat.customProgramCacheKey = () => 'cf-clump';
   mats.set(key, mat);
   return mat;
 }

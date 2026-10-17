@@ -159,6 +159,40 @@ export async function createEngine(canvas) {
   const crystalLight = new THREE.PointLight(0x58e0d8, 0, 6, 1.5);
   if (A.crystal) crystalLight.position.copy(A.crystal).add(V3(0, 0.3, 0));
   scene.add(crystalLight);
+  // ---------------------------------------------------------------- one set of lights for the whole story
+  // Every lit material is compiled for the number of lights in the scene, and again whenever that number changes (on
+  // Windows that is a fraction of a second per material). Two lights live in a group that comes and goes: the camp's
+  // fire and the scroll's glow, in the forest. Entering the forest changed the count, so every lit material there was
+  // compiled again on the way in; and while the forest was prepared three counted those two lights twice, so it had
+  // already been compiled once for a count that never happens. They are stood in for by two lights kept in the scene
+  // from the start, at zero while their group is not shown: the count never changes.
+  const standIns = [0, 1].map(() => { const l = new THREE.PointLight(0xffffff, 0, 1, 2); l.name = 'stand-in'; scene.add(l); return l; });
+  const anchored = [];
+  function anchorLights() {
+    const found = [];
+    scene.traverse(o => { if (o.isPointLight && o.parent && o.parent !== scene && o.name !== 'stand-in') found.push(o); });
+    for (const l of found) {
+      const parent = l.parent;
+      parent.remove(l);
+      let st = standIns.find(x => !x.userData.taken);
+      if (!st) { st = new THREE.PointLight(0xffffff, 0, 1, 2); st.name = 'stand-in'; scene.add(st); console.warn('one light more than the stand-ins: lit materials will be compiled again'); }
+      st.userData.taken = true;
+      anchored.push({ l, parent, st });
+    }
+  }
+  // (each frame: where its group puts it, and dark unless its group is shown)
+  function syncLights() {
+    for (const { l, parent, st } of anchored) {
+      let on = l.visible, p = parent;
+      while (on && p && p !== scene) { if (!p.visible) on = false; p = p.parent; }
+      if (p !== scene) on = false;
+      st.intensity = on ? l.intensity : 0;
+      if (!on) continue;
+      parent.updateWorldMatrix(true, false);
+      st.position.copy(l.position).applyMatrix4(parent.matrixWorld);
+      st.color.copy(l.color); st.distance = l.distance; st.decay = l.decay;
+    }
+  }
   const fireClusters = Object.values(H).map(h => ({ p: h.roofTop.clone().lerp(h.porchFront || h.center, 0.35).add(V3(0, 1.2, 0)), delay: Math.max(0, Math.min(0.55, (h.def.z + 40) / 260)), burn: h.def.burn ?? 1 }));
 
   // ---------------------------------------------------------------- effects
@@ -400,9 +434,8 @@ export async function createEngine(canvas) {
   // (gate: an async function the build waits on between its stages, so it holds back while the reader is scrolling)
   function prepareForest({ gate = null } = {}) {
     if (!bPromise) bPromise = import('./forest.js').then(async m => {
-      // the characters first (and their shader programs, compiled without blocking), then the forest
+      // the characters first, then the forest
       getWuhen(); getElder(); getFar();
-      await Promise.all([wuhen.group, elder.group, spirit && spirit.group, far.group].filter(Boolean).map(o => renderer.compileAsync(o, camera, scene)));
       if (gate) await gate();
       return m.buildForest(mats, quality, { renderer, scene, camera, wuhen, makePerson, gate });
     }).then(async b => {
@@ -412,13 +445,11 @@ export async function createEngine(canvas) {
       b.root.visible = false;
       scene.add(b.root);
       injectFog(b.root);
-      // its shader programs, in its own light (the camp fire's lamp counts there, and the valley is not drawn): compiled
-      // without blocking before the story ever gets there, so there is no stall on the way in
-      const wv = world.root.visible;
-      b.root.visible = true; world.root.visible = false;
-      const jobs = [b.root, wuhen.group, ...gh.map(g => g.group)].map(o => renderer.compileAsync(o, camera, scene));
-      b.root.visible = false; world.root.visible = wv;
-      await Promise.all(jobs);
+      // its lights to the stand-ins, then the shader programs of everything new (the characters, the forest), compiled
+      // in the browser's threads: with one light count everywhere, the whole scene at once (a group compiled on its
+      // own has its lights counted twice by three)
+      anchorLights();
+      await renderer.compileAsync(scene, camera);
       ghosts = gh;
       B = b;
       return B;
@@ -1952,6 +1983,7 @@ export async function createEngine(canvas) {
   }
 
   function render() {
+    syncLights();
     post.render(() => sky.renderClouds(camera));
     metrics.frames++;
   }
@@ -1968,6 +2000,7 @@ export async function createEngine(canvas) {
   // page draws (the opening plays meanwhile); compiled() waits for them afterwards. (Asking whether each is done is a
   // round trip to the GPU process, so it is not asked while the opening plays.) The first draw of every look the
   // story takes is the rehearsal's (warmUp).
+  anchorLights();
   try { renderer.compile(scene, camera); } catch (e) { console.warn('precompile', e); }
   const compiled = () => renderer.compileAsync(scene, camera).catch(e => console.warn('precompile', e));
 
@@ -2009,6 +2042,7 @@ export async function createEngine(canvas) {
   }
   async function warmUp({ onProgress = null, us = WARM_US, sweep = SWEEP_US, scale = 0.35 } = {}) {
     const nextFrame = () => new Promise(r => { let done = false; const go = () => { if (!done) { done = true; r(); } }; requestAnimationFrame(go); setTimeout(go, 60); });
+    anchorLights();
     const pr = renderer.getPixelRatio();
     renderer.setPixelRatio(Math.min(pr, scale));
     resize();

@@ -378,10 +378,8 @@ export function fpatch(mat, o = {}) {
   };
   mat.userData.flora = { kind, uniforms: uni };
   const prev = mat.onBeforeCompile;
-  mat.onBeforeCompile = (sh, r) => {
-    if (prev && prev !== THREE.Material.prototype.onBeforeCompile) prev(sh, r);
-    Object.assign(sh.uniforms, U, uni);
-    let v = sh.vertexShader, f = sh.fragmentShader;
+  const prevKey = mat.customProgramCacheKey();
+  const transform = (v, f) => {
     const defs = kind === 'trunk' ? '#define FL_TRUNK\n' : '';
     v = v.replace('#include <common>', '#include <common>\n' + defs + GLSL_V_HEAD)
       .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + GLSL_V_BODY(wind, true));
@@ -405,12 +403,36 @@ export function fpatch(mat, o = {}) {
     if (kind !== 'leaf' && o.airMass !== false) f = f.replace('#include <dithering_fragment>', '#include <dithering_fragment>\n#ifdef OPAQUE\nif (uFlAir > .5) gl_FragColor.a = .97;\n#endif');
     if (o.fragExtra) f = o.fragExtra(f);
     if (o.vertExtra) v = o.vertExtra(v);
-    sh.vertexShader = v; sh.fragmentShader = f;
+    return [v, f];
   };
-  const key = `flora-${kind}-${wind}-${o.key || ''}`;
-  mat.customProgramCacheKey = () => key;
+  mat.onBeforeCompile = (sh, r) => {
+    if (prev && prev !== THREE.Material.prototype.onBeforeCompile) prev(sh, r);
+    Object.assign(sh.uniforms, U, uni);
+    [sh.vertexShader, sh.fragmentShader] = transform(sh.vertexShader, sh.fragmentShader);
+  };
+  // (keyed by the code it makes, not by its name: on Windows each program takes the driver a fraction of a second
+  // to compile, and kinds that differ only in their uniforms — pine and maple bark, fern and bamboo leaves — were
+  // compiled once each, 53 programs for identical code)
+  let key = null;
+  mat.customProgramCacheKey = () => {
+    if (key === null) {
+      const lib = THREE.ShaderLib[SHADER_LIB[mat.type] || 'physical'];
+      const [v, f] = transform(lib.vertexShader, lib.fragmentShader);
+      key = codeKey('flora', v, f) + '|' + prevKey;
+    }
+    return key;
+  };
   if (!mat.vertexColors) mat.vertexColors = true;
   return mat;
+}
+
+// a short key for a piece of shader code (two 32-bit hashes)
+const SHADER_LIB = { MeshStandardMaterial: 'physical', MeshPhysicalMaterial: 'physical', MeshLambertMaterial: 'lambert', MeshPhongMaterial: 'phong', MeshBasicMaterial: 'basic', MeshToonMaterial: 'toon' };
+export function codeKey(prefix, ...parts) {
+  const s = parts.join('\u0000');
+  let a = 2166136261, b = 5381;
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); a = Math.imul(a ^ c, 16777619); b = (Math.imul(b, 33) ^ c) | 0; }
+  return `${prefix}-${(a >>> 0).toString(36)}${(b >>> 0).toString(36)}`;
 }
 
 // Shadow depth material matching fpatch's wind and leaf drop (alpha from the material's map, set by three).
