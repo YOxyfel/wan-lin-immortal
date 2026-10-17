@@ -2088,6 +2088,12 @@ export async function createEngine(canvas) {
     137.5, 139.3, 139.45, 139.7, 140.2, 141.2, 141.8, 143, 144.5,
   ];
   const SWEEP_US = new Set([4, 48.5, 54.6, 64, 79.5, 98, 105, 112.5, 131.1, 139.45]);
+  // (what each position costs, in multiples of a plain one, measured on a Windows desktop: where the story first shows
+  // something, its shaders are first drawn there. The progress reported goes by these, so the page's beats come at
+  // even times rather than bunched up behind the burning village.)
+  const WARM_COST = { 0: 12, 10: 16, 46: 6, 58.8: 4, 72.7: 10, 75.1: 15, 77: 7, 78.6: 6, 79.5: 10, 81: 6, 84.5: 5, 88: 4,
+    91.5: 8, 92.1: 8, 92.5: 5, 93.5: 10, 95: 7, 98: 30, 100: 12, 101.3: 8, 102.4: 7, 103.6: 9, 105: 7, 108.3: 10, 115.5: 7,
+    128: 3, 129.1: 4, 130.5: 4, 132.5: 6 };
   function renderUnculled() {
     const flipped = [];
     scene.traverseVisible(o => { if ((o.isMesh || o.isPoints || o.isLine || o.isSprite) && o.frustumCulled) { o.frustumCulled = false; flipped.push(o); } });
@@ -2117,7 +2123,8 @@ export async function createEngine(canvas) {
     const pr = renderer.getPixelRatio();
     renderer.setPixelRatio(Math.min(pr, scale));
     resize();
-    let slice = performance.now(), tPrev = 0;
+    let slice = performance.now(), tPrev = 0, done = 0;
+    const total = us.reduce((a, u) => a + (WARM_COST[u] || 1), 0);
     try {
       for (let i = 0; i < us.length; i++) {
         // (the story's clock, never running backwards: each position's second look is a moment after its first)
@@ -2133,7 +2140,8 @@ export async function createEngine(canvas) {
           render();
         } catch (e) { console.warn('rehearsal', u, e); }
         if (stats) { const t1 = performance.now(); await gpuDone(30000); stats.push({ u, cpu: t1 - t0, all: performance.now() - t0, programs: renderer.info.programs.length - p0 }); }
-        if (onProgress) onProgress((i + 1) / us.length, u);
+        done += WARM_COST[u] || 1;
+        if (onProgress) onProgress(done / total, u);
         // (a slice of work, then a frame for the page; every so often the GPU is let catch up)
         if (pause && pause.due()) { await gpuDone(); await pause.play(); slice = performance.now(); }
         else if (i % 12 === 11) { await gpuDone(); slice = performance.now(); }

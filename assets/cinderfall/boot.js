@@ -129,13 +129,15 @@ async function boot() {
   // (ritual.js: each beat waits for its share of the preparation, and the preparation waits while a beat plays)
   const pace = XUAN.map(pts => brushPace(pts));
   const DROP = 3.1;
-  // how far the preparation has to be for each beat (0..1); measured on a Windows desktop, the rehearsal is most of it
+  // how far the preparation has to be for each beat (0..1). The drop falls once the valley is built (0.1), while its
+  // programs compile; the rest of the work (on a Windows desktop: the forest about a third of it, the rehearsal the
+  // rest) is shared out evenly between the strokes and the title.
   const BEATS = [
     { id: 'drop', dur: DROP, at: 0.1 },
-    ...pace.map((p, k) => ({ id: `s${k}`, dur: p.dur, at: [0.15, 0.25, 0.37, 0.5, 0.63][k] })),
-    { id: 'title', dur: 1.7, at: 0.75 },
-    { id: 'stamp', dur: 0.75, at: 0.85 },
-    { id: 'sub', dur: 1.0, at: 0.93 },
+    ...pace.map((p, k) => ({ id: `s${k}`, dur: p.dur, at: [0.15, 0.25, 0.36, 0.47, 0.58][k] })),
+    { id: 'title', dur: 1.7, at: 0.69 },
+    { id: 'stamp', dur: 0.75, at: 0.8 },
+    { id: 'sub', dur: 1.0, at: 0.9 },
     { id: 'hint', dur: 1.3, at: 1 },
   ];
   const ritual = createRitual(BEATS);
@@ -207,15 +209,15 @@ async function boot() {
     if (!/[?&]noforest\b/.test(location.search)) {
       let stages = 0;
       await e.prepareForest({
-        gate: async () => { stages++; reach(lerp(0.15, 0.27, Math.min(1, stages / 11))); await ritual.play(); },
-        idle: async () => { mark('forest built'); reach(0.28); await ritual.play(); },
+        gate: async () => { stages++; reach(lerp(0.15, 0.42, Math.min(1, stages / 11))); await ritual.play(); },
+        idle: async () => { mark('forest built'); reach(0.43); await ritual.play(); },
       });
       built = !!e.forest;
     }
     mark('forest');
-    reach(0.3);
+    reach(0.45);
     await ritual.play();
-    if (!/[?&]warm=0\b/.test(location.search)) await e.warmUp({ onProgress: k => reach(lerp(0.3, 0.99, k)), pause: ritual, stats });
+    if (!/[?&]warm=0\b/.test(location.search)) await e.warmUp({ onProgress: k => reach(lerp(0.45, 0.99, k)), pause: ritual, stats });
     mark('rehearsed');
     engine = e;
     ready = true;
