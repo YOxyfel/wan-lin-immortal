@@ -1964,11 +1964,12 @@ export async function createEngine(canvas) {
 
   injectFog(scene);
   update(0, 0, 0.016);
-  // the valley's shader programs, compiled without blocking (the page goes on drawing while they build); then one
-  // frame in each look the story takes (colour, from above the clouds, the ink) so their passes are ready too
-  const compiled = renderer.compileAsync(scene, camera).then(async () => {
-    for (const u of [50.2, 62.4, 0]) { update(u, 0, 0.016); render(); await new Promise(r => setTimeout(r, 0)); }
-  }).catch(e => console.warn('precompile', e));
+  // the valley's shader programs: their compiling is started here and goes on in the browser's own threads while the
+  // page draws (the opening plays meanwhile); compiled() waits for them afterwards. (Asking whether each is done is a
+  // round trip to the GPU process, so it is not asked while the opening plays.) The first draw of every look the
+  // story takes is the rehearsal's (warmUp).
+  try { renderer.compile(scene, camera); } catch (e) { console.warn('precompile', e); }
+  const compiled = () => renderer.compileAsync(scene, camera).catch(e => console.warn('precompile', e));
 
   // ---------------------------------------------------------------- the rehearsal
   // Every look the story takes, drawn once behind the loading screen. Measured on a desktop GPU (Chromium on
@@ -1979,9 +1980,9 @@ export async function createEngine(canvas) {
   // goes up, not only those in view. Each position is drawn twice a moment apart, so the strikes and bursts fired on
   // the way have their shapes. The story's own clock is used, and what the storm keeps of it is reset afterwards.
   const WARM_US = [
-    0, 1.5, 4, 5.5, 7, 10, 14, 18, 22, 26.5, 30, 34, 38, 42, 44, 46, 46.8, 47.5, 48.5, 50, 51.4, 53, 54.1, 54.45, 54.6,
+    0, 1.5, 4, 5.5, 7, 10, 14, 18, 22, 26.5, 30, 34, 38, 42, 44, 46, 46.8, 47.5, 48.5, 50, 51.4, 53, 54.02, 54.1, 54.45, 54.6,
     55.3, 56, 57.5, 58.8, 60.5, 62, 62.65, 64, 65.5, 66.7, 68.4, 70.5, 72.7, 75.1, 77, 78.6, 79.5, 81, 83, 84.5, 86, 88,
-    90, 91.5, 92.1, 92.5, 93.5, 95, 96.5, 98, 100, 101.3, 102.4, 103.6, 105, 106.5, 107.5, 108.05, 108.4, 109, 110,
+    90, 91.5, 92.1, 92.5, 93.5, 95, 96.5, 98, 100, 101.3, 102.4, 103.6, 105, 106.5, 107.5, 108.05, 108.2, 108.3, 108.4, 109, 110,
     110.7, 111.5, 112.5, 114, 115.5, 117, 118.5, 120, 121.5, 123, 124.5, 126, 128, 129.1, 129.6, 130.5, 131.1, 132.5,
     134, 136, 137.5, 139.3, 139.45, 139.7, 140.2, 141.2, 141.8, 143, 144.5,
   ];
@@ -2007,7 +2008,7 @@ export async function createEngine(canvas) {
     } finally { gl.deleteSync(f); }
   }
   async function warmUp({ onProgress = null, us = WARM_US, sweep = SWEEP_US, scale = 0.35 } = {}) {
-    const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
+    const nextFrame = () => new Promise(r => { let done = false; const go = () => { if (!done) { done = true; r(); } }; requestAnimationFrame(go); setTimeout(go, 60); });
     const pr = renderer.getPixelRatio();
     renderer.setPixelRatio(Math.min(pr, scale));
     resize();
@@ -2018,8 +2019,9 @@ export async function createEngine(canvas) {
         const u = us[i], t = Math.max(performance.now() / 1000, tPrev + 0.4);
         tPrev = t + 0.35;
         try {
+          // (drawn, not compiled ahead: compiling "the scene" prepares every material, seen or not, for this position's
+          // light, hundreds of programs nothing would ever draw; drawing compiles exactly what the reader will see)
           update(u, t, 0.016);
-          await renderer.compileAsync(scene, camera);
           if (sweep.has(u)) renderUnculled(); else render();
           update(u + 0.01, t + 0.35, 0.016);
           render();

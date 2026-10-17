@@ -111,9 +111,9 @@ async function boot() {
       ink.render(6, { ...base, blots: [] });
     } catch (e) { console.warn('ink rehearsal', e); }
   }
-  // Getting ready. A short loading screen while the valley is built and its shader programs compiled (without
-  // blocking); then the curtain lifts and the opening plays (the drop, the sign written, the title) while nothing heavy
-  // runs; then, under the finished title, the forest beyond the ridges is built and every look the story takes is
+  // Getting ready. A short loading screen while the valley is built; then the curtain lifts and the opening plays (the
+  // drop, the sign written, the title) while its shader programs compile in the browser's own threads and nothing
+  // heavy runs on the page; then, under the finished title, the forest beyond the ridges is built and every look the story takes is
   // rehearsed (drawn once, unseen), so the driver's own compiling and every upload happen here and not on the way.
   // Measured on a desktop GPU, doing these on the way froze the page for 0.1–0.6 s at a time at nearly every key
   // moment of a first read. Until it is done the hint under the title says so, with a line of progress; a reader who
@@ -124,11 +124,10 @@ async function boot() {
   // (--p: the loading screen's line; --q: the line under the title while the story is prepared)
   const progress = (text, p) => { if (loadText && text && loadText.textContent !== text) loadText.textContent = text; root.style.setProperty('--p', clamp(p).toFixed(3)); };
   const prep = q => root.style.setProperty('--q', clamp(q).toFixed(3));
-  const nextFrame = () => new Promise(res => requestAnimationFrame(() => res()));
+  // (a frame for the page between pieces of work; in a background tab, where no frames come, a moment instead)
+  const nextFrame = () => new Promise(res => { let done = false; const go = () => { if (!done) { done = true; res(); } }; requestAnimationFrame(go); setTimeout(go, 60); });
   let opened = false;
-  import('./engine.js').then(m => m.createEngine($('#world'))).then(async e => {
-    progress('PREPARING CINDERFALL', 0.6);
-    await e.compiled;
+  import('./engine.js').then(m => { progress('PREPARING CINDERFALL', 0.35); return m.createEngine($('#world')); }).then(async e => {
     if (ink) warmInk();
     progress('', 1);
     window.__cf.engine = e;
@@ -142,6 +141,8 @@ async function boot() {
     // the opening plays undisturbed (or until the reader moves on)
     const startSu = uFromScroll();
     await new Promise(res => { const check = () => (performance.now() - introAt > 5800 || Math.abs(uFromScroll() - startSu) > 0.3 || autoplay ? res() : setTimeout(check, 100)); check(); });
+    // (the valley's programs have been compiling in the browser's threads all this while)
+    await e.compiled();
     let built = false;
     if (!/[?&]noforest\b/.test(location.search)) {
       let stages = 0;

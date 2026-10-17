@@ -24,7 +24,8 @@ const ROUTE_R = 118, DELL_R = 140;
 // between the stages of the build: let a frame be drawn first (and, given a gate, wait until it opens: the page
 // holds the heavy work back while the reader is scrolling)
 let gateFn = null;
-const tick = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0))).then(() => (gateFn ? gateFn() : null));
+// (in a background tab, where no frames come, a moment instead)
+const tick = () => new Promise(r => { let done = false; const go = () => { if (!done) { done = true; setTimeout(r, 0); } }; requestAnimationFrame(go); setTimeout(go, 60); }).then(() => (gateFn ? gateFn() : null));
 
 // groves: conifer stands (dense and dark: ink masses from the air, snow on their shoulders), bare broadleaf woods
 // between them (grey twig haze over snow), clearings; shared by the mid forest and the canopy shell
