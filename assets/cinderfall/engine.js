@@ -489,9 +489,9 @@ export async function createEngine(canvas) {
       // has its lights counted twice by three). Started first, and only asked about once the page has had its turn
       // (`idle`: each question is a round trip to the GPU process).
       poolLights(); liteAll(b.root); for (const g of [wuhen, elder, far, ...gh]) if (g && g.group) liteAll(g.group);
-      try { renderer.compile(scene, camera); } catch (e) { console.warn('forest precompile', e); }
+      try { onTarget(() => renderer.compile(scene, camera)); } catch (e) { console.warn('forest precompile', e); }
       if (idle) await idle();
-      await renderer.compileAsync(scene, camera);
+      await onTarget(() => renderer.compileAsync(scene, camera));
       ghosts = gh;
       B = b;
       return B;
@@ -501,6 +501,16 @@ export async function createEngine(canvas) {
 
   // ---------------------------------------------------------------- post
   const post = createPost(renderer, scene, camera, mats, quality, sun);
+  // Shader programs are compiled for where they are drawn: the scene is drawn into the post pipeline's target, and
+  // three gives a program drawn into a render target no tone mapping and linear output, so a program compiled for
+  // the canvas is another program, one nothing draws. (Measured on Windows: compiled against the canvas, all 133
+  // programs compiled ahead went unused, and the 161 the story draws were compiled during the rehearsal instead, each
+  // waited for on the page's thread: 20 of its 23 s.)
+  function onTarget(fn) {
+    const prev = renderer.getRenderTarget();
+    renderer.setRenderTarget(post.target);
+    try { return fn(); } finally { renderer.setRenderTarget(prev); }
+  }
   sky.setSize(renderer.getDrawingBufferSize(new THREE.Vector2()).x, renderer.getDrawingBufferSize(new THREE.Vector2()).y);
 
   // ---------------------------------------------------------------- the road
@@ -2043,8 +2053,8 @@ export async function createEngine(canvas) {
   // a round trip to the GPU process, so it is not asked while the drop falls.) The first draw of every look the story
   // takes is the rehearsal's (warmUp).
   poolLights(); liteAll(scene);
-  try { renderer.compile(scene, camera); } catch (e) { console.warn('precompile', e); }
-  const compiled = () => renderer.compileAsync(scene, camera).catch(e => console.warn('precompile', e));
+  try { onTarget(() => renderer.compile(scene, camera)); } catch (e) { console.warn('precompile', e); }
+  const compiled = () => onTarget(() => renderer.compileAsync(scene, camera)).catch(e => console.warn('precompile', e));
 
   // ---------------------------------------------------------------- the rehearsal
   // Every look the story takes, drawn once behind the loading screen. Measured on a desktop GPU (Chromium on
