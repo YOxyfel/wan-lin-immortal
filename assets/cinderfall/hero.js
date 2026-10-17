@@ -24,7 +24,7 @@ export function createHero({ age = 0 } = {}) {
   });
   const { group, rig, K, U, Pc, Pt, Pi, st, contactMin, setAge } = C;
   // ---------------------------------------------------------------- update
-  const defaults = { speed: 0, run: 0, wave: 0, crouch: 0, kneel: 0, reach: 0, grief: 0, draw: 0, release: 0, fall: 0, lie: 0, getUp: 0, sit: 0, pushup: 0, hold: 0, holdWidth: 0, lookAt: null, lookW: 1, wind: null, gripL: null, gripR: null, raise: 0, raiseTarget: null, lookUp: 0, carve: 0, carveTarget: null, braceTarget: null, palm: 0, palmTarget: null };
+  const defaults = { speed: 0, run: 0, wave: 0, crouch: 0, kneel: 0, reach: 0, grief: 0, draw: 0, release: 0, fall: 0, lie: 0, getUp: 0, sit: 0, pushup: 0, hold: 0, holdWidth: 0, lookAt: null, lookW: 1, wind: null, gripL: null, gripR: null, raise: 0, raiseTarget: null, lookUp: 0, carve: 0, carveTarget: null, braceTarget: null, palm: 0, palmTarget: null, lift: 0 };
   const _look = V(), _hp = V(), _lq = new THREE.Quaternion(), _cvK = V(), _cvB = V(), _cvP = V();
   function computePose(dt, time, s) {
     const d = K.dims();

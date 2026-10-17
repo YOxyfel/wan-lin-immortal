@@ -375,6 +375,8 @@ export function buildCharacter(cfg) {
     const gust = 1 + 0.35 * Math.sin(time * 1.7) * Math.sin(time * 0.63 + 1.1);
     windL.multiplyScalar(gust);
     windL.z -= st.windSpeed * 0.92;
+    // (an updraft: the hair and sash lifted, as when the storm's eye draws breath over him)
+    if (s.lift) windL.y += s.lift;
     // breathing air / idle drift so hair never looks frozen
     windL.x += 0.12 * Math.sin(time * 0.9); windL.z += 0.1 * Math.sin(time * 0.71 + 2);
     U.uWindL.value.copy(windL);

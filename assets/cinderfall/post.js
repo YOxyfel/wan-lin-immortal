@@ -204,7 +204,7 @@ const COMPOSITE = `#include <packing>
 uniform sampler2D tColor, tDepth, tBloom, tAO, tShafts, tPaper, tNoise, tBlur, tMark, tPaint; uniform vec2 uBlurTexel; uniform mat4 uProjInv, uCamWorld; uniform float uInkDetail, uSkyWash;
 uniform vec2 uRes; uniform float uNear, uFar, uDpr, uTime;
 uniform float uExposure, uBloom, uShafts, uAOAmt;
-uniform float uSat, uContrast, uVignette, uGrain, uGreenWarm; uniform vec3 uTint, uShadowTint, uHighTint;
+uniform float uSat, uContrast, uVignette, uGrain, uGrainT, uGreenWarm; uniform vec3 uTint, uShadowTint, uHighTint;
 uniform float uInk, uInkLine, uInkNear, uInkFar, uInkWash, uInkKey, uSepia; uniform vec4 uInkSpread, uSeep, uAccent;
 uniform float uBleed, uDebugView; uniform vec2 uBleedC;
 uniform float uToon, uToonR, uToonLine, uToonBand, uToonSat, uToonW;
@@ -212,6 +212,9 @@ uniform float uPaper, uRedWash, uFlash, uShock, uBlack, uWhite, uDesat; uniform 
 // the clouds in front of the world, when the eye is up among them (rgb: their light, a: what of the world shows through;
 // x: where they begin along the ray)
 uniform sampler2D tCloudL, tCloudD; uniform float uCloudK;
+// the cinema bars (x: how far in, y: their height as a fraction of the screen, z: half a pixel, w: how much glow
+// bleeds over them) and their colour
+uniform vec4 uBars; uniform vec3 uBarCol;
 // the shock of a blow: a ring of bent light racing out from where it landed (xy: there, z: radius in screen heights,
 // w: strength); the impact frame: the image struck into two tones for a blink
 uniform vec4 uShockR; uniform float uImpactF;
@@ -562,7 +565,16 @@ void main(){
   col = mix(lit, mix(max(uWhiteCol, lit), uWhiteCol, uWhiteR.z >= 0. && uWhiteR.w > 0. ? smoothstep(1.2, 2.4, uWhiteR.z) : 1.), uWhite * wR);
   vec2 v = (vUv - .5) * vec2(aspect, 1.);
   col *= 1. - uVignette * smoothstep(.35, 1.05, length(v)) * (1. - uPaper) * (1. - uWhite);
-  float g = texture2D(tNoise, vUv * uRes / 512. + fract(uTime * vec2(17.31, 9.17))).a - .5;
+  // the cinema bars at the key moments: whatever is marked as breaking the frame (scene alpha 3 and up: rain going by,
+  // lightning, the pillar of light) passes over them, and the glow of the brightest things bleeds over their edges
+  if (uBars.x > 0.) {
+    float by = min(vUv.y, 1. - vUv.y), edge = uBars.y * uBars.x;
+    float inBar = 1. - smoothstep(edge - uBars.z, edge + uBars.z, by);
+    float brk = smoothstep(2.9, 3.3, texture2D(tColor, vUv).a);
+    vec3 glow = 1. - exp(-texture2D(tBloom, vUv).rgb * uBars.w);
+    col = mix(col, uBarCol + glow, inBar * (1. - brk));
+  }
+  float g = texture2D(tNoise, vUv * uRes / 512. + fract(uGrainT * vec2(17.31, 9.17))).a - .5;
   col += g * uGrain * (.3 + lum(col));
   col *= 1. - uBlack;
   gl_FragColor = vec4(toSRGB(col), 1.);
@@ -609,7 +621,7 @@ export function createPost(renderer, scene, camera, mats, quality, sun) {
     uInkDetail: { value: 0.08 }, uSkyWash: { value: 1 },
     uRes: { value: new THREE.Vector2(W, H) }, uNear: { value: camera.near }, uFar: { value: camera.far }, uDpr: { value: renderer.getPixelRatio() }, uTime: { value: 0 },
     uExposure: { value: 1 }, uBloom: { value: 0.12 }, uShafts: { value: 1 }, uAOAmt: { value: quality.low ? 0 : 0.85 },
-    uSat: { value: 1 }, uContrast: { value: 1 }, uVignette: { value: 0.35 }, uGrain: { value: 0.035 }, uGreenWarm: { value: 0.2 },
+    uSat: { value: 1 }, uContrast: { value: 1 }, uVignette: { value: 0.35 }, uGrain: { value: 0.035 }, uGrainT: { value: 0 }, uGreenWarm: { value: 0.2 }, uBars: { value: new THREE.Vector4(0, 0.12, 0.0005, 0.5) }, uBarCol: { value: new THREE.Color(0.009, 0.008, 0.007) },
     uTint: { value: new THREE.Color(1, 1, 1) }, uShadowTint: { value: new THREE.Color(1, 1, 1) }, uHighTint: { value: new THREE.Color(1, 1, 1) },
     uInk: { value: 0 }, uInkLine: { value: 1.1 }, uInkNear: { value: 25 }, uInkFar: { value: 260 }, uInkWash: { value: 1 }, uInkKey: { value: 0.5 }, uSepia: { value: 0 },
     uInkSpread: { value: new THREE.Vector4(0.5, 0.5, 3, 0.3) }, uSeep: { value: new THREE.Vector4(0.5, 0.5, -1, 0.3) }, uAccent: { value: new THREE.Vector4(1, 1, 1, 0) },
@@ -650,6 +662,8 @@ export function createPost(renderer, scene, camera, mats, quality, sun) {
   const _sp = new THREE.Vector3();
   function render(beforeScene) {
     ink.uTime.value = U.uTime.value;
+    // (the grain on the lens runs on real time, even when the story's clock is slowed)
+    ink.uGrainT.value = performance.now() / 1000 % 1000;
     const prevAuto = renderer.autoClear;
     renderer.autoClear = true;
     if (beforeScene) beforeScene();

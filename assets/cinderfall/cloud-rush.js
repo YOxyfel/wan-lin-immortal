@@ -8,14 +8,14 @@
 import * as THREE from 'three';
 
 const VS = `attribute vec4 aSeed, aSeed2;
-uniform vec3 uCam, uVel; uniform float uBox, uTime, uAmt, uExpo;
+uniform vec3 uCam, uVel; uniform float uBox, uTime, uAmt, uExpo, uSize, uNear;
 varying vec2 vUv; varying float vA; varying vec3 vW; varying vec2 vSeed;
 void main(){
   vec3 drift = vec3(5., -2., 3.) * uTime * (aSeed2.y - .5);
   vec3 rel = mod(aSeed.xyz * uBox + drift - uCam, uBox) - uBox * .5;
   vec3 p = uCam + rel;
   float dist = length(rel);
-  float size = mix(35., 120., aSeed2.x);
+  float size = mix(35., 120., aSeed2.x) * uSize;
   vec4 c = viewMatrix * vec4(p, 1.);
   // (drawn out along its way across the frame: the eye's speed against it, seen from where it is)
   vec3 w = -(viewMatrix * vec4(uVel, 0.)).xyz;
@@ -29,7 +29,7 @@ void main(){
   vUv = uv;
   vW = p;
   vSeed = aSeed2.zw;
-  vA = uAmt * smoothstep(18., 70., dist) * (1. - smoothstep(uBox * .3, uBox * .46, dist)) * mix(.5, 1., aSeed.w) / sqrt(stretch);
+  vA = uAmt * smoothstep(uNear, uNear * 3.9, dist) * (1. - smoothstep(uBox * .3, uBox * .46, dist)) * mix(.5, 1., aSeed.w) / sqrt(stretch);
   gl_Position = projectionMatrix * c;
 }`;
 const FS = `uniform sampler2D tNoise, tBg; uniform vec2 uScreen; uniform vec3 uLow, uHigh, uFlashCol, uFlashPos; uniform float uY0, uY1, uFlash, uTime, uOwn;
@@ -64,7 +64,7 @@ export function createCloudRush({ count = 70, noise }) {
   g.setAttribute('aSeed2', new THREE.InstancedBufferAttribute(s2, 4));
   g.instanceCount = count;
   const uniforms = {
-    uCam: { value: new THREE.Vector3() }, uVel: { value: new THREE.Vector3() }, uBox: { value: 700 }, uTime: { value: 0 }, uAmt: { value: 0 }, uExpo: { value: 0.03 },
+    uCam: { value: new THREE.Vector3() }, uVel: { value: new THREE.Vector3() }, uBox: { value: 700 }, uTime: { value: 0 }, uAmt: { value: 0 }, uExpo: { value: 0.03 }, uSize: { value: 1 }, uNear: { value: 18 },
     tNoise: { value: noise }, tBg: { value: null }, uScreen: { value: new THREE.Vector2(1, 1) }, uOwn: { value: 0.35 },
     uLow: { value: new THREE.Color(0.1, 0.11, 0.14) }, uHigh: { value: new THREE.Color(0.8, 0.82, 0.86) }, uY0: { value: 0 }, uY1: { value: 1 },
     uFlash: { value: 0 }, uFlashCol: { value: new THREE.Color(0.75, 0.72, 1) }, uFlashPos: { value: new THREE.Vector3() },
@@ -80,8 +80,9 @@ export function createCloudRush({ count = 70, noise }) {
     mesh, uniforms,
     // amt: how thick the wisps are (0 hides them); bg: the sky's drawing and its size on screen; low/high: the light
     // low and high in the cloud (y0..y1 m) mixed in by own; flash: the lightning's light; dt: the frame's time (the
-    // eye's speed is measured from it)
-    set({ camera, time, dt, amt, bg, screen, own = 0.35, low, high, y0 = 0, y1 = 1, flash = 0, flashPos = null, flashCol = null }) {
+    // eye's speed is measured from it); size, box, near: the wisps' size (1: 35 to 120 m), the box they fill round the
+    // eye, and how near the lens they fade (small and close: shreds whipping past the lens)
+    set({ camera, time, dt, amt, bg, screen, own = 0.35, low, high, y0 = 0, y1 = 1, flash = 0, flashPos = null, flashCol = null, size = 1, box = 700, near = 18 }) {
       const p = camera.position;
       if (has && dt > 1e-4) vel.lerp(v1.copy(p).sub(last).divideScalar(Math.max(dt, 1 / 120)).clampLength(0, 3000), 0.35);
       last.copy(p); has = true;
@@ -93,6 +94,7 @@ export function createCloudRush({ count = 70, noise }) {
       if (low) uniforms.uLow.value.copy(low);
       if (high) uniforms.uHigh.value.copy(high);
       uniforms.uY0.value = y0; uniforms.uY1.value = y1;
+      uniforms.uSize.value = size; uniforms.uBox.value = box; uniforms.uNear.value = near;
       uniforms.uFlash.value = flash;
       if (flashPos) uniforms.uFlashPos.value.copy(flashPos);
       if (flashCol) uniforms.uFlashCol.value.copy(flashCol);

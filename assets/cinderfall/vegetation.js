@@ -80,6 +80,7 @@ export function tallPine(kit, x, y, z, s, rand, opts = {}) {
       cluster(kit, tip, r * 0.72, Math.max(4, Math.round(9 * d)), 1, rand, tint, 0.3 + f * 0.25, 1, opts);
     }
   }
+  return { top, h };
 }
 
 // Broad-leafed tree (camphor / chestnut). Returns the canopy top for placing ribbons, etc.

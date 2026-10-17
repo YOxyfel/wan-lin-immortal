@@ -1,6 +1,6 @@
 // Cinderfall prologue: scroll → scroll position su → story position u (held moments stretch it) → world, ink overlay,
 // captions, title and the last page.
-import { TOTAL, TOTAL_U, uToS, sToU, inkCut, inkfx, fx, INK_CUTS } from './timeline.js';
+import { TOTAL, TOTAL_U, uToS, sToU, inkCut, inkfx, fx, INK_CUTS, timeRate } from './timeline.js';
 import { createInkOverlay, writeGlyph } from './ink.js';
 import { GLYPHS } from './glyphs.js';
 import { createAudio } from './audio.js';
@@ -27,7 +27,7 @@ const CAPTIONS = [
   { a: 31.2, b: 35.4, pos: 'right', eyebrow: 'AT THE GATE', text: 'The garrison marched out at dawn.<br><em>No one asked why.</em>', small: true },
   { a: 37.4, b: 41.4, pos: 'left', eyebrow: 'THE OLD ROAD', text: 'Same road. Same pines.<br>Same quiet.' },
   { a: 43.2, b: 45.75, pos: 'right', eyebrow: 'THE EDGE OF THE PINES', text: 'Right where<br>they always were.', small: true },
-  { a: 46.1, b: 47.65, pos: 'right', text: 'Then the birds<br>fell silent.', big: true },
+  { a: 46.1, b: 47.38, pos: 'right', text: 'Then the forest<br>held its breath.', big: true },
   { a: 49.8, b: 52.4, pos: 'right', eyebrow: 'ABOVE THE CLOUDS', text: 'Something was at war.' },
   { a: 52.95, b: 54.3, pos: 'right', text: 'The sky gathered<br>its thunder.' },
   { a: 54.5, b: 55.35, pos: 'right', eyebrow: 'A STONE\'S THROW FROM CINDERFALL', text: 'Something fell.' },
@@ -241,6 +241,8 @@ async function boot() {
   const uFromScroll = () => clamp(-root.getBoundingClientRect().top / scrollable()) * TOTAL_U;
   const scrollToU = (su, behavior = 'auto') => scrollTo({ top: root.offsetTop + (su / TOTAL_U) * scrollable(), behavior });
   let su = uFromScroll(), suV = 0, target = su, last = performance.now();
+  // the story's own clock (seconds): it runs slow in the slow-motion beats (timeline.js SLOWMO)
+  let clock = 0;
   let autoplay = false, autoU = 0, forced = null, rendered = false;
   const watchBtn = $('#watch');
   const setAuto = on => { autoplay = on; autoU = target; watchBtn.textContent = on ? 'Pause' : 'Watch'; watchBtn.setAttribute('aria-pressed', String(on)); };
@@ -270,6 +272,8 @@ async function boot() {
     // position's own cost
     get prep() { return { marks, stats, trace, beats: ritual.log }; },
     async frame(v, t = 1, dtF) { forced = v; su = target = sToU(v); suV = 0; frame(performance.now(), t, dtF); },
+    // (the tempo map, for tools: scroll position ↔ story position)
+    tempo: { uToS, sToU },
   };
 
   const op = (n, v) => { n.style.opacity = v.toFixed(3); n.style.visibility = v > 0.002 ? 'visible' : 'hidden'; };
@@ -322,7 +326,9 @@ async function boot() {
     const u = forced != null ? forced : ready ? uToS(su) : 0;
     root.dataset.u = u.toFixed(3);
     storyU = u;
-    const time = forceTime ?? now / 1000;
+    const rate = timeRate(u);
+    clock += dt * rate;
+    const time = forceTime ?? clock;
     // (the opening — the drop, the sign written, the title — beat by beat, as ritual.js plays them; each beat's own
     // time stays at its end once it is over, so between beats nothing moves)
     const td = ritual.at('drop', now) * DROP;
@@ -334,7 +340,7 @@ async function boot() {
     if (engine && inView) {
       // hold the cloud while the forest is still being built
       const hold = u > 107.9 && !engine.forest;
-      engine.update(hold ? Math.min(u, 108.25) : u, time, dt);
+      engine.update(hold ? Math.min(u, 108.25) : u, time, dt * rate);
       renderTimed();
     }
     // ---------------------------------------------------------------- ink overlay
@@ -433,6 +439,10 @@ async function boot() {
     document.body.classList.toggle('cf-dark', dark && inView);
     hud.classList.toggle('dark', dark);
     $('.nav').classList.toggle('dark', dark && inView);
+    // (the silence over the sea of clouds: everything on the page draws back but the picture; and the cinema bars'
+    // height, for the captions that ride on the lower one)
+    setVar(document.documentElement, '--cf-quiet', inView ? smooth(48.466, 48.47, u) * (1 - smooth(48.95, 49.3, u)) : 0);
+    setVar(document.documentElement, '--cf-bar', engine && inView ? engine.metrics.bars || 0 : 0);
     audio.update(u, now, Math.abs(target - su) * 10, engine ? engine.metrics.wind ?? 0.5 : 0.4);
     if (forceTime == null) forced = null;
   }

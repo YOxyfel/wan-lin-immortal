@@ -210,7 +210,9 @@ export function buildWorld(mats, quality) {
     if (Math.cos(a - 1.6) > 0.35) a += Math.PI;
     V.fern(kit, mush.x + Math.cos(a) * r0, g(mush.x + Math.cos(a) * r0, mush.z + Math.sin(a) * r0), mush.z + Math.sin(a) * r0, rand.range(0.8, 1.3), rand);
   }
-  V.tallPine(kit, mush.x + 2.2, g(mush.x + 2.2, mush.z - 3), mush.z - 3, 1.05, rand, {});
+  // (the pine over them: the eye goes up through its crown when it is launched into the sky)
+  const mp = V.tallPine(kit, mush.x + 2.2, g(mush.x + 2.2, mush.z - 3), mush.z - 3, 1.05, rand, {});
+  anchors.mushPine = { base: new THREE.Vector3(mush.x + 2.2, g(mush.x + 2.2, mush.z - 3), mush.z - 3), top: new THREE.Vector3(...mp.top), h: mp.h };
   anchors.mushrooms = new THREE.Vector3(mush.x, g(mush.x, mush.z), mush.z);
   // the roadside: a pavilion to rest in on the climb to the pines; where the road goes in under them, the signpost
   // (古松, the old pines); across the old way west, the boundary rope and its board (禁); the woodcutters' place

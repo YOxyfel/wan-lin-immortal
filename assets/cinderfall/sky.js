@@ -6,6 +6,7 @@ import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { U } from './materials.js';
 import { rng, fbm, smooth as smoothstep } from './util.js';
 import { heightAt } from './layout.js';
+import { puppetTexture } from './puppets.js';
 
 const VS = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }`;
 
@@ -138,7 +139,15 @@ uniform vec4 uEye, uHit, uDark; uniform vec2 uClashGV; uniform vec3 uHitCol;
 // eye is following (the fight), for the transmittance up to it; the ground drawn far below when the eye is up among
 // the clouds; how far the fair-weather layer has thickened into a floor of cloud
 uniform vec4 uCrater[3]; uniform float uFocus, uGroundK, uSeaK, uDive;
+// the sheets of cloud across the well that the launch bursts up through (x: how much, yzw: their heights) and their
+// thicknesses (xyz, metres); the well itself while the eye climbs it (x: how ragged its walls are, 1 as they are)
+uniform vec4 uBands, uBandT, uWell;
 uniform sampler2D tSea;
+// the war's shadow play on the first sheet (puppets.js): the stage (xy: its centre, z: the figures' height in metres,
+// w: how much), its axes (xy: right, zw: up, both across the ground), each figure (xy: where its feet are in the
+// stage's units, z: its lean, w: its arm's angle; 0 gold, 1 the masked one), and the flare where their weapons meet
+// (xy, z: how bright)
+uniform sampler2D tPuppet; uniform vec4 uStage, uStageR, uPup0, uPup1, uPupFx;
 // the charge gathering in the cloud (xyz, w: how bright), and the great bolt's channel lighting it from within
 // (A: its top and how bright, B: where its leader has come to)
 uniform vec4 uCharge, uChanA, uChanB, uHole;
@@ -160,6 +169,29 @@ ${SKYCOL}
 float remap(float v, float a, float b, float c, float d){ return c + (v - a) / (b - a) * (d - c); }
 float ign(vec2 p){ return fract(52.9829189 * fract(dot(p, vec2(.06711056, .00583715)))); }
 float hg(float mu, float g){ float g2 = g * g; return (1. - g2) / pow(1. + g2 - 2. * g * mu, 1.5); }
+// one puppet at stage point st: its silhouette (x), what is cut out of it and glows (y), its blurred shape (z, for its
+// aura); its body in atlas column bx, its arm (jointed at sh) in the rows starting at av
+vec2 rot2(vec2 v, float a){ float c = cos(a), s = sin(a); return vec2(c * v.x - s * v.y, s * v.x + c * v.y); }
+vec3 puppet(vec2 st, vec4 P, float bx, vec2 sh, float av){
+  vec2 q = rot2(st - P.xy, -P.z);
+  vec3 o = vec3(0.);
+  // (the aura is read from the blurred atlas, fading out toward the edge of the figure's own part of it, so no edge
+  // of the part shows)
+  if (q.x > -.5 && q.x < .5 && q.y > 0. && q.y < 1.) {
+    vec2 uv = vec2(bx + (q.x + .5) * .25, q.y);
+    vec2 a = texture(tPuppet, uv).rg;
+    float e = smoothstep(0., .07, min(min(q.x + .5, .5 - q.x), min(q.y, 1. - q.y)));
+    o = vec3(a, textureLod(tPuppet, uv, 4.6).r * e);
+  }
+  vec2 qa = rot2(q - sh, -P.w);
+  if (abs(qa.x) < .6 && abs(qa.y) < .6) {
+    vec2 uv = vec2(.5 + (qa.x + .6) / 1.2 * .25, av + (qa.y + .6) / 1.2 * .5);
+    vec2 a = texture(tPuppet, uv).rg;
+    float e = smoothstep(0., .07, .6 - max(abs(qa.x), abs(qa.y)));
+    o = max(o, vec3(a, textureLod(tPuppet, uv, 4.6).r * e));
+  }
+  return o;
+}
 // The storm is a front sweeping in from far beyond the north-western ridges (O), its upper half leaning out ahead
 // of the base like an anvil; uStormGrow moves the front (0.3: some 3.5 km out from the forest edge, 0.7: overhead).
 vec2 stormO(){ vec2 dir = normalize(uStormC.xz - vec2(0., -150.)); return uStormC.xz + dir * 6500.; }
@@ -177,12 +209,13 @@ float dome(float w, float k){ float d = clamp((1. - w) * k, 0., 1.); return sqrt
 // (uHole: xy its centre, z how open it is: it closes again once the eye is through; w: how much wider than a well,
 // the eye of the gathering)
 float holeS(){ return uHole.z * (1. + uHole.w); }
-float seaHoleD(vec2 xz){
+float seaHoleDk(vec2 xz, float k){
   float d = length(xz - uHole.xy);
   if (d > 900. * (1. + uHole.w)) return d;
   float n = texture(tShape, vec3(xz * .0011 + .2, .45)).r, n2 = texture(tShape, vec3(xz * .0037 + .7, .15)).g;
-  return d + ((n - .5) * 260. + (n2 - .5) * 90.) * holeS();
+  return d + ((n - .5) * 260. + (n2 - .5) * 90.) * holeS() * k;
 }
+float seaHoleD(vec2 xz){ return seaHoleDk(xz, 1.); }
 float seaHole(vec2 xz){ return uHole.z < .01 ? 1. : smoothstep(320. * holeS(), 470. * holeS(), seaHoleD(xz)); }
 // (inside the well its walls bulge and billow with the height, not drawn straight down; the eye of the gathering
 // opens wider as it goes up, a funnel)
@@ -191,7 +224,11 @@ float seaHole3(vec3 p){
   float n3 = texture(tShape, p * vec3(.0034, .0026, .0034) + vec3(.31, .17, .53)).r;
   float n4 = texture(tDetail, p * .0095 + vec3(.2, .6, .1)).g;
   float wid = 1. + .32 * uHole.w * smoothstep(1100., 2600., p.y);
-  return smoothstep(320. * holeS() * wid, 470. * holeS() * wid, seaHoleD(p.xz) + ((n3 - .5) * 230. + (n4 - .5) * 70.) * holeS());
+  // (while the eye climbs it, the well's walls above its ragged mouth are calmer and sheer: billows, not crags or
+  // slopes)
+  float hk = smoothstep(640., 820., p.y);
+  float kw = mix(1., uWell.x, hk), outer = mix(470., 360., uWell.y * hk);
+  return smoothstep(320. * holeS() * wid, outer * holeS() * wid, seaHoleDk(p.xz, kw) + ((n3 - .5) * 230. + (n4 - .5) * 70.) * holeS() * kw);
 }
 // the gathering: what the fight stirs up winds round the eye under it, fastest close to it, so the cloud is drawn
 // out into arms (the noise is read from where it was before it was wound)
@@ -240,7 +277,10 @@ float gDepth = 0.;
 // (and, for the light from below: how thick the formed deck is over the last sample, metres, 0 where there is none)
 float gSeaThick = 0.;
 bool gNoSea = false;
+// (and how much of the last sample's cloud is one of the launch's sheets, which one, and how far up through it)
+float gSheetW = 0., gSheetLit = 1., gSheetK = 0., gSheetN = .5;
 float density(vec3 p, float sk, bool detail, out float hf){
+  gSheetW = 0.;
   // storm cells and the storm's ragged base: scud hanging low under the deck in places, torn by the wind
   vec4 cn = vec4(0.);
   if (sk > .003) cn = texture(tShape, vec3(p.xz * .00011 + .3 + uWind * uTime * .35, .7));
@@ -298,6 +338,31 @@ float density(vec3 p, float sk, bool detail, out float hf){
   if (uVort.z > 0. && c > 0.) c *= seaHole3(p);
   // the sea of clouds under it all
   c = max(c, cSea);
+  // the sheets across the well: thin and dense (far denser than the rest, so bursting up through one the eye is lost in
+  // it for a moment). The first is whole, a screen glowing with the light above it (the fight's shadows play on it);
+  // the next two are torn here and there, so the light above shows through before the eye is in them.
+  float shD = 0.;
+  gSheetW = 0.; gSheetLit = 1.; gSheetK = 0.;
+  if (uBands.x > 0. && uHole.z > .01) {
+    float inW = 1. - seaHole3(p);
+    if (inW > .01) {
+      float torn = smoothstep(.32, .62, texture(tShape, vec3(pv * .0013 + .37, .81)).r * .7 + n * .45);
+      for (int k = 0; k < 3; k++) {
+        float hy = k == 0 ? uBands.y : (k == 1 ? uBands.z : uBands.w);
+        float th = (k == 0 ? uBandT.x : (k == 1 ? uBandT.y : uBandT.z)) * (.75 + .5 * n);
+        float yy = p.y - hy + (n - .5) * 60.;
+        // (the first denser: a whole screen, nothing of what is above showing through it)
+        float dk = smoothstep(th * .5, th * .12, abs(yy)) * (k == 0 ? 2. : mix(.18, 1., torn));
+        if (dk > shD) {
+          shD = dk;
+          gSheetK = float(k);
+          gSheetLit = clamp(yy / th + .5, 0., 1.);
+          gSheetN = texture(tShape, vec3(pv * .0045 + .21, .63)).r * .4 + texture(tDetail, vec3(pv * .016 + .4, .37)).g * .35 + texture(tDetail, vec3(pv * .05 + .7, .61)).r * .25;
+        }
+      }
+      shD *= uBands.x * inW * 10.;
+    }
+  }
   // blasts from the fight punch round holes into the cloud tops and throw the cloud outward
   for (int k = 0; k < 3; k++) {
     vec4 cr = uCrater[k];
@@ -319,12 +384,14 @@ float density(vec3 p, float sk, bool detail, out float hf){
   // (diving through it, it is whole: dense billows all the way down, the ground lost until under its base)
   float dv = uDive * sk * smoothstep(.012, .05, hf) * (1. - smoothstep(.72, .86, hf));
   if (dv > 0.) c = max(c, dv * (.1 + .38 * smoothstep(.28, .62, n)));
-  if (c <= 0. || !detail) return c * mix(1., skD, sk);
+  if (c <= 0. || !detail) { float cf = c * mix(1., skD, sk); gSheetW = shD / max(shD + cf, 1e-4); return max(cf, shD); }
   vec4 d = texture(tDetail, q * 4.7 + vec3(uTime * .0011, 0., 0.));
   float df = d.r * .625 + d.g * .25 + d.b * .125;
   df = mix(df, 1. - df, clamp(hf * 3.5, 0., 1.));
   c = clamp(c - (1. - c) * df * mix(mix(.6, .9, sharp), 1.1, sk) * (1. - .5 * dv), 0., 1.);
-  return c * mix(1., skD, sk) * mix(1., 1.5, sharp);
+  float cf = c * mix(1., skD, sk) * mix(1., 1.5, sharp);
+  gSheetW = shD / max(shD + cf, 1e-4);
+  return max(cf, shD);
 }
 // The sea's top as a surface (when the eye is above it): the same heads and towers, the blasts of the fight
 // punched into it (a bowl with its rim thrown up, filling back in), sinking away under the storm.
@@ -552,6 +619,14 @@ void main(){
       float hh;
       if (density(pp, stormAt(pp.xz, (pp.y - 620.) / 4080.), false, hh) > .015) { hit = tt; break; }
     }
+    // (the launch's sheets are thin: never stepped over, wherever the ray crosses one inside the well)
+    if (uBands.x > 0. && abs(rd.y) > .02) {
+      for (int k = 0; k < 3; k++) {
+        float hy = k == 0 ? uBands.y : (k == 1 ? uBands.z : uBands.w);
+        float tk = (hy - ro.y) / rd.y;
+        if (tk > t0 && tk < t1 && (hit < 0. || tk < hit) && seaHole3(ro + rd * tk) < .99) hit = max(t0, tk - 90. / abs(rd.y));
+      }
+    }
     if (hit < 0.) marching = false;
     else {
       float back = span * (2. * sqrt((hit - t0) / max(span, 1.)) + .05) / 40.;
@@ -559,6 +634,22 @@ void main(){
       t1 = min(t1, t0 + 1300. + back);
       crowd = hit - t0 < 40. ? 1. : 0.;
     }
+  }
+  // the shadow play: read once for the ray, where it meets the screen's underside (the same for every sample in the
+  // screen, so the figures stay crisp however obliquely it is seen)
+  vec3 pupH = vec3(0.), pupG = vec3(0.); float pupS = 0.;
+  if (uStage.w > 0. && rd.y > .05) {
+    vec3 ps = ro + rd * ((uBands.y - 42. - ro.y) / rd.y);
+    vec2 d = ps.xz - uStage.xy;
+    vec2 st = vec2(dot(d, uStageR.xy), dot(d, uStageR.zw)) / uStage.z;
+    vec3 g0 = puppet(st, uPup0, 0., vec2(.1, .76), .5), g1 = puppet(st, uPup1, .25, vec2(-.02, .76), 0.);
+    vec3 goldL = vec3(1., .66, .26), violL = vec3(.55, .24, 1.);
+    // (the aura only round each figure, not under it)
+    pupH = (goldL * g0.z * (1. - g0.x) + violL * g1.z * (1. - g1.x)) * 1.3 * uStage.w;
+    pupS = max(g0.x, g1.x) * uStage.w;
+    pupG = (goldL * g0.y + violL * g1.y) * 2.6 * uStage.w;
+    vec2 fq = st - uPupFx.xy;
+    pupG += vec3(1., .9, .7) * uPupFx.z * (exp(-dot(fq, fq) / .003) * 5. + exp(-dot(fq, fq) / .05) * .9);
   }
   if (marching) {
     // (interleaved gradient noise: the steps' offsets vary evenly across the screen, no salt-and-pepper edges)
@@ -574,7 +665,7 @@ void main(){
       float sk = stormAt(p.xz, (p.y - 620.) / 4080.);
       float hf;
       float c = density(p, sk, true, hf);
-      float dep = gDepth, sTh = gSeaThick;
+      float dep = gDepth, sTh = gSeaThick, sW = gSheetW, sL = gSheetLit, sK = gSheetK, sN = gSheetN;
       if (c > .002) {
         // (over the sea: crisper, denser heads, the light marched farther for the long shadows of the towers)
         float aS = aloftK * (1. - sk);
@@ -608,6 +699,20 @@ void main(){
         amb += uDive * sk * (vec3(.085, .094, .125) * (.35 + .65 * smoothstep(.16, .56, hf)) + vec3(.32, .33, .37) * smoothstep(1900., 2750., p.y) * uSunVis);
         // (under a thick deck less of the sky's light gets in)
         S += mix(amb * mix(1., .6, under), ambA, aS);
+        // (the launch's sheets, each lit by what is above it: the first a screen glowing pearl-grey over the dark of the
+        // well, the next pearl, the last gold in the sun; each a little darker underneath)
+        // (the launch: inside the eye's well its walls are slate low down, lighter as they rise toward the light)
+        if (uWell.z > 0.) {
+          float inWl = uWell.z * (1. - smoothstep(900., 1400., length(p.xz - uHole.xy)));
+          S *= mix(1., mix(.13, 1., smoothstep(750., 2300., p.y)), inWl);
+        }
+        vec3 shC = sK < .5 ? vec3(.6, .58, .6) * (.62 + .5 * sL) : (sK < 1.5 ? vec3(.86, .86, .9) * (.72 + .5 * sL) : vec3(1.25, 1.02, .7) * (.85 + .7 * sL));
+        // (mottled underneath, as a real deck is: thicker and darker in its billows, lighter where it thins)
+        shC *= (.35 + .65 * uSunVis) * (.45 + 1.1 * smoothstep(.36, .64, sN));
+        // (the shadow play on the screen: each figure ringed by its own light, dark against it, its cut-outs burning;
+        // the screen itself dimmed a little round them, as a lamp-lit paper is)
+        if (sK < .5 && uStage.w > 0.) shC = (shC * (1. - .35 * uStage.w) + pupH) * (1. - .9 * pupS) + pupG;
+        S = mix(S, shC, sW);
         // the storm's belly takes the colour of the low light at the horizon (amber, then red)
         // (only far off, toward the horizon: no glowing band with a hard top under the deck)
         S += uHorizon * sk * (1. - hf) * (1. - hf) * .1 * smoothstep(5000., 22000., length(p.xz - ro.xz));
@@ -795,7 +900,8 @@ export function createSky(renderer, quality) {
   const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
   const seaRT = bakeSea(renderer, quality.low ? 1024 : 2048);
   const uniforms = {
-    tShape: { value: shape.texture }, tDetail: { value: detail.texture }, tSea: { value: seaRT.texture },
+    tShape: { value: shape.texture }, tDetail: { value: detail.texture }, tSea: { value: seaRT.texture }, tPuppet: { value: puppetTexture(512) },
+    uStage: { value: new THREE.Vector4(0, 0, 100, 0) }, uStageR: { value: new THREE.Vector4(1, 0, 0, 1) }, uPup0: { value: new THREE.Vector4(-0.5, 0, 0, 0) }, uPup1: { value: new THREE.Vector4(0.5, 0, 0, 0) }, uPupFx: { value: new THREE.Vector4(0, 0, 0, 0) },
     uProjInv: { value: new THREE.Matrix4() }, uCamWorld: { value: new THREE.Matrix4() }, uCamPos: { value: V3(0, 0, 0) },
     uSunDir: { value: V3(0.5, 0.3, 0.8).normalize() }, uSunCol: { value: new THREE.Color(1, 0.8, 0.55) }, uSunVis: { value: 1 },
     uZenith: { value: new THREE.Color(0.25, 0.48, 0.82) }, uHorizon: { value: new THREE.Color(0.85, 0.86, 0.82) }, uGround: { value: new THREE.Color(0.5, 0.52, 0.5) },
@@ -807,7 +913,7 @@ export function createSky(renderer, quality) {
     uStarK: { value: 0 }, uStarPos: { value: V3(0, -9999, 0) }, uStarTail: { value: V3(0, -9999, 0) },
     uT1: { value: [V3(), V3(), V3(), V3()] }, uT2: { value: [V3(), V3(), V3(), V3()] }, uImpact: { value: new THREE.Vector4(0, 0, 0, -1) },
     uEye: { value: new THREE.Vector4(0, 0, 0, 0) }, uHit: { value: new THREE.Vector4(0, 0, 0, -1) }, uHitCol: { value: new THREE.Color(1, 0.86, 0.74) }, uDark: { value: new THREE.Vector4(0, 0, 0, 0) }, uClashGV: { value: new THREE.Vector2(1, 1) },
-    uCrater: { value: [new THREE.Vector4(0, 0, 0, -1), new THREE.Vector4(0, 0, 0, -1), new THREE.Vector4(0, 0, 0, -1)] }, uFocus: { value: 0 }, uGroundK: { value: 0 }, uSeaK: { value: 0 }, uDive: { value: 0 },
+    uCrater: { value: [new THREE.Vector4(0, 0, 0, -1), new THREE.Vector4(0, 0, 0, -1), new THREE.Vector4(0, 0, 0, -1)] }, uFocus: { value: 0 }, uGroundK: { value: 0 }, uSeaK: { value: 0 }, uDive: { value: 0 }, uBands: { value: new THREE.Vector4(0, 1300, 1650, 2000) }, uBandT: { value: new THREE.Vector4(150, 170, 210, 0) }, uWell: { value: new THREE.Vector4(1, 0, 0, 0) },
     uCharge: { value: new THREE.Vector4(0, 0, 0, 0) }, uHole: { value: new THREE.Vector4(-250, -40, 1, 0) }, uChanA: { value: new THREE.Vector4(0, 0, 0, 0) }, uChanB: { value: new THREE.Vector4(0, 0, 0, 0) },
     uVort: { value: new THREE.Vector4(0, 0, 0, 1) }, uBeam: { value: new THREE.Vector4(0, 0, 0, 0) }, uClashFar: { value: 1 },
     uMoonDir: { value: V3(-0.4, 0.5, -0.75).normalize() }, uMoonCol: { value: new THREE.Color(0, 0, 0) },

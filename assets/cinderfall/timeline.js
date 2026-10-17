@@ -15,14 +15,55 @@ export const TOTAL = 145;
 // cannot move, the open door, the hand that falls, the morning he goes farther, the rim of the dell, the crystal.
 export const PAUSES = [[26.45, 1.4], [46.95, 1.6], [49.35, 1.1], [58.7, 1.6], [65.45, 2.0], [80.95, 1.3], [92.15, 2.2], [124.5, 1.0], [132.15, 1.5], [136.85, 1.1], [139.18, 2.6]];
 const SLOW = 0.2;
-const PSEG = (() => { let u = 0, s = 0; const out = []; for (const [sp, L] of PAUSES) { u += sp - s; s = sp; out.push({ u0: u, s0: s, u1: u + L, s1: s + L * SLOW }); u += L; s += L * SLOW; } return out; })();
-export const TOTAL_U = TOTAL + PAUSES.reduce((a, [, L]) => a + L * (1 - SLOW), 0);
+// Stretches: [story position, story length, rate]. The story runs at `rate` of its pace over that much of it, so
+// it takes 1/rate as much scroll; unlike a held moment the camera keeps going, only slower under the same scroll.
+// The launch up through the clouds: the lens drawing back (47.42), lifting slowly with a look down at him (47.47),
+// bursting up through the crown and on to the eye (47.535), up the well (47.95), slowing under the screen where the
+// fight's shadows play (48.08), bursting through the sheets and out over the sea (48.2), the hang in the sun (48.48);
+// and the dive back down through the storm.
+export const STRETCHES = [[47.42, 0.05, 0.3], [47.47, 0.065, 0.12], [47.535, 0.415, 0.3], [47.95, 0.13, 0.3], [48.08, 0.12, 0.11], [48.2, 0.28, 0.3], [48.48, 0.56, 0.3], [52.7, 1.32, 0.42]];
+// Slow motion: the story's own clock. A slow camera alone is not slow motion while the fire, the rain, the hair and
+// the flashes run on at full speed; here everything that moves by the clock slows too (the grain on the lens does
+// not). [in, slowed, holding until, back, rate]
+export const SLOWMO = [
+  // (the held breath: the forest still, the petals and leaves hanging in the air, his hair still; the storm's eye draws
+  // breath and it all goes on again, rising toward it)
+  [46.88, 46.96, 47.34, 47.42, 0.04],
+  // (lifting off with the birds, slowly, before the burst)
+  [47.46, 47.48, 47.52, 47.56, 0.3],
+  // (bursting out of the last sheet into the sun: the world slows to a sixth as the eye hangs over the sea)
+  [48.466, 48.468, 48.95, 49.3, 0.17],
+  // (the dive: the lens tipping over at the top, weightless for a moment before it falls)
+  [52.5, 52.56, 52.68, 52.8, 0.3],
+];
+// The cinema bars, at the key moments only: [in from, in by, out from, out by]. They close in as the tension builds
+// and leave on the beat; what is marked as breaking the frame passes over them.
+// (the launch: in through the held breath, gone in one frame at the breach, with the silence; the dive and the strike:
+// in as the lens tips over, gone as the light thrown out of the fire gets away west)
+export const BARS = [[46.95, 47.22, 48.467, 48.468], [52.5, 52.76, 55.3, 55.302]];
+export function barsAt(s) { let k = 0; for (const [a, b, c, d] of BARS) if (s > a && s < d) k = Math.max(k, band(a, b, c, d, s)); return k; }
+// the breach: out of the last sheet over the sea, the moment everything stops (rain, shreds, shake, bars, the roar)
+export const SILENCE = 48.468;
+export function timeRate(s) {
+  let r = 1;
+  for (const [a, b, c, d, k] of SLOWMO) if (s > a && s < d) r = Math.min(r, lerp(1, k, band(a, b, c, d, s)));
+  return r;
+}
+// (held moments and stretches as one list of segments; `hold` is the held moment's index, for the camera's push)
+const PSEG = (() => {
+  const segs = [...PAUSES.map(([sp, L], i) => ({ sp, ls: L * SLOW, lu: L, hold: i })), ...STRETCHES.map(([sp, ls, r]) => ({ sp, ls, lu: ls / r, hold: -1 }))].sort((a, b) => a.sp - b.sp);
+  let u = 0, s = 0;
+  const out = [];
+  for (const g of segs) { u += g.sp - s; s = g.sp; out.push({ u0: u, s0: s, u1: u + g.lu, s1: s + g.ls, hold: g.hold }); u += g.lu; s += g.ls; }
+  return out;
+})();
+export const TOTAL_U = TOTAL + PSEG.reduce((a, p) => a + (p.u1 - p.u0) - (p.s1 - p.s0), 0);
 // scroll position (u) → story position (s), and back
 export function uToS(u) {
   let du = 0;
   for (const p of PSEG) {
     if (u < p.u0) return u - du;
-    if (u < p.u1) return p.s0 + (u - p.u0) * SLOW;
+    if (u < p.u1) return p.s0 + (u - p.u0) * (p.s1 - p.s0) / (p.u1 - p.u0);
     du += (p.u1 - p.u0) - (p.s1 - p.s0);
   }
   return Math.min(TOTAL, u - du);
@@ -31,7 +72,7 @@ export function sToU(s) {
   let du = 0;
   for (const p of PSEG) {
     if (s < p.s0) return s + du;
-    if (s < p.s1) return p.u0 + (s - p.s0) / SLOW;
+    if (s < p.s1) return p.u0 + (s - p.s0) * (p.u1 - p.u0) / (p.s1 - p.s0);
     du += (p.u1 - p.u0) - (p.s1 - p.s0);
   }
   return s + du;
@@ -40,8 +81,9 @@ export function sToU(s) {
 // which builds through the hold and lets go over the story that follows it (never dropping back in one frame)
 const RELEASE = 1.2;
 export function pauseAt(s) {
-  for (let i = 0; i < PSEG.length; i++) {
-    const p = PSEG[i];
+  for (const p of PSEG) {
+    if (p.hold < 0) continue;
+    const i = p.hold;
     if (s >= p.s0 && s < p.s1) { const k = (s - p.s0) / (p.s1 - p.s0); return { i, k, w: smooth(0, 1, k) }; }
     if (s >= p.s1 && s < p.s1 + RELEASE) return { i, k: 1, w: 1 - smooth(p.s1, p.s1 + RELEASE, s) };
   }

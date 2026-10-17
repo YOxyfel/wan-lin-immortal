@@ -327,3 +327,41 @@ cache in the browser or the driver knows any of them, as on a first visit).
   story created no program; the GPU's own time per frame at 1564×1272 was 3–10 ms.
 - Also: a hidden page holds back image decodes, so the sign's maps no longer wait on them (`ink.js`); a finished
   stroke is shown by switching between two images rather than swapping one's source, which left it blank for a moment.
+
+## Round 6: cinema (the launch, the shadow play, the bars, the clock)
+
+Direction plan v2 (`cinderfall-direction.md`) came out of a stress test of plan v1 by four separate reviews (a director
+and cinematographer, a donghua storyboard director, a real-time technical director, a muted first-time viewer timing
+what can be read at scroll speed). This round builds its foundations and the first of the owner's three asks.
+
+- **The story's own clock** (`timeline.js` `SLOWMO`, `boot.js`): slow motion is real now. In a slow-motion beat
+  everything that moves by the clock (fire, rain, hair, sparks, flashes, the fight) slows with the camera; the grain on
+  the lens stays on real time (`post.js` `uGrainT`).
+- **Cues fired on crossing** (`engine.js` `cueAge`): flashes and flares that must last a set time fire when the story
+  crosses them going forward and then run on the clock, so a reader who stops is never left on a lit frame and one who
+  arrives by a jump never sees them.
+- **Flash safety**: no strobe inside a lightning flash any more (the 12–14 Hz flicker is gone), and the dive's flashes
+  at most about two and a half a second.
+- **The cinema bars with frame breaks** (`post.js`, `timeline.js` `BARS`): drawn in the final pass, warm ink-black,
+  thinner on a tall screen. What is marked in the scene alpha as breaking the frame (3 and up: lightning cores, the
+  rain when it is tagged, `weather.js` `setTag`) passes over them, and the glow of the brightest things bleeds over
+  their edges. Used at the launch (in through the held breath, gone in one frame at the breach) and the dive and strike.
+- **The launch** (47.4–49.0, about two screens of scroll, `engine.js` `flightPath`): the forest holds its breath (the
+  clock nearly stops; the caption now says so); the storm's eye breathes in and his hair lifts; the lens draws back
+  behind the pine over the mushrooms, lifts with a look down at him, and bursts up through the edge of its crown with
+  the flock that was perched in it (the bird burst moved here from 46.2). Up toward the eye, into its ragged mouth (one
+  flash of lightning in the wall, fired on crossing), up the well along its wall, which is calmer and sheer while the
+  eye climbs it (`sky.js` `uWell`), slate low down and lighter higher, the light inside the well lower
+  (exposure 0.56 of the beat's). Rain all the way up, drawn out into streaks by the eye's own speed; small shreds of
+  cloud whipping past the lens.
+- **The shadow play** (`puppets.js`, `sky.js`): under the first sheet across the well, the lens nearly stops, and the
+  war is first seen as two giant shadow puppets on the cloud screen lit from above: the gold cultivator with his sword,
+  the masked one of Fen Tian Zong with his glaive (the sect's peaked hood, mantle and iron mask, the violet eye slit),
+  each ringed by its own light, their cut-outs burning gold and violet. The glaive comes down on the sword; a flare
+  where they meet (fired on crossing); the gold one is driven back; and the lens bursts up through them all. Drawn on
+  a canvas at load (no images), jointed at the shoulder like real puppets, read once per pixel where the ray meets the
+  screen, so they stay crisp however obliquely they are seen.
+- **The breach** (48.468, `SILENCE`): out of the last, gold sheet the white becomes the white of the page; in the same
+  frame the shake, rain, shreds, bars and roar stop, the clock slows to a sixth, the page's own furniture draws back,
+  and the sea of clouds settles out of the white; the lens tilts down to the horizon, the fight high off to one side.
+- **Phones**: the Watch and Skip buttons were hidden on phones by an older stylesheet rule; fixed.

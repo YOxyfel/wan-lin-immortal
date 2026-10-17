@@ -4,7 +4,7 @@ import { band, smooth, clamp } from './util.js';
 import { STRIKES } from './timeline.js';
 
 export function createAudio() {
-  let ctx = null, master, windGain, windFilter, fireGain, fireFilter, waterGain, waterFilter, riseGain, riseFilter, humGain, on = false;
+  let ctx = null, master, windGain, windFilter, fireGain, fireFilter, waterGain, waterFilter, riseGain, riseFilter, humGain, roarGain, roarFilter, on = false;
   let lastStep = 0, lastChirp = 0, lastBell = 0, lastBeat = 0, lastHowl = 0, lastU = 0;
   const noiseBuffer = () => {
     const b = ctx.createBuffer(1, ctx.sampleRate * 4, ctx.sampleRate), d = b.getChannelData(0);
@@ -28,6 +28,8 @@ export function createAudio() {
     [waterGain, waterFilter] = loop(nb, 2.3, 'bandpass', 1800, 0.4);
     // the air drawn up into the light gathering over the dell, rising in pitch until the pillar falls
     [riseGain, riseFilter] = loop(nb, 1.3, 'bandpass', 300, 1.4);
+    // the launch: the roar of the air going past, low, rising as the eye climbs
+    [roarGain, roarFilter] = loop(nb, 0.8, 'lowpass', 140, 0.9);
     // a low chord that rises under the scroll
     humGain = ctx.createGain(); humGain.gain.value = 0; humGain.connect(master);
     for (const [f, a] of [[110, 0.5], [164.8, 0.3], [220, 0.22], [329.6, 0.12]]) { const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f; const g = ctx.createGain(); g.gain.value = a; o.connect(g).connect(humGain); o.start(); }
@@ -71,7 +73,13 @@ export function createAudio() {
       // the dell: still air under the great tree; the crossing: wind in the white between the valley and the forest
       const hollow = band(132.6, 133.4, 140.8, 141.4, u) * 0.6;
       const cloud = band(105.6, 107, 109, 110.4, u);
-      windGain.gain.setTargetAtTime((0.025 + wind * 0.05 + cloud * 0.08) * (1 - hollow * 0.85), t, 0.4);
+      // (out over the sea of clouds, after the roar of the launch: silence for a moment, the wind gone with it)
+      const hush = band(48.466, 48.468, 49.2, 49.7, u);
+      windGain.gain.setTargetAtTime((0.025 + wind * 0.05 + cloud * 0.08) * (1 - hollow * 0.85) * (1 - hush), t, hush > 0.5 ? 0.012 : 0.4);
+      // (and cut dead at the breach: the silence over the sea is total)
+      const launch = band(47.5, 47.56, 48.466, 48.468, u);
+      roarGain.gain.setTargetAtTime(0.16 * launch, t, launch > 0.01 ? 0.08 : 0.01);
+      roarFilter.frequency.setTargetAtTime(110 + 520 * launch * smooth(47.5, 48.45, u), t, 0.2);
       windFilter.frequency.setTargetAtTime(300 + wind * 380 + cloud * 300, t, 0.5);
       const fire = band(55, 58, 104, 107.5, u) * (1 - band(84.5, 85.5, 91.6, 92.6, u) * 0.6);
       fireGain.gain.setTargetAtTime(fire * (0.05 + 0.03 * Math.sin(now * 0.013)), t, 0.2);
@@ -90,6 +98,10 @@ export function createAudio() {
       if (((u > 62 && u < 66) || (u > 97.5 && u < 103)) && now - lastHowl > 7000) { lastHowl = now; howl(u > 97 ? 0.03 : 0.05); }
       const beat = band(57, 58.5, 61.5, 62.5, u) + band(83, 84, 91.6, 92.4, u) + band(129.6, 129.9, 131.0, 131.4, u) * 1.4;
       if (beat > 0.2 && now - lastBeat > (u > 129 ? 520 : 850)) { lastBeat = now; tone(52, 'sine', 0.35 * Math.min(1, beat), 0.005, 0.18, 0.7); setTimeout(() => on && tone(48, 'sine', 0.22 * Math.min(1, beat), 0.005, 0.16, 0.7), 190); }
+      // the launch: the burst out of the pines; a thud as the eye goes through each sheet of cloud; out into the sun
+      if (pass(47.535)) { burst(0.3, 1.4, 90, 0.6); tone(38, 'sine', 0.3, 0.02, 1.6, 1.8); }
+      for (const at of [48.21, 48.34, 48.45]) if (pass(at)) { burst(0.22, 0.5, 160, 0.6); tone(55, 'sine', 0.22, 0.004, 0.45, 0.7); }
+      if (pass(48.6)) tone(1568, 'sine', 0.025, 0.9, 3.2, 1);
       // the star falls; the tear; the crossing
       if (pass(51.3)) { tone(1300, 'sine', 0.05, 0.4, 2.6, 0.35); burst(0.14, 3.2, 90, 0.6); }
       if (pass(92.05)) tone(1760, 'sine', 0.05, 0.003, 1.6, 0.98);

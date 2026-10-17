@@ -175,28 +175,33 @@ export function createRain(count = 2400) {
   const m = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, fog: true,
     blending: THREE.CustomBlending, blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneMinusSrcAlphaFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
-    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uAmt: { value: 0 }, uCenter: { value: V3() }, uBox: { value: V3(36, 22, 36) }, uWindV: { value: new THREE.Vector2(1.5, 0.6) }, uCol: { value: new THREE.Color(0.75, 0.8, 0.88) } }]),
-    vertexShader: `attribute vec4 aRand; uniform float uTime, uAmt; uniform vec3 uCenter, uBox; uniform vec2 uWindV; varying float vA; varying float vX;
+    // (uCamVel: how fast the eye itself is going, m/s; with uExpo, the time a drop is exposed for, a drop the eye flies
+    // past fast is drawn out into a long streak along the way it goes by)
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uAmt: { value: 0 }, uCenter: { value: V3() }, uBox: { value: V3(36, 22, 36) }, uWindV: { value: new THREE.Vector2(1.5, 0.6) }, uCol: { value: new THREE.Color(0.75, 0.8, 0.88) }, uCamVel: { value: V3() }, uExpo: { value: 0 }, uTag: { value: 0 } }]),
+    vertexShader: `attribute vec4 aRand; uniform float uTime, uAmt, uExpo; uniform vec3 uCenter, uBox, uCamVel; uniform vec2 uWindV; varying float vA; varying float vX;
 #include <fog_pars_vertex>
 void main(){
   vec3 vel = vec3(uWindV.x, -9.5 - aRand.w * 3., uWindV.y);
   vec3 q = aRand.xyz * uBox + vel * uTime;
   q = mod(q - uCenter + uBox * .5, uBox) - uBox * .5;
   vec3 c = uCenter + q;
-  vec3 dir = normalize(vel);
+  vec3 rel = vel - uCamVel;
+  vec3 dir = normalize(rel);
   vec3 toCam = normalize(cameraPosition - c);
   vec3 side = normalize(cross(dir, toCam));
-  vec3 p = c + side * position.x * .014 + dir * position.y * (.5 + aRand.w * .4);
+  vec3 p = c + side * position.x * .014 + dir * position.y * ((.5 + aRand.w * .4) + length(rel) * uExpo);
   vX = position.x;
   vA = uAmt * (1. - smoothstep(.25, .5, length(q / uBox))) * step(aRand.w, uAmt * 1.2);
   vec4 mvPosition = viewMatrix * vec4(p, 1.);
   gl_Position = projectionMatrix * mvPosition;
   #include <fog_vertex>
 }`,
-    fragmentShader: `uniform vec3 uCol; varying float vA; varying float vX;
+    fragmentShader: `uniform vec3 uCol; uniform float uTag; varying float vA; varying float vX;
 #include <fog_pars_fragment>
-void main(){ gl_FragColor = vec4(uCol, vA * .32 * (1. - abs(vX) * 1.6));
+void main(){ float c = vA * .32 * (1. - abs(vX) * 1.6); gl_FragColor = vec4(uCol, c);
 #include <fog_fragment>
+  // (marked as breaking the frame, in the cinema bars: its light added, the mark in the alpha)
+  if (uTag > .5) gl_FragColor = vec4(uCol * c * 1.4, 3. + 2. * c);
 }`,
   });
   m.uniforms.uTime = U.uTime;
@@ -204,7 +209,15 @@ void main(){ gl_FragColor = vec4(uCol, vA * .32 * (1. - abs(vX) * 1.6));
   mesh.frustumCulled = false;
   mesh.renderOrder = 12;
   mesh.name = 'rain';
-  return { mesh, uniforms: m.uniforms };
+  // (breaking the frame: added light, the alpha keeping the largest mark; the blending is state, not the program)
+  const setTag = on => {
+    if (!!m.uniforms.uTag.value === on) return;
+    m.uniforms.uTag.value = on ? 1 : 0;
+    m.blendSrc = on ? THREE.OneFactor : THREE.SrcAlphaFactor; m.blendDst = on ? THREE.OneFactor : THREE.OneMinusSrcAlphaFactor;
+    m.blendEquationAlpha = on ? THREE.MaxEquation : THREE.AddEquation;
+    m.blendSrcAlpha = on ? THREE.OneFactor : THREE.ZeroFactor; m.blendDstAlpha = on ? THREE.OneFactor : THREE.OneMinusSrcAlphaFactor;
+  };
+  return { mesh, uniforms: m.uniforms, setTag };
 }
 
 // ------------------------------------------------------------------ a deck of cloud puffs that follows the camera in x/z

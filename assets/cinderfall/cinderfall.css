@@ -70,6 +70,8 @@
 
 /* ------------------------------------------------------------ hud */
 .hud { z-index: 13; }
+/* (the silence over the sea of clouds: the page's own furniture draws back from the picture) */
+.hud, .nav { opacity: calc(1 - var(--cf-quiet, 0) * 0.88); }
 .hud-actions { display: flex; gap: 22px; align-items: center; }
 .hud button { font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; padding: 6px 0; }
 #watch { border: 1px solid currentColor; border-radius: 99px; padding: 6px 14px; }
@@ -77,7 +79,8 @@
 .meter { position: absolute; left: 0; bottom: 0; height: 2px; width: 100% !important; transform-origin: 0 50%; transform: scaleX(0); background: #a3261b; z-index: 13; }
 
 @media (max-width: 700px) {
-  .hud .hud-actions { display: flex; }
+  /* (the older stylesheet hides the HUD's last span on phones; this one is the Watch and Skip buttons) */
+  .hud span.hud-actions { display: flex; }
   #chapter { max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .cf-cap { left: 6vw; right: 6vw; bottom: 17vh; max-width: none; }
   .cf-cap.right { right: 6vw; left: 6vw; }
