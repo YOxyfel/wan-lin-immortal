@@ -135,7 +135,8 @@ outlines from Noto Serif CJK, SIL Open Font License). Debug: `?debug=1` pauses t
 renders any story position; `?q=low|high` forces quality; `?motion=off` shows the static story; `?res=fixed` turns off
 the resolution governor; `?warm=0` skips the rehearsal during the opening (every look of the story drawn once, unseen,
 so nothing is compiled or uploaded mid-story) and `?noforest` the forest build; `?prepstats` times each rehearsed
-position on its own and `?trace` records every frame of the opening (both read from `window.__cf.prep`).
+position on its own, `?trace` records every frame of the opening (both read from `window.__cf.prep`) and `?cold` makes
+every shader new, as on a first visit.
 
 The earlier prologue scripts (`assets/prologue*.js`, `village-scene.js`) are no longer loaded by `index.html`.
 A copy of the previous homepage is in `../website-before-cinderfall/`. See `cinderfall-review.md` for verification notes.

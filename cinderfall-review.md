@@ -290,3 +290,40 @@ the scene, 14 to 18 point lights here). That is the lag of a first read, whereve
   not, for that position's light: 593 programs before, against the ~370 a read used.
 - Checked headless (low quality): 13 point lights at every position from the opening to the strike, one light count in
   every program, 256 programs (252 distinct) for the whole story against ~370 before.
+
+### Round 5, third pass: the opening is the loading screen (17 October 2026)
+
+Measured in the browser pane on the same desktop (RTX 4080 Super, Chromium on Windows, a 144 Hz display), with each
+step timed (`?trace`, `?prepstats`, `window.__cf.prep`; `?cold` makes every shader slightly different, so that no
+cache in the browser or the driver knows any of them, as on a first visit).
+
+- The opening plays while the story is prepared (`ritual.js`, `boot.js`). While the page loads, the ink dot breathes
+  where the first drop will land. The drop falls and blooms while the valley's shaders compile in the browser's own
+  threads. Then 玄 is written stroke by stroke at a brush's pace (slower into each turn and pressed there a moment),
+  then the title, the stamp pressed, and the line under it. Each beat waits for its share of the preparation, and the
+  preparation waits while a beat plays, so all of the freezing work (the forest's build, the rehearsal's first draws)
+  falls in the still moments between beats, where it cannot be seen. When the work is ahead, the brush quickens. The
+  line under the title reads PREPARING THE STORY over a line of progress until the hint takes its place. **Replay**
+  plays the opening again, a little quicker. The bloom and the drops are placed and sized by each sign's own box, so
+  the two agree on any screen. On phones the sign is a little smaller, inside its bloom.
+- Found on the way: the shaders compiled ahead were compiled for the canvas, but the scene is drawn into the post
+  pipeline's target, for which three uses no tone mapping and linear output, so they are different programs. All 133
+  compiled ahead went unused, and the 161 the story draws were compiled during the rehearsal, each waited for on the
+  page's thread (20 of the rehearsal's 23 s). They are now compiled for that target (`engine.js` `onTarget`): 165
+  programs in all, 29 of them (shadow-pass variants, two late materials) made during the rehearsal.
+- Lights: the story's point lights (eight fires, the house, his face, the crystal, the blade, the crag, the camp fire,
+  the scroll) are no longer seen by three. Each frame the five (four on low quality) that light the view most, by
+  three's own falloff at a few points along it, are copied into five pooled lights, which fade as they swap and are
+  set at once at a cut (`engine.js` `syncPool`). Every lit program is compiled for five point lights instead of 13–16.
+- Shading: world materials use a lighter direct light (normalised Blinn-Phong with Schlick Fresnel instead of GGX);
+  the sky's image-based light is unchanged; the hero, the villagers, metals and the special materials keep three's own
+  (`materials.js` `liteAll`). Side by side with the previous version at nine positions, the look is the same.
+- A shader's first draw on Windows, measured alone after its link: 115–120 ms for the hero's skin (150 ms before, with
+  16 lights), about 70 ms for a lit world material, a few ms for the rest; links take 0.2–0.75 s in the browser's
+  threads. After one draw, the same code costs nothing again in that session.
+- Result, first visit (`?cold`): ready at 31 s (59 s before); revisits about 25 s. In the first-visit run every beat
+  of the opening played with no frame over 14 ms; in the other runs only two or three frames reached 21 ms, as the
+  world first appears under the hint. The pauses between beats were 0.3–3.6 s. After that, a pass through the whole
+  story created no program; the GPU's own time per frame at 1564×1272 was 3–10 ms.
+- Also: a hidden page holds back image decodes, so the sign's maps no longer wait on them (`ink.js`); a finished
+  stroke is shown by switching between two images rather than swapping one's source, which left it blank for a moment.
