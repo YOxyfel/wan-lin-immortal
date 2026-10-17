@@ -85,6 +85,9 @@ function monoKeys(keys) {
 }
 
 export async function createEngine(canvas) {
+  // (?cold, for measuring a first visit: every shader made slightly different, so neither the browser's cache of
+  // compiled programs nor the driver's knows any of them)
+  if (/[?&]cold\b/.test(location.search)) THREE.ShaderChunk.common = THREE.ShaderChunk.common.replace('#define PI 3.141592653589793', `#define PI ${(3.14159265 + Math.random() * 1e-6).toFixed(10)}`);
   installFog();
   const quality = detectQuality();
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', stencil: false });
