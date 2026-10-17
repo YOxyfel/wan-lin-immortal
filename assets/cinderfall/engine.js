@@ -99,8 +99,14 @@ export async function createEngine(canvas) {
   scene.fog = new THREE.FogExp2(0xcdd6d4, 0.0015);
   const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.08, 3400);
 
+  // (where the build's time goes, for measuring: window.__cf.engine.marks)
+  const marks = [];
+  const mark = n => marks.push([n, Math.round(performance.now())]);
+  mark('start');
   const mats = createMaterials(renderer);
+  mark('materials');
   const world = buildWorld(mats, quality);
+  mark('world');
   scene.add(world.root);
   // blooming sakura through the village and along the road
   try { addValleySakura(world.root, quality, world); } catch (e) { console.warn('sakura unavailable', e); }
@@ -109,7 +115,9 @@ export async function createEngine(canvas) {
   // (its light in the scene itself: the valley is hidden from high up and in the forest, and a light coming and going
   // with it would recompile every lit material)
   scene.add(sect.light);
+  mark('sakura+sect');
   const sky = createSky(renderer, quality);
+  mark('sky');
   scene.add(sky.mesh);
   // the fight above the clouds and what comes of it: the charge gathering in the storm's base over the valley, the
   // great bolt down from it onto the western slope a stone's throw from Cinderfall, before him where he stands at the
@@ -129,6 +137,7 @@ export async function createEngine(canvas) {
   const mountains = createRanges(quality, sky.uniforms);
   scene.add(mountains.group);
   const mist = createMist();
+  mark('ranges+mist');
   scene.add(mist.group);
   const A = world.anchors, H = A.houses, UH = H.uncle;
 
@@ -251,6 +260,7 @@ export async function createEngine(canvas) {
     }
   }
   const firePoints = [...craterFire, ...roofFire, ...(UH.interiorFire || []).map(f => ({ ...f, delay: 0.05 }))];
+  mark('lights');
   const fire = createFire(firePoints, quality.low ? 760 : 1180);
   scene.add(fire.mesh);
   // (the uncle's house smokes from the back of its roof, so the light rises clear of the column, in front of it)
@@ -500,7 +510,9 @@ export async function createEngine(canvas) {
   }
 
   // ---------------------------------------------------------------- post
+  mark('effects');
   const post = createPost(renderer, scene, camera, mats, quality, sun);
+  mark('post');
   // Shader programs are compiled for where they are drawn: the scene is drawn into the post pipeline's target, and
   // three gives a program drawn into a render target no tone mapping and linear output, so a program compiled for
   // the canvas is another program, one nothing draws. (Measured on Windows: compiled against the canvas, all 133
@@ -2046,14 +2058,17 @@ export async function createEngine(canvas) {
     strikeAt(which, 1, violet, U.uTime.value - age);
   }
 
+  mark('cast');
   injectFog(scene);
   update(0, 0, 0.016);
+  mark('first update');
   // the valley's shader programs: their compiling is started here and goes on in the browser's own threads while the
   // page draws (the first drop falls meanwhile); compiled() waits for them afterwards. (Asking whether each is done is
   // a round trip to the GPU process, so it is not asked while the drop falls.) The first draw of every look the story
   // takes is the rehearsal's (warmUp).
   poolLights(); liteAll(scene);
   try { onTarget(() => renderer.compile(scene, camera)); } catch (e) { console.warn('precompile', e); }
+  mark('compile started');
   const compiled = () => onTarget(() => renderer.compileAsync(scene, camera)).catch(e => console.warn('precompile', e));
 
   // ---------------------------------------------------------------- the rehearsal
@@ -2138,5 +2153,5 @@ export async function createEngine(canvas) {
     fresh();
   }
 
-  return { renderer, scene, camera, update, render, resize, metrics, quality, world, post, sky, prepareForest, warmUp, forceStrike, debug, compiled, get forest() { return B; } };
+  return { renderer, scene, camera, update, render, resize, metrics, quality, world, post, sky, prepareForest, warmUp, forceStrike, debug, compiled, marks, get forest() { return B; } };
 }
