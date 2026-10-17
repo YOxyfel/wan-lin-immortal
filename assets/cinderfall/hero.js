@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { proportions, eulerQ } from './hero-rig.js';
 import { styleFor, HERO_HEAD } from './hero-body.js';
 import { wuhenCards } from './hero-hair.js';
-import { idlePose, gaitPose, crouchPose, kneelPose, sitPose, pushupPose, drawPose, fallPose, liePose, getUpKey, waveArm, reachArm, holdArms, holdUpArm, carveArms, palmArm } from './hero-pose.js';
+import { idlePose, gaitPose, crouchPose, kneelPose, sitPose, pushupPose, drawPose, fallPose, liePose, getUpKey, waveArm, reachArm, reachArmL, holdArms, holdUpArm, carveArms, palmArm, measureArm } from './hero-pose.js';
 import { buildCharacter } from './hero-char.js';
 import { clamp, lerp, smooth, DEG } from './hero-util.js';
 
@@ -24,8 +24,8 @@ export function createHero({ age = 0 } = {}) {
   });
   const { group, rig, K, U, Pc, Pt, Pi, st, contactMin, setAge } = C;
   // ---------------------------------------------------------------- update
-  const defaults = { speed: 0, run: 0, wave: 0, crouch: 0, kneel: 0, reach: 0, grief: 0, draw: 0, release: 0, fall: 0, lie: 0, getUp: 0, sit: 0, pushup: 0, hold: 0, holdWidth: 0, lookAt: null, lookW: 1, wind: null, gripL: null, gripR: null, raise: 0, raiseTarget: null, lookUp: 0, carve: 0, carveTarget: null, braceTarget: null, palm: 0, palmTarget: null, lift: 0 };
-  const _look = V(), _hp = V(), _lq = new THREE.Quaternion(), _cvK = V(), _cvB = V(), _cvP = V();
+  const defaults = { speed: 0, run: 0, wave: 0, crouch: 0, kneel: 0, reach: 0, grief: 0, draw: 0, release: 0, fall: 0, lie: 0, getUp: 0, sit: 0, pushup: 0, hold: 0, holdWidth: 0, lookAt: null, lookW: 1, wind: null, gripL: null, gripR: null, raise: 0, raiseTarget: null, lookUp: 0, carve: 0, carveTarget: null, carveMode: null, braceTarget: null, palm: 0, palmTarget: null, measure: 0, measureTarget: null, measureSlide: 0, reachL: 0, reachLTarget: null, lift: 0 };
+  const _look = V(), _hp = V(), _lq = new THREE.Quaternion(), _cvK = V(), _cvB = V(), _cvP = V(), _cvM = V();
   function computePose(dt, time, s) {
     const d = K.dims();
     const speed = Math.max(0, s.speed || 0), run = clamp(s.run || 0);
@@ -64,6 +64,12 @@ export function createHero({ age = 0 } = {}) {
       if (s.reachTarget) { T = group.worldToLocal(_look.copy(s.reachTarget)); }
       rig.copyPose(Pt, Pc); reachArm(K, Pt, c, T); rig.blendBones(Pc, Pt, ease(rc), K.armBones.R);
     }
+    // the left hand out to something (taking the basket by its handle)
+    const rl = clamp(s.reachL || 0);
+    if (rl > 0 && s.reachLTarget) {
+      group.updateWorldMatrix(true, false);
+      rig.copyPose(Pt, Pc); reachArmL(K, Pt, c, group.worldToLocal(_look.copy(s.reachLTarget))); rig.blendBones(Pc, Pt, ease(rl), K.armBones.L);
+    }
     // something held up before the eyes in the right fist (over any reach: the hand comes up out of it)
     const rz = clamp(s.raise || 0);
     if (rz > 0 && s.raiseTarget) {
@@ -74,9 +80,15 @@ export function createHero({ age = 0 } = {}) {
     const cv = clamp(s.carve || 0);
     if (cv > 0 && s.carveTarget) {
       group.updateWorldMatrix(true, false);
-      const bT = s.braceTarget ? group.worldToLocal(_cvB.copy(s.braceTarget)) : null;
-      rig.copyPose(Pt, Pc); carveArms(K, Pt, c, group.worldToLocal(_cvK.copy(s.carveTarget)), bT);
+      const bT = s.braceTarget && !(s.measure > 0) ? group.worldToLocal(_cvB.copy(s.braceTarget)) : null;
+      rig.copyPose(Pt, Pc); carveArms(K, Pt, c, group.worldToLocal(_cvK.copy(s.carveTarget)), bT, s.carveMode);
       rig.blendBones(Pc, Pt, ease(cv), bT ? [...K.armBones.R, ...K.armBones.L] : K.armBones.R);
+    }
+    // his height marked on the bark: the left palm on his crown, laid forward level to the bark
+    const ms = clamp(s.measure || 0);
+    if (ms > 0 && s.measureTarget) {
+      group.updateWorldMatrix(true, false);
+      rig.copyPose(Pt, Pc); measureArm(K, Pt, c, group.worldToLocal(_cvM.copy(s.measureTarget)), clamp(s.measureSlide || 0)); rig.blendBones(Pc, Pt, ease(ms), K.armBones.L);
     }
     // a palm laid flat on something (the cuts in the bark)
     const pm = clamp(s.palm || 0);

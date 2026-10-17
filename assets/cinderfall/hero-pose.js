@@ -22,6 +22,8 @@ export const GRIPS = {
   pinch: [0.45, 0.42, 0.62, 0.78, 0.88, 0.1],
   limp: [0.28, 0.32, 0.38, 0.44, 0.5, 0.2, 20],
   claw: [0.3, 0.45, 0.5, 0.55, 0.6, 0.8],
+  // the index finger out straight, the others curled, the thumb over them
+  point: [0.55, 0.0, 0.88, 0.94, 0.96, 0],
 };
 
 export class PoseKit {
@@ -453,6 +455,38 @@ export function reachArm(K, P, c, target) {
   return P;
 }
 
+// the left hand out to something before him (taking hold of a handle): reachArm's mirror
+export function reachArmL(K, P, c, target) {
+  const r = K.rig;
+  r.fk(P);
+  const yaw = yawOf(r.wq[0]);
+  const fwd = V(Math.sin(yaw), 0, Math.cos(yaw));
+  const fd = fwd.clone().multiplyScalar(0.9).add(V(0, -0.35, 0)).normalize();
+  const pd = V(0, -1, 0).addScaledVector(fwd, 0.2).add(V(-Math.cos(yaw) * 0.5, 0, Math.sin(yaw) * 0.5)).normalize();
+  K.e(P, 'clavicleL', 0, 10, 0);
+  K.arm(P, 'L', target, V(1, 0.1, -0.3), fd, pd, 0.5);
+  K.fingers(P, 'L', 'hook');
+  return P;
+}
+
+// pointing with the right hand: the arm out along a direction (group space), the index finger straight
+export function pointArm(K, P, c, dir) {
+  const r = K.rig;
+  r.fk(P);
+  const sh = r.wp[K.I.upperArmR];
+  const d = dir.clone().normalize();
+  const reach = (K.dims().lUA + K.dims().lFA) * 0.92;
+  const grip = sh.clone().addScaledVector(d, reach);
+  const side = V(0, 1, 0).cross(d);
+  if (side.lengthSq() < 1e-6) side.set(1, 0, 0);
+  side.normalize();
+  K.e(P, 'clavicleR', 0, -6, 12);
+  // (the palm turned in toward his middle)
+  K.arm(P, 'R', grip, V(-0.6, -0.8, 0.1), d, side, 0.5);
+  K.fingers(P, 'R', 'point');
+  return P;
+}
+
 // something small held up before the eyes in the right fist (a mushroom by its stem): the forearm rising, the wrist
 // straight, the fingers wrapped toward the body's midline and the thumb on top, so what is held stands upright above
 // the fist (the hand anchor's +Y, the thumb side, points up). target: the grip point in the group's frame.
@@ -474,15 +508,21 @@ export function holdUpArm(K, P, c, target) {
 // carving a notch in a trunk: the knife in the right fist, the blade out of its little-finger side and its edge to the
 // bark, drawn down; the left palm braced flat on the trunk beside the cuts. knife: the fist's grip point; brace: where
 // the left palm lies (group space; null leaves the left arm alone)
-export function carveArms(K, P, c, knife, brace) {
+export function carveArms(K, P, c, knife, brace, mode) {
   const r = K.rig;
   r.fk(P);
   const yaw = yawOf(r.wq[K.I.chest]);
   const fwd = V(Math.sin(yaw), 0, Math.cos(yaw)), left = V(Math.cos(yaw), 0, -Math.sin(yaw));
   // (knuckles toward the bark and a little down, the thumb on top, the palm turned in toward his middle: the blade
   // comes out of the bottom of the fist)
-  const fd = fwd.clone().multiplyScalar(0.82).addScaledVector(left, 0.18).add(V(0, -0.38, 0)).normalize();
-  const pd = V(0, 1, 0).cross(fd).normalize();
+  let fd = fwd.clone().multiplyScalar(0.82).addScaledVector(left, 0.18).add(V(0, -0.38, 0)).normalize();
+  let pd = V(0, 1, 0).cross(fd).normalize();
+  if (mode === 'across') {
+    // (scoring across the bark: the fist palm down, knuckles to the bark, the blade held out of the thumb side so it
+    // points back across him, and drawn to his right, the handle leading)
+    fd = fwd.clone().addScaledVector(left, 0.12).add(V(0, -0.22, 0)).normalize();
+    pd = V(0, -1, 0).addScaledVector(fd, fd.y).normalize();
+  }
   K.e(P, 'clavicleR', 0, -8, 4);
   K.arm(P, 'R', knife, V(-0.85, -0.45, -0.25), fd, pd, 0.5);
   K.fingers(P, 'R', 'rod');
@@ -492,6 +532,22 @@ export function carveArms(K, P, c, knife, brace) {
     K.arm(P, 'L', brace, V(0.85, -0.45, -0.25), fdL, fwd.clone(), 0.5);
     K.fingers(P, 'L', 'flat');
   }
+  return P;
+}
+
+// his height marked: the left palm flat on his crown, then laid forward, level, until the fingertips meet the bark
+// (fingers forward, the palm down). target: the palm's centre; slide 0 on the crown .. 1 at the bark
+export function measureArm(K, P, c, target, slide = 0) {
+  const r = K.rig;
+  r.fk(P);
+  const yaw = yawOf(r.wq[K.I.chest]);
+  const fwd = V(Math.sin(yaw), 0, Math.cos(yaw)), left = V(Math.cos(yaw), 0, -Math.sin(yaw));
+  const fd = fwd.clone().addScaledVector(left, lerp(-0.45, -0.2, slide)).normalize();
+  const pd = V(0, -1, 0);
+  K.e(P, 'clavicleL', 0, lerp(10, 5, slide), lerp(-12, -6, slide));
+  // (the elbow out to his left and up while the hand is on his head; lower and farther back as it reaches out)
+  K.arm(P, 'L', target, V(1, lerp(0.45, -0.25, slide), lerp(-0.1, -0.4, slide)), fd, pd, 0.5);
+  K.fingers(P, 'L', 'flat');
   return P;
 }
 

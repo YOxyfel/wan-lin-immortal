@@ -850,6 +850,8 @@ export async function createEngine(canvas) {
   }
   // a ghost's pose from what he was doing that year
   function ghostState(d) {
+    // (a full pose given by the place: years.js)
+    if (d.state) return { wind: windV, ...d.state };
     const s = { wind: windV };
     if (d.kind === 'huddle') { s.sit = 1; s.grief = 0.75; }
     else if (d.kind === 'build') { s.crouch = 0.7; s.reach = 1; s.reachTarget = d.reachTarget || d.P.clone().addScaledVector(d.heading, 0.6).add(V3(0, 0.9, 0)); }
@@ -975,6 +977,7 @@ export async function createEngine(canvas) {
   let FLIGHT = null;
   const _fl1 = V3(), _fl2 = V3(), _chB = V3(), _hitGold = new THREE.Color();
   const _rainP = V3(), _rainV = V3();
+  let lastShot = "";
   let STAGE = null;
   function flightPath() {
     if (FLIGHT) return FLIGHT;
@@ -1492,7 +1495,8 @@ export async function createEngine(canvas) {
       reach = w.reach || 0;
       speed = w.speed != null ? w.speed : scrub ? Math.min(7, B.wuhen(u + 0.05).P.distanceTo(B.wuhen(u - 0.05).P) / 0.1 * 0.45) : Math.min(7, P.distanceTo(wPrev || P) / dt);
       Object.assign(hs, { fall: w.fall || 0, getUp: w.getUp || 0, hold: w.hold || 0, holdWidth: w.holdWidth || 0, release: w.release || 0, gripL: w.gripL || null, gripR: w.gripR || null, sit: w.sit || 0, grief: w.grief || 0, crouch: w.crouch || 0, reachTarget: w.reachTarget || null,
-        carve: w.carve || 0, carveTarget: w.carveTarget || null, braceTarget: w.braceTarget || null, palm: w.palm || 0, palmTarget: w.palmTarget || null, lookUp: w.lookUp || 0 });
+        carve: w.carve || 0, carveTarget: w.carveTarget || null, carveMode: w.carveMode || null, braceTarget: w.braceTarget || null, palm: w.palm || 0, palmTarget: w.palmTarget || null, lookUp: w.lookUp || 0,
+        measure: w.measure || 0, measureTarget: w.measureTarget || null, measureSlide: w.measureSlide || 0, pushup: w.pushup || 0, phase: w.phase ?? null });
       if (w.lookAt) { hs.lookAt = w.lookAt; hs.lookW = w.lookW ?? 1; }
       // (a wind of its own where something happens to him: the gust as the pillar of light strikes)
       if (w.wind) hs.wind = windV.clone().add(w.wind);
@@ -1688,7 +1692,7 @@ export async function createEngine(canvas) {
       look.lerp(lk, rw);
     }
     const gw = 0, fw = 0;
-    if (inB) B.shots(u, pos, look, { P, heading, right, portrait, time });
+    const bShot = inB ? B.shots(u, pos, look, { P, heading, right, portrait, time }) : null;
     // held moments: while the story waits the camera keeps drifting in, slowly
     const pz = pauseAt(u);
     if (pz.i >= 0 && pz.w > 0) { const d = pos.distanceTo(look); pos.lerp(look, Math.min(d * PUSH[pz.i], 1.4) / Math.max(d, 1e-3) * pz.w); }
@@ -1700,7 +1704,9 @@ export async function createEngine(canvas) {
     camera.lookAt(look);
     if (stormRoll && !debug.cam) camera.rotateZ(stormRoll);
     // (on a phone the rise keeps a little of its width while it is still in the room, so the light fits the frame)
-    camera.fov = lerp(cam.fov(u), stormFov, stw) + portrait * 12 * (1 - zoomK) * (1 - rw * (1 - 0.7 * band(92.0, 92.6, 94.8, 95.6, u))) * (1 - gw) + portrait * 14 * fcw;
+    // (the forest's shots may keep their own focal lengths)
+    const fov0 = bShot && bShot.fovW > 0 ? lerp(cam.fov(u), bShot.fov, bShot.fovW) : cam.fov(u);
+    camera.fov = lerp(fov0, stormFov, stw) + portrait * 12 * (1 - zoomK) * (1 - rw * (1 - 0.7 * band(92.0, 92.6, 94.8, 95.6, u))) * (1 - gw) + portrait * 14 * fcw;
     // (at the stall the lens narrows on the weapons)
     if (!inB) camera.fov = lerp(camera.fov, 33 + portrait * 10, band(25.45, 26.25, 27.3, 28.0, u) * 0.85);
     if (debug.fov) camera.fov = debug.fov;
@@ -1899,9 +1905,12 @@ export async function createEngine(canvas) {
       metrics.bars = bk * bh;
     }
     {
-      // (the eye's own motion this frame, for the streaks; a jump of the eye is a cut, not a flight)
+      // (the eye's own motion this frame, for the streaks; a jump of the eye is a cut, not a flight, and so is a change
+      // of shot in the forest)
       const d = _rainV.copy(camera.position).sub(_rainP), dl = d.length();
-      if (dt > 1e-4 && dl < 60) rain.uniforms.uCamVel.value.copy(d).divideScalar(dt), rain.uniforms.uExpo.value = dt;
+      const shotCut = !!(bShot && bShot.shot && bShot.shot !== lastShot);
+      lastShot = bShot ? bShot.shot : '';
+      if (dt > 1e-4 && dl < 60 && !shotCut) rain.uniforms.uCamVel.value.copy(d).divideScalar(dt), rain.uniforms.uExpo.value = dt;
       else rain.uniforms.uCamVel.value.set(0, 0, 0), rain.uniforms.uExpo.value = 0;
       _rainP.copy(camera.position);
     }
@@ -2076,7 +2085,7 @@ export async function createEngine(canvas) {
       if (lead > 0.01) { const gy = heightAt(soulP.x, soulP.z); WAKE.value.set(soulP.x, gy, soulP.z, lead * clamp(1 - (soulP.y - gy - 5) / 9)); } else WAKE.value.w = 0;
       flies.set({ time, amt: !inB ? band(104.9, 105.4, 106.6, 107.0, u) : 0, center: V3(-64, heightAt(-64, 35) + 1.6, 35), radius: 30, flat: 0.07, drift: 1, px: pxS });
     }
-    if (B) B.update(u, time, camera, { inB, wuhenP: P, sample, hero: wuhen, pxScale: pxS, lamp: inB ? crystalLight : null });
+    if (B) B.update(u, time, camera, { inB, wuhenP: P, sample, hero: wuhen, ghosts, pxScale: pxS, lamp: inB ? crystalLight : null });
 
     // ------------------------------------------------------------ environment light from the sky (refreshed as the sky changes)
     if ((Math.abs(time - envT) > 0.25 && (Math.abs(u - envU) > 0.04 || Math.abs(time - envT) > 2.5)) || Math.abs(u - envU) > 1.0) {
@@ -2285,8 +2294,8 @@ export async function createEngine(canvas) {
     0, 1.5, 1.95, 4, 5.5, 7, 10, 14, 18, 22, 26.5, 30, 34, 38, 42, 44, 46, 46.8, 47.5, 48.15, 48.5, 50, 51.4, 51.75, 53,
     53.75, 54.02, 54.1, 54.45, 54.6, 55.3, 56, 57.5, 58.8, 60.5, 62, 62.65, 64, 65.5, 66.7, 68.4, 70.5, 72.7, 75.1,
     77, 78.6, 79.5, 81, 83, 84.5, 86, 88, 90, 91.5, 92.1, 92.5, 93.5, 95, 96.5, 98, 100, 101.3, 102.4, 103.6, 105,
-    106.5, 107.5, 108.05, 108.2, 108.3, 108.4, 109, 110, 110.7, 111.5, 112.5, 112.6, 114, 115.5, 117, 117.1, 118.5,
-    118.7, 120, 120.3, 121.5, 121.9, 123, 123.35, 124.5, 126, 128, 129.1, 129.6, 130.5, 131.1, 132.5, 134, 136,
+    106.5, 107.5, 108.05, 108.2, 108.3, 108.4, 109, 110, 110.7, 111.5, 112.5, 112.6, 114, 115.5, 116.4, 117, 117.1, 118.5,
+    118.7, 120, 120.3, 121.5, 121.9, 123, 123.35, 124.5, 126, 128, 129.1, 129.6, 129.8, 130.5, 131.1, 132.5, 134, 136,
     137.5, 139.3, 139.45, 139.7, 140.2, 141.2, 141.8, 143, 144.5,
   ];
   const SWEEP_US = new Set([4, 48.5, 54.6, 64, 79.5, 98, 105, 112.5, 131.1, 139.45]);

@@ -21,7 +21,11 @@ const SLOW = 0.2;
 // bursting up through the crown and on to the eye (47.535), up the well (47.95), slowing under the screen where the
 // fight's shadows play (48.08), bursting through the sheets and out over the sea (48.2), the hang in the sun (48.48);
 // and the dive back down through the storm.
-export const STRETCHES = [[47.42, 0.05, 0.3], [47.47, 0.065, 0.12], [47.535, 0.415, 0.3], [47.95, 0.13, 0.3], [48.08, 0.12, 0.11], [48.2, 0.28, 0.3], [48.48, 0.56, 0.3], [52.7, 1.32, 0.42]];
+export const STRETCHES = [[47.42, 0.05, 0.3], [47.47, 0.065, 0.12], [47.535, 0.415, 0.3], [47.95, 0.13, 0.3], [48.08, 0.12, 0.11], [48.2, 0.28, 0.3], [48.48, 0.56, 0.3], [52.7, 1.32, 0.42],
+  // the years: the first at half pace, each after quicker, the sixth slower than the first
+  [112.3, 4.5, 0.5], [116.8, 1.45, 0.75], [118.25, 1.2, 0.85], [119.45, 0.95, 0.95], [121.15, 3.35, 0.45],
+  // the walk out: a stride to a little under a second of Watch (forest.js STRIDE_DU)
+  [125.9, 4.55, 0.74]];
 // Slow motion: the story's own clock. A slow camera alone is not slow motion while the fire, the rain, the hair and
 // the flashes run on at full speed; here everything that moves by the clock slows too (the grain on the lens does
 // not). [in, slowed, holding until, back, rate]
@@ -113,27 +117,38 @@ export const handDrop = track([[91.4, 0], [92.1, 1]]);
 export const turnYaw = track([[47.2, 0], [49.2, 1.98], [56.4, 1.98], [59.4, Math.PI]]);
 
 // ------------------------------------------------------------------ the six winters at the tally tree
-// He came to the forest at the start of a winter. Every winter after, one cut in the pale bark: the knife drawn down
-// it (these are the moments the cut is made). Between the cuts the year turns round the tree (snow, spring rain and
-// blossom, summer, the red of autumn, snow again) while the camp grows beyond it; after the sixth winter, the sixth
-// autumn, when he lays his hand on the six cuts and turns away.
-export const CUTS = [115.15, 116.75, 118.35, 119.95, 121.55, 123.0];
-const NEXT = k => (k < CUTS.length - 1 ? CUTS[k + 1] : 124.6);
-// a season track over the montage: the first winter, then for each year keys relative to its cut (c) and the next (n)
+// He came to the forest at the start of a winter. Each year ends at the pale tree in the first snow, where he marks
+// his height on the bark (YEARS: [the year begins, the mark, the year ends]). The first year is one slow pan across
+// the camp from the boulder to the tree, the seasons one by one (by the fire through the winter, gathering in the
+// spring, shaping a bow in the summer, his first arrow in the autumn); each year after is a moment of it and the mark,
+// faster and faster; in the sixth he walks across the camp to the tree while the whole year turns round him, and
+// makes the sixth mark in the first frost of the sixth autumn, and lays his palm on the six before he turns away.
+export const YEARS = [[112.3, 116.45, 116.8], [116.8, 118.05, 118.25], [118.25, 119.28, 119.45], [119.45, 120.28, 120.4], [120.4, 121.05, 121.15], [121.15, 123.0, 124.6]];
+export const CUTS = YEARS.map(y => y[1]);
+// which year a story position is in, and how far through its sweep (0 at its start, 1 at the mark)
+export function yearAt(u) {
+  let k = 0;
+  while (k < 5 && u >= YEARS[k][2]) k++;
+  const [s, c] = YEARS[k];
+  return { k, f: Math.max(0, Math.min(1, (u - s) / (c - s))) };
+}
+// a track over the years: each(start, mark, end, k, at) gives keys, at(x) the position x of the way to the mark
 const yearKeys = (first, each, last) => {
   const out = [...first];
-  CUTS.forEach((c, k) => { for (const [f, v] of each(c, NEXT(k), k)) out.push([f, v]); });
+  YEARS.forEach(([s, c, e], k) => { for (const [f, v] of each(s, c, e, k, x => s + x * (c - s))) out.push([f, v]); });
   return out.concat(last).sort((a, b) => a[0] - b[0]);
 };
-const SEASONS = yearKeys([], (c, n, k) => k < 5
-  ? [[c - 0.45, 'winter'], [c + 0.38, 'winter'], [c + 0.62, 'rain'], [c + 0.82, 'summer'], [c + 1.0, 'summer'], [n - 0.62, 'autumn'], [n - 0.5, 'autumn']]
-  : [[c - 0.45, 'winter'], [c + 0.3, 'winter'], [c + 0.5, 'rain'], [c + 0.68, 'summer'], [c + 0.85, 'autumn'], [n - 0.05, 'autumn']], []);
+// (the first year's seasons are its own: the long winter by the fire, then one season to each thing he does)
+const SEASONS = yearKeys([], (s, c, e, k, at) => k === 0
+  ? [[113.55, 'winter'], [113.8, 'rain'], [114.25, 'summer'], [114.95, 'summer'], [115.2, 'autumn'], [115.85, 'autumn'], [116.2, 'winter'], [e, 'winter']]
+  : k < 5 ? [[s, 'winter'], [at(0.14), 'winter'], [at(0.24), 'rain'], [at(0.4), 'summer'], [at(0.6), 'summer'], [at(0.7), 'autumn'], [at(0.84), 'autumn'], [c - 0.02, 'winter'], [e, 'winter']]
+  : [[s, 'winter'], [at(0.12), 'winter'], [at(0.22), 'rain'], [at(0.35), 'summer'], [at(0.55), 'summer'], [at(0.68), 'autumn'], [e, 'autumn']], []);
 
 // ------------------------------------------------------------------ light and air: named palettes, keyed along u
 // [u, palette] — the night holds from the turn until the flight, then the forest's seasons run, accelerating
 const KEYS = [
   [0, 'day'], [46.6, 'day'], [47.35, 'gather'], [48.3, 'gather'], [48.95, 'aloft'], [53.03, 'aloft'], [53.3, 'tempest'], [55.6, 'tempest'], [57.6, 'night'], [104.3, 'night'], [105.15, 'soulnight'], [107.7, 'soulnight'],
-  [108.1, 'arrive'], [112.45, 'arrive'], [113.2, 'winter'], ...SEASONS, [124.6, 'trail'], [128.9, 'trail'], [129.9, 'oldwood'], [131.4, 'oldwood'], [132.6, 'dell'], [139.05, 'dell'], [139.38, 'pillar'], [140.25, 'pillar'], [140.7, 'gold'], [145, 'gold'],
+  [108.1, 'arrive'], [112.45, 'arrive'], [112.95, 'winter'], ...SEASONS, [124.6, 'trail'], [128.9, 'trail'], [129.9, 'oldwood'], [131.4, 'oldwood'], [132.6, 'dell'], [139.05, 'dell'], [139.38, 'pillar'], [140.25, 'pillar'], [140.7, 'gold'], [145, 'gold'],
 ];
 const KEYS_N = Object.keys(P.day);
 export const env = {};
@@ -153,9 +168,11 @@ Object.assign(env, {
   pollen: T([[0, 0.9], [46, 0.9], [49, 0], [124.4, 0], [125.4, 0.8], [131, 0.8], [131.4, 0]]),
   embers: T([[0, 0], [56, 0], [60, 1], [104, 1], [106, 0.3], [107.9, 0]]),
   ash: T([[0, 0], [54, 0], [60, 0.7], [70, 1], [94, 1], [96.4, 0.55], [103.4, 0.45], [104.6, 0.1], [106, 0.05], [107, 0]]),
-  snow: T([[0, 0], [107.95, 0], [108.3, 0.7], [110.8, 0.7], [112.8, 0.6], [114.2, 0.5], ...yearKeys([], (c, n, k) => [[c - 0.42, 0.75], [c + 0.25, 0.75], [c + 0.42, 0], [n - 0.55, 0]], []).filter(([f]) => f < 123.5), [123.42, 0], [145, 0]]),
-  rain: T([[0, 0], [49.6, 0], [51, 0.5], [55.4, 0.6], [57.6, 0], ...yearKeys([], (c, n, k) => [[c + 0.48, 0], [c + 0.6, 0.85], [c + 0.74, 0]], []), [124, 0], [145, 0]]),
-  leaves: T([[0, 0], [46.0, 0], [47.0, 1], [55, 1], [58, 0.3], [62, 0], ...yearKeys([], (c, n, k) => k < 5 ? [[n - 0.72, 0], [n - 0.6, 0.55], [n - 0.46, 0.55], [n - 0.4, 0]] : [[c + 0.8, 0], [c + 0.92, 0.5]], []), [124.4, 0.5], [125, 0.35], [131, 0.35], [131.3, 0]]),
+  // (the years: snow through each winter and again in the first snow at the year's end; spring rain; the leaves in the
+  // autumn; the sixth year ending in frost, not snow)
+  snow: T([[0, 0], [107.95, 0], [108.3, 0.7], [110.8, 0.7], [112.3, 0.6], ...yearKeys([], (s, c, e, k, at) => k === 0 ? [[113.3, 0.55], [113.55, 0], [115.88, 0], [116.05, 0.7], [e, 0.65]] : k < 5 ? [[at(0.1), 0.55], [at(0.17), 0], [at(0.87), 0], [at(0.92), 0.7], [e, 0.65]] : [[s, 0.55], [at(0.1), 0.45], [at(0.17), 0]], []), [145, 0]]),
+  rain: T([[0, 0], [49.6, 0], [51, 0.5], [55.4, 0.6], [57.6, 0], ...yearKeys([], (s, c, e, k, at) => k === 0 ? [[113.7, 0], [113.82, 0.8], [114.0, 0]] : [[at(0.17), 0], [at(0.23), 0.8], [at(0.31), 0]], []), [124, 0], [145, 0]]),
+  leaves: T([[0, 0], [46.0, 0], [47.0, 1], [55, 1], [58, 0.3], [62, 0], ...yearKeys([], (s, c, e, k, at) => k === 0 ? [[115.0, 0], [115.12, 0.55], [115.85, 0.55], [115.98, 0]] : k < 5 ? [[at(0.66), 0], [at(0.72), 0.55], [at(0.86), 0.55], [at(0.9), 0]] : [[at(0.64), 0], [at(0.72), 0.5]], []), [124.4, 0.5], [125, 0.35], [131, 0.35], [131.3, 0]]),
   birds: T([[0, 1], [47, 1], [52, 1], [53, 0], [124.6, 0], [125.4, 0.6], [131, 0.6], [131.2, 0]]),
   birdFlee: T([[0, 0], [46.35, 0], [47.6, 0.35], [50.5, 1], [124, 1], [124.1, 0]]),
   // the morning sun: from behind his left shoulder in the village and along the old road (so the valley on his left
@@ -175,10 +192,10 @@ Object.assign(env, {
   // blood-red strands of qi: [high over the village, along the road home, near the lens]
   strands: T([[0, [0, 0, 0]], [61.6, [0, 0, 0]], [62.6, [1, 0, 0]], [65.4, [1, 0, 0]], [66.4, [1, 1, 1]], [77, [1, 1, 1]], [78.6, [1, 0.4, 0]], [93, [1, 0.4, 0]], [94.2, [1, 0.4, 0.7]], [97.4, [1, 0.4, 0.7]], [98.6, [0, 0, 0]], [145, [0, 0, 0]]]),
   // seasons of the Forbidden Forest (0..1 each)
-  snowCover: T([[0, 0], [107.6, 0], [108.2, 0.62], [112.2, 0.66], [112.6, 1], [114.6, 1], ...yearKeys([], (c, n, k) => k < 5 ? [[c + 0.36, 1], [c + 0.56, 0.1], [c + 0.66, 0], [n - 0.5, 0], [n - 0.4, 0.95]] : [[c + 0.3, 1], [c + 0.48, 0.1], [c + 0.56, 0]], []), [145, 0]]),
-  wet: T([[0, 0], ...yearKeys([], (c, n, k) => [[c + 0.42, 0], [c + 0.6, 1], [c + 0.82, 0.3], [c + 0.95, 0]], []), [145, 0]]),
-  autumn: T([[0, 0], ...yearKeys([], (c, n, k) => k < 5 ? [[c + 0.95, 0], [n - 0.62, 1], [n - 0.42, 1], [n - 0.3, 0.3], [n + 0.1, 0]] : [[c + 0.7, 0], [c + 0.86, 1]], []), [145, 1]]),
-  blossom: T([[0, 0], ...yearKeys([], (c, n, k) => [[c + 0.46, 0], [c + 0.62, 1], [c + 0.8, 0.5], [c + 0.92, 0]], []), [145, 0]]),
+  snowCover: T([[0, 0], [107.6, 0], [108.2, 0.62], [112.2, 0.66], [112.6, 1], ...yearKeys([], (s, c, e, k, at) => k === 0 ? [[113.55, 1], [113.8, 0.1], [113.9, 0], [115.9, 0], [116.2, 0.95], [e, 1]] : k < 5 ? [[at(0.13), 1], [at(0.23), 0.1], [at(0.29), 0], [at(0.87), 0], [at(0.94), 0.95], [e, 1]] : [[s, 1], [at(0.12), 1], [at(0.22), 0.1], [at(0.28), 0], [at(0.9), 0], [c, 0.28], [e, 0.3]], []), [125, 0.15], [126, 0], [145, 0]]),
+  wet: T([[0, 0], ...yearKeys([], (s, c, e, k, at) => k === 0 ? [[113.68, 0], [113.86, 1], [114.15, 0.3], [114.35, 0]] : [[at(0.16), 0], [at(0.25), 1], [at(0.38), 0.3], [at(0.46), 0]], []), [145, 0]]),
+  autumn: T([[0, 0], ...yearKeys([], (s, c, e, k, at) => k === 0 ? [[114.9, 0], [115.15, 1], [115.9, 1], [116.15, 0.3], [e, 0]] : k < 5 ? [[at(0.58), 0], [at(0.7), 1], [at(0.87), 1], [at(0.95), 0.3], [e, 0]] : [[at(0.58), 0], [at(0.7), 1]], []), [145, 1]]),
+  blossom: T([[0, 0], ...yearKeys([], (s, c, e, k, at) => k === 0 ? [[113.75, 0], [113.95, 1], [114.3, 0.4], [114.5, 0]] : [[at(0.2), 0], [at(0.28), 1], [at(0.4), 0.4], [at(0.47), 0]], []), [145, 0]]),
 });
 
 export const brokenAt = 55.2;
@@ -211,15 +228,15 @@ export const cam = {
   flight: T([[0, 0], [145, 0]]),
   // the Forbidden Forest
   descent: T([[108.2, 0], [108.3, 1], [111.9, 1], [112.9, 0]]),
-  years: T([[112.35, 0], [113.3, 1], [114.15, 1], [114.75, 0]]),
-  tally: T([[114.15, 0], [114.75, 1], [124.05, 1], [124.45, 0]]),
+  years: T([[112.25, 0], [112.35, 1], [124.05, 1], [124.45, 0]]),
+  tally: T([[0, 0], [145, 0]]),
   boar: T([[127.6, 0], [128.0, 1], [128.4, 1], [128.7, 0]]),
   draw: T([[128.3, 0], [128.6, 1], [129.3, 1], [129.7, 0]]),
   tumble: T([[130.9, 0], [131.2, 1], [132.9, 1], [133.5, 0]]),
   reveal: T([[133.3, 0], [134.1, 1], [135.9, 1], [136.5, 0]]),
   scroll: T([[135.9, 0], [137.0, 1], [145, 1]]),
   shake: T([[0, 0], [47, 0], [47.6, 0.05], [52.6, 0.05], [53.4, 0.14], [54.0, 0.2], [54.36, 0.14], [54.43, 0.5], [54.55, 0.32], [54.62, 0.8], [54.8, 0.35], [55.3, 0.12], [56.6, 0.08], [57.2, 0.05], [58, 0.05], [62, 0.2], [66, 0.35], [67, 0.9], [77, 0.9], [78, 0.4], [82.5, 0.25], [84.4, 0.06], [92.4, 0.04], [93, 0], [129.5, 0], [129.9, 0.6], [131.0, 0.9], [131.3, 2.0], [132.3, 1.2], [132.8, 0], [139.22, 0], [139.38, 0.22], [139.437, 0.3], [139.443, 2.8], [139.5, 1.1], [139.62, 0.4], [139.9, 0.1], [140.3, 0], [145, 0]]),
-  fov: T([[0, 46], [10, 46], [14, 50], [45.9, 50], [46.7, 59], [47.4, 62], [49.4, 60], [56.6, 60], [58.8, 50], [60.6, 48], [62.6, 21], [63.7, 22], [64.6, 36], [65.6, 38], [66.45, 44], [67.0, 54], [77, 56], [80, 50], [82.6, 50], [84.4, 42], [92.2, 38], [94, 50], [96.4, 50], [98.6, 46], [101.4, 30], [102.8, 31], [104.0, 48], [104.6, 52], [105.2, 50], [105.7, 45], [106.15, 46], [106.7, 50], [107.4, 52], [108.2, 54], [108.4, 54], [111.4, 52], [112.6, 46], [114.15, 46], ...CUTS.flatMap((c, k) => k < 5 ? [[c - 0.385, 46], [c - 0.375, 36], [c + 0.415, 40], [c + 0.425, 46]] : [[c - 0.385, 46], [c - 0.375, 36], [c + 0.415, 40], [c + 0.425, 44]]), [124.1, 40], [124.45, 48], [124.6, 50], [127.8, 46], [128.6, 36], [129.6, 52], [131.2, 62], [133, 54], [136, 48], [139, 42], [139.219, 42], [139.222, 56], [139.598, 52], [139.602, 52], [139.948, 47], [139.952, 42], [145, 40]]),
+  fov: T([[0, 46], [10, 46], [14, 50], [45.9, 50], [46.7, 59], [47.4, 62], [49.4, 60], [56.6, 60], [58.8, 50], [60.6, 48], [62.6, 21], [63.7, 22], [64.6, 36], [65.6, 38], [66.45, 44], [67.0, 54], [77, 56], [80, 50], [82.6, 50], [84.4, 42], [92.2, 38], [94, 50], [96.4, 50], [98.6, 46], [101.4, 30], [102.8, 31], [104.0, 48], [104.6, 52], [105.2, 50], [105.7, 45], [106.15, 46], [106.7, 50], [107.4, 52], [108.2, 54], [108.4, 54], [111.4, 52], [112.6, 46], [124.1, 44], [124.45, 48], [124.6, 50], [127.8, 46], [128.6, 36], [129.6, 52], [131.2, 62], [133, 54], [136, 48], [139, 42], [139.219, 42], [139.222, 56], [139.598, 52], [139.602, 52], [139.948, 47], [139.952, 42], [145, 40]]),
 };
 
 // ------------------------------------------------------------------ ink and paper
@@ -244,7 +261,8 @@ export const fx = {
   // the uncle's soul gives the world back its colour: it seeps out from the gold as the soul rises (radius, screen)
   soulSeep: T([[0, 0], [92.5, 0], [93.1, 0.12], [93.7, 0.34], [94.3, 0.75], [94.9, 1.6], [95.4, 2.8], [108.15, 2.8], [108.3, 0]]),
   // colour returning in the forest, from the camp outward (radius)
-  seep: T([[0, -0.4], [114.4, -0.4], [116, 0.25], [118, 0.55], [120, 0.85], [122, 1.2], [123.6, 1.6], [124.6, 2.8]]),
+  // (in the forest: out from the camp, a little farther each time he marks a year on the tree)
+  seep: T([[0, -0.4], [114.4, -0.4], ...CUTS.flatMap((c, k) => [[c - 0.02, [-0.25, 0.32, 0.62, 0.9, 1.15, 1.42][k]], [c + 0.3, [0.3, 0.6, 0.88, 1.12, 1.4, 1.95][k]]]), [124.6, 2.8]]),
   paper: T([[0, 1], [4.9, 1], [5.5, 0], [140.95, 0], [141.4, 1], [145, 1]]),
   redInk: T([[0, 0], [61.4, 0], [62.2, 0.25], [63.6, 0.05], [65, 0]]),
   // the mist between the valley and the forest: the page goes white while the star's trail runs on across it
@@ -271,7 +289,10 @@ export const inkfx = {
 export const forest = {
   // the camp grows (stage 0..6) and the tally gains a notch each winter (years 0..6)
   // (each new piece of the camp comes in the summer between two winters' cuts, while the eye is out wide)
-  stage: T([[0, -1], [112.35, -1], [112.95, 0], ...[1, 2, 3, 4, 5].flatMap(n => [[CUTS[n - 1] + 0.62, n - 1], [CUTS[n - 1] + 1.0, n]]), [CUTS[5] + 0.55, 5], [CUTS[5] + 0.85, 6], [145, 6]]),
+  // (the first spring his snares and a drying rack, the first summer the target for the bow he makes; the hut in the
+  // third year, its walls and woodpile in the fourth, his uncle's stone in the fifth, the bench and the pelts in the
+  // sixth)
+  stage: T([[0, -1], [112.35, -1], [112.95, 0], ...yearKeys([], (s, c, e, k, at) => [[[113.85, 0], [114.0, 1], [114.6, 1], [114.85, 2]], [], [[at(0.35), 2], [at(0.6), 3]], [[at(0.3), 3], [at(0.55), 4]], [[at(0.3), 4], [at(0.55), 5]], [[at(0.3), 5], [at(0.5), 6]]][k], []), [145, 6]]),
   // (the old camp-kit tally marks: no longer shown, the cuts are made before the eye)
   years: T([[0, 0], [145, 0]]),
   growth: T([[0, 0], [112, 0], [124, 1]]),
@@ -281,14 +302,15 @@ export const forest = {
   snare: T([[124.6, 0], [125.0, 1], [125.6, 1], [125.9, 0]]),
   way: T([[125.8, 0], [127.3, 120], [127.75, 160], [128.7, 214], [130.1, 300], [131.3, 372], [132.1, 400], [132.3, 402], [133.3, 413.5]], t => t),
   // qi: first a few motes in the old wood, then streams that gather toward the dell, then the spiral at the nook
-  qi: T([[0, 0], [128.6, 0], [129.4, 0.25], [130.6, 0.55], [131.8, 0.85], [133.5, 1], [138.4, 1], [139.4, 0.4], [140.6, 0]]),
+  // (none until the missed beat in the old wood, forest.js)
+  qi: T([[0, 0], [129.75, 0], [130.25, 0.3], [130.6, 0.55], [131.8, 0.85], [133.5, 1], [138.4, 1], [139.4, 0.4], [140.6, 0]]),
   org: T([[0, 0], [130.2, 0], [131.6, 0.45], [132.4, 0.8], [134.0, 1], [145, 1]]),
   // the dell: he stands, goes to it, kneels, touches the crystal; it cracks with light and breaks; the scroll
   getUp: T([[133.2, 0], [133.25, 0]]),
   approach: T([[134.1, 0], [136.2, 1]], t => t),
   crack: T([[136.85, 0], [137.25, 1]]),
   shatter: T([[137.3, 0], [137.85, 1]]),
-  glow: T([[129.4, 0], [133.8, 0.35], [136.0, 0.55], [136.9, 1], [137.4, 1.4], [138.6, 0.9], [139.15, 1.8], [139.44, 2.4], [139.8, 2.2]]),
+  glow: T([[129.75, 0], [133.8, 0.35], [136.0, 0.55], [136.9, 1], [137.4, 1.4], [138.6, 0.9], [139.15, 1.8], [139.44, 2.4], [139.8, 2.2]]),
   unroll: T([[138.4, 0], [139.6, 1]]),
   // as it opens all the way he looks up: the light gathers in the leaves overhead, sends a thread of light down to
   // the page, and the pillar comes down out of the sky after it onto him and the page (STRIKE_B), throwing a ring of

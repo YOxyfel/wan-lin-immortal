@@ -100,22 +100,28 @@ export function buildCamp(mats, gy, quality = {}) {
     kit.add('timber', new THREE.TorusGeometry(0.14, 0.006, 3, 10), L(x + 0.35, 0.16, z, 0, 0.3), { color: [0.75, 0.68, 0.5] });
   }
   {
-    const rx = -3.4, rz = 3.0;
+    // (by the fire's side of the camp, clear of the way the eye looks across it)
+    const rx = 3.4, rz = 2.4;
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) kit.add('bark', mcyl(0.035, 0.04, 1.9, 5), L(rx + sx * 0.9, 0.92, rz + sz * 0.38, 0, sz * 0.2), { color: [0.62, 0.55, 0.44] });
     kit.add('bark', mcyl(0.03, 0.03, 2.1, 5), L(rx, 1.78, rz, 0, 0, Math.PI / 2), { color: [0.6, 0.52, 0.42] });
     for (let i = 0; i < 7; i++) { const g = new THREE.PlaneGeometry(0.12, rand.range(0.4, 0.7)); g.translate(0, -0.28, 0); kit.add('cloth', g, L(rx - 0.8 + i * 0.26, 1.76, rz, rand.range(-0.3, 0.3)), { color: i % 3 ? [0.42, 0.16, 0.12] : [0.5, 0.4, 0.3], sway: 0.6 }); }
   }
 
   // ---------------------------------------------------------------- stage 2: an archery target of bound straw, arrows, a quiver on a peg
+  // (it faces the place he shoots from, so the lens behind him sees the face of it beyond him)
   const [tx, tz] = P.TARGET;
-  const tA = Math.atan2(P.CAMP[0] - tx, P.CAMP[1] - tz);
+  const tA = Math.atan2(P.RANGE[0] - tx, P.RANGE[1] - tz);
   kit.forceVis = 12;
   kit.add('bark', mcyl(0.35, 0.4, 0.5, 10), L(tx, 0.25, tz), { color: [0.6, 0.52, 0.42] });
   for (const sx of [-1, 1]) kit.add('bark', mcyl(0.04, 0.05, 1.5, 5), L(tx + Math.cos(tA) * sx * 0.45, 0.75, tz - Math.sin(tA) * sx * 0.45, tA, -0.12, 0), { color: [0.55, 0.47, 0.38] });
   kit.add('straw', mcyl(0.52, 0.52, 0.38, 16), L(tx, 1.0, tz, tA, Math.PI / 2), {});
   kit.add('cloth', new THREE.RingGeometry(0.12, 0.23, 16), L(tx + Math.sin(tA) * 0.2, 1.0, tz + Math.cos(tA) * 0.2, tA), { color: [0.55, 0.12, 0.08] });
   kit.add('cloth', new THREE.CircleGeometry(0.06, 10), L(tx + Math.sin(tA) * 0.2, 1.0, tz + Math.cos(tA) * 0.2, tA), { color: [0.2, 0.15, 0.1] });
-  for (let i = 0; i < 4; i++) kit.add('timber', mcyl(0.006, 0.006, 0.6, 3), L(tx + Math.sin(tA) * 0.42 + rand.range(-0.15, 0.15), 1.0 + rand.range(-0.15, 0.15), tz + Math.cos(tA) * 0.42 + rand.range(-0.1, 0.1), tA + rand.range(-0.2, 0.2), Math.PI / 2 + rand.range(-0.1, 0.1)), { color: [0.72, 0.58, 0.4] });
+  // (the arrows left in it come after the first that found its heart, in the fourth year)
+  kit.forceVis = 15;
+  for (let i = 0; i < 4; i++) { const a = rand() * TAU, rr = 0.16 + rand() * 0.24; kit.add('timber', mcyl(0.006, 0.006, 0.6, 3), L(tx + Math.sin(tA) * 0.46 + Math.cos(tA) * Math.cos(a) * rr, 1.0 + Math.sin(a) * rr, tz + Math.cos(tA) * 0.46 - Math.sin(tA) * Math.cos(a) * rr, tA + rand.range(-0.12, 0.12), Math.PI / 2 + rand.range(-0.08, 0.08)), { color: [0.72, 0.58, 0.4] }); }
+  kit.forceVis = 12;
+  const target = { bull: V3(tx + Math.sin(tA) * 0.205, gy(tx, tz) + 1.0, tz + Math.cos(tA) * 0.205), normal: V3(Math.sin(tA), 0, Math.cos(tA)) };
   {
     const q = face.clone().addScaledVector(side, -2.1).addScaledVector(f, 0.05);
     kit.add('timber', mcyl(0.03, 0.03, 0.4, 5), M(q.x + f.x * 0.2, fy + 1.6, q.z + f.z * 0.2, rockRY, Math.PI / 2), { color: 0.6 });
@@ -237,5 +243,5 @@ export function buildCamp(mats, gy, quality = {}) {
     group.add(meshOf(T.build(), pale, F.depth.mapleBark, { name: 'tallyTree' }));
     group.add(meshOf(Lf.build(), F.ancientLeaf, F.depth.ancientLeaf, { name: 'tallyLeaves' }));
   }
-  return { group, tallyFace, notches, rockFace: { center: face.clone().setY(fy), normal: f.clone() }, materials: B };
+  return { group, tallyFace, notches, target, rockFace: { center: face.clone().setY(fy), normal: f.clone() }, materials: B };
 }

@@ -2,6 +2,8 @@
 // hair cards with a topknot, beard on the jaw, procedural face with wrinkles). Group origin = floor under his hips,
 // head toward -x, body along +x, his right side (where Wuhen kneels) toward +z.
 // update(dt, time, { speak, reach, drop, eyes, reachTarget })
+// In the morning he stands at his door instead: update(dt, time, { stand: 1, hold, holdTarget, point, pointDir,
+// lookAt, speak }) (the basket held out by its handle; his hand raised at the sun).
 import * as THREE from 'three';
 import { proportions, eulerQ, axisQ } from './hero-rig.js';
 import { styleFor, HERO_HEAD } from './hero-body.js';
@@ -9,6 +11,7 @@ import { srgb } from './hero-geo.js';
 import { elderCards, elderStatics } from './hero-hair.js';
 import { buildCharacter, srgbColor } from './hero-char.js';
 import { clamp, lerp, smooth, DEG } from './hero-util.js';
+import { idlePose, reachArm, pointArm } from './hero-pose.js';
 
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const ease = w => w * w * (3 - 2 * w);
@@ -124,7 +127,48 @@ export function createElder() {
     rig.apply(Pc);
     rig.fk(Pc);
   }
-  const defaults = { speak: 0, reach: 0, drop: 0, eyes: 1, reachTarget: null };
+  // standing at his door in the morning: an old man's stoop, his eyes on the boy; the basket held out by its handle,
+  // given; then his hand up at the sun
+  const _lk = V(), _hp = V(), _lq = new THREE.Quaternion(), _wq = new THREE.Quaternion();
+  function standPose(dt, t, s) {
+    const d = K.dims();
+    const c = { t, d, speed: 0, run: 0, phase: 0, cycle: 1, release: 0, holdWidth: 0 };
+    idlePose(K, Pc, c);
+    const add = (n, x, y, z) => { eulerQ(qA, x, y, z); Pc.q[I[n]].multiply(qA); };
+    add('spine', 4, 0, 0); add('chest', 6, 0, 0); add('neck', 6, 0, 0); add('head', -6, 0, 0);
+    group.updateWorldMatrix(true, false);
+    const hd = ease(clamp(s.hold || 0));
+    if (hd > 0 && s.holdTarget) {
+      rig.copyPose(Pt, Pc); reachArm(K, Pt, c, group.worldToLocal(_t.copy(s.holdTarget))); K.fingers(Pt, 'R', 'hook');
+      rig.blendBones(Pc, Pt, hd, K.armBones.R);
+    }
+    const pt = ease(clamp(s.point || 0));
+    if (pt > 0 && s.pointDir) {
+      group.getWorldQuaternion(_wq).invert();
+      rig.copyPose(Pt, Pc); pointArm(K, Pt, c, _d.copy(s.pointDir).applyQuaternion(_wq));
+      rig.blendBones(Pc, Pt, pt, K.armBones.R);
+    }
+    // (his eyes on the boy)
+    if (s.lookAt) {
+      rig.fk(Pc);
+      group.worldToLocal(_lk.copy(s.lookAt));
+      rig.pointOn(I.head, _hp.set(0, rig.bindPos[I.head].y + 0.07 * d.k, 0.05 * d.k), _hp);
+      _lk.sub(_hp).applyQuaternion(_lq.copy(rig.wq[I.chest]).invert());
+      const ly = clamp(Math.atan2(_lk.x, _lk.z) / DEG, -60, 60), lp = clamp(-Math.atan2(_lk.y, Math.hypot(_lk.x, _lk.z)) / DEG, -30, 35);
+      eulerQ(_lq, lp * 0.35, ly * 0.4, 0); Pc.q[I.neck].premultiply(_lq);
+      eulerQ(_lq, lp * 0.5, ly * 0.55, 0); Pc.q[I.head].premultiply(_lq);
+    }
+    U.uMouth.value = clamp(s.speak) * (0.25 + 0.75 * Math.abs(Math.sin(t * 7.3) * Math.sin(t * 2.1 + 0.5)));
+    const blink = Math.pow(Math.max(0, Math.sin(t * 0.7) * Math.sin(t * 1.9 + 0.4)), 30);
+    // (awake, his eyes creased by the smile and the sun)
+    U.uLid.value = clamp(0.3 + blink * 0.7);
+    U.uGaze.value.set(0, 0.0004);
+    const mn = contactMin();
+    Pc.rp.y -= mn;
+    rig.apply(Pc);
+    rig.fk(Pc);
+  }
+  const defaults = { speak: 0, reach: 0, drop: 0, eyes: 1, reachTarget: null, stand: 0, hold: 0, holdTarget: null, point: 0, pointDir: null, lookAt: null };
   const api = {
     group, rig, bones: {}, uniforms: U, state: st, skinMesh: C.skinMesh, clothMesh: C.clothMesh, hairMesh: C.hairMesh, _K: K,
     anchors: { handR: () => C.anchorPos('handR'), handL: () => C.anchorPos('handL'), head: () => C.anchorPos('head') },
@@ -133,7 +177,9 @@ export function createElder() {
       const s = Object.assign({}, defaults, state);
       st.lastState = s;
       U.uTime.value = time;
-      computePose(dt, time, s);
+      // (his robe whole in the morning; torn that night)
+      U.uTatter.value = s.stand ? 0 : 0.35;
+      if (s.stand) standPose(dt, time, s); else computePose(dt, time, s);
       if (!st.settled) { C.settle(s); return; }
       if (dt > 0) C.stepSecondary(dt, time, s); else C.refresh();
     },

@@ -365,3 +365,33 @@ what can be read at scroll speed). This round builds its foundations and the fir
   frame the shake, rain, shreds, bars and roar stop, the clock slows to a sixth, the page's own furniture draws back,
   and the sea of clouds settles out of the white; the lens tilts down to the horizon, the fight high off to one side.
 - **Phones**: the Watch and Skip buttons were hidden on phones by an older stylesheet rule; fixed.
+
+## Round 7: the six winters and the walk out (17 October 2026)
+
+- **The six winters, rebuilt** (`years.js`; 112.3–124.6, about 48 s in Watch). Each winter ends at the pale tree: he
+  lays his left palm on his crown, brings it forward level until his fingertips meet the bark, and draws his knife
+  across under them. The marks are his height, so they climb the bark as he grows (`MARK_AGE`, from 1.72 m to
+  1.81 m): a ladder, the same close lens on it each year, seen from just below the palm so the mark is never hidden
+  (a lens from behind his head could not see under the hand). The hero gained a measuring arm (`hero-pose.js`
+  `measureArm`) and a level score with the knife held out of the thumb side (`carveArms` `'across'`).
+- **Year one** is one slow pan across the camp from the boulder to the tree, a season to each thing he does: huddled
+  by the fire in the snow; gathering the first green; shaping a bow from a stave stood upright before him; his first
+  arrow, wide of the target (it stays in the ground for three years). The figures come and go as ink dissolves, never
+  two of him solid at once. (Plan v2 asked for solid figures in the handscroll manner, but with one season for the
+  whole scene several solid figures would all be in the same season; the dissolve is the medium's own join.) The
+  archery target moved to the far side of the camp (`forest-set-terrain.js` `TARGET`, `RANGE`) so the arrow is seen
+  from behind him; the drying rack moved out of the pan's way.
+- **Years two to five**: a moment of the year and then the mark, cut from one to the next, faster each year (a hare
+  in his snare by the stream; the roof beam carried to the hut as it goes up; the arrow into the heart of the target
+  from where he missed; push-ups in the rain by the training post). Colour seeps back into the camp year by year.
+- **Year six**: he walks across the camp he has built to the tree in real time while the whole year passes round him
+  (snow, green, red), the sixth mark in the first frost, his palm laid flat on the six ("Six years."), and he turns
+  for the way out.
+- **The walk out as a stride-cut** (`forest.js` `STRETCH`; 125.9–130.45, about 15 s in Watch): the lens locked at his
+  hip behind his right shoulder on a long lens (30°), his walk locked to the story; on the heel strike that ends a
+  stretch the world cuts to the next while he walks on in the same place in the frame (the camp's woods, the ford
+  with the water under his feet, the bamboo, the old wood and its giants), three strides to each, then two, then one,
+  the sun coming round from behind him to low gold ahead. On the next heel strike nothing changes: a mote of gold
+  crosses the lens, he stops and looks after it, and the lens leaves him for the first time, rising up the giant
+  beside him as the qi begins. The mote is the only new shader program, rehearsed at 129.8.
+- **Captions**: "Every winter, he measured himself against the tree."; the static story text matches.

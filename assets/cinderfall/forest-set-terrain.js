@@ -23,7 +23,7 @@ const JOURNEY = [[0, 0], [-6, -14], [-11, -30], [-16, -47], [-21, -62], [-26, -7
   [-57, -145.5], [-72, -166], [-92, -185], [-118, -204], [-150, -226], [-178, -246], [-204, -262], [-224, -278],
   [-238, -292], [-246, -299], [-252, -309]];
 export const P = {
-  CAMP: [0, 0], ROCK: [5.6, -5.4], FIRE: [1.6, -1.2], HOME: [-9, -8], TALLY: [-6.2, 6.6], TARGET: [3.8, 10.6],
+  CAMP: [0, 0], ROCK: [5.6, -5.4], FIRE: [1.6, -1.2], HOME: [-9, -8], TALLY: [-6.2, 6.6], TARGET: [-9.5, -2.5], RANGE: [-3.6, 5.7],
   MEDITATE: [-12, 2.5], BIGPINE: [-13.5, 0.5], MAPLE1: [-9, 5.5], POOL: [10.5, -1.5], MEMORIAL: [-4.2, -4.4],
   JOURNEY,
   FORD: [-57, -145.5], THICKET: [-92, -185], OLDWOOD: [-150, -226], CLIFF: [-224, -278], RIM: [-246, -299], LAND: [-252, -309],
@@ -347,7 +347,7 @@ export function walkY(x, z) {
 
 // path / moss / litter / rock masks for the floor shader
 const NOOK = (() => { const dx = P.LAND[0] - P.ANCIENT[0], dz = P.LAND[1] - P.ANCIENT[1], l = Math.hypot(dx, dz); return [P.ANCIENT[0] + dx / l * 3.2, P.ANCIENT[1] + dz / l * 3.2]; })();
-const WORN = [[NOOK[0], NOOK[1], 2.3, 0.55], [P.FIRE[0], P.FIRE[1], 3.2, 0.8], [P.ROCK[0] - 2, P.ROCK[1] + 2, 3, 0.55], [P.HOME[0] + 1.5, P.HOME[1] + 2.6, 3, 0.6], [P.TARGET[0], P.TARGET[1] - 4, 4, 0.35], [P.MEDITATE[0], P.MEDITATE[1], 1.6, 0.45], [8.2, -1.2, 2.6, 0.45], [P.TALLY[0] + 1, P.TALLY[1] - 1, 1.5, 0.4], [P.MEMORIAL[0] + 0.6, P.MEMORIAL[1] + 0.6, 1.4, 0.4]];
+const WORN = [[NOOK[0], NOOK[1], 2.3, 0.55], [P.FIRE[0], P.FIRE[1], 3.2, 0.8], [P.ROCK[0] - 2, P.ROCK[1] + 2, 3, 0.55], [P.HOME[0] + 1.5, P.HOME[1] + 2.6, 3, 0.6], [P.RANGE[0], P.RANGE[1], 2.2, 0.4], [P.MEDITATE[0], P.MEDITATE[1], 1.6, 0.45], [8.2, -1.2, 2.6, 0.45], [P.TALLY[0] + 1, P.TALLY[1] - 1, 1.5, 0.4], [P.MEMORIAL[0] + 0.6, P.MEMORIAL[1] + 0.6, 1.4, 0.4]];
 export function maskAt(x, z) {
   const tr = nearestOn(JP, JGn, x, z);
   const old = oldK(x, z);

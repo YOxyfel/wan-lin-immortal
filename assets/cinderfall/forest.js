@@ -1,8 +1,7 @@
 // The Forbidden Forest (world B): the set (forest-set.js) and what happens in it, as pure functions of u.
 // Out of the painting the eye comes down through the snowy pines to the clearing as he comes out of the trees and sinks
-// down against the boulder. The first winter at the camp; then six winters at the pale tree: each winter he draws his
-// knife down its bark (close on the blade and the chips), and the year turns round the tree while the camp grows past
-// it, a year older each time; in the sixth autumn he lays his hand on the six cuts and turns away. No game near the camp,
+// down against the boulder. Six years at the camp (years.js): each winter he marks his height on the pale tree with his
+// knife, the camp growing round it; in the sixth autumn he lays his hand on the six marks and turns away. No game near the camp,
 // not one track, as if by fate: he goes farther than he ever has — a shot to each stretch of the way, cut straight from
 // one to the next: over the ford, through the bamboo, into the old wood where the air begins to glow — until the motes
 // of gold gather into streams and lead him down into the dell of the ancient tree. There, sealed in crystal among the
@@ -18,6 +17,7 @@ import { createQi } from './qi.js';
 import { createBeam } from './beam.js';
 import { createLeafBlast } from './blast.js';
 import { cam, forest as FT, CUTS, STRIKE_B } from './timeline.js';
+import { createYears, MARK_AGE, crownOf, scoreOf } from './years.js';
 import { clamp, lerp, smooth, band } from './util.js';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
@@ -39,15 +39,29 @@ const slerpDir = (a, b, w) => {
 // light toward the falls; to the rim of the dell; down into it.
 const STAGES = [
   [124.6, 125.9, 0, 6, 'snare'],
-  [125.9, 127.0, 23, 32, 'leave'],
-  [127.0, 128.05, 150.5, 161.5, 'ford'],
-  [128.05, 129.1, 213, 222, 'thicket'],
-  [129.1, 130.45, 274.5, 283.5, 'oldwood'],
+  [125.9, 130.45, 23, 292, 'stride'],
   [130.45, 131.65, 360, 370.5, 'streams'],
   [131.65, 132.3, 396.6, 401.8, 'rim'],
   [132.3, 133.3, 401.8, 413.5, 'slide'],
 ];
 const CAM_BACK = 3.0;
+// The way out (125.9–130.45) as a stride-cut: the lens locked at his hip, behind him off his right shoulder on a long
+// lens, his walk locked to the story. On the heel strike that ends a stretch the world cuts to the next stretch of the
+// way while he walks on in the same place in the frame: the camp's woods, the ford, the bamboo, the old wood and its
+// giants, bigger each time; three strides to each, then two, then one. On the next heel strike nothing changes: a mote
+// of gold crosses the lens, he stops, and the lens leaves him for the first time, up the giant beside him, as the air
+// begins to glow. [metres along the way where the stretch begins (null: the ford's crossing), strides, the sun]
+const STRIDE_U0 = 125.9, STRIDE_DU = 0.318, STRIDE_LEN = 1.45;
+const STRETCH = [
+  [23, 3, [0.45, 0.42, 0.79]],      // the camp's woods, the morning sun behind him, his shadow ahead
+  [null, 3, [0.15, 0.55, 0.82]],    // the ford
+  [213, 2, [-0.05, 0.75, 0.66]],    // the bamboo, about noon
+  [244, 2, [-0.5, 0.45, -0.74]],    // the old wood, the sun come round ahead of him
+  [262, 1, [-0.66, 0.36, -0.66]],
+  [287, 1, [-0.78, 0.27, -0.56]],   // low ahead, gold: he walks into it
+];
+const STRIDE_END = STRETCH.reduce((a, x) => a + x[1], 0);     // the missed beat: a heel strike, and nothing changes
+const MISSED = STRIDE_U0 + STRIDE_END * STRIDE_DU, HALT = 0.254, CRANE = [129.9, 130.45];
 // the pillar of light: the cut to the lens looking up the tree as he looks up; (the strike, STRIKE_B, cuts across the
 // dell); the cut back over his shoulder, down into the page
 const UP_CUT = 139.22, WIDE_CUT = 139.6, BACK_CUT = 139.95;
@@ -68,38 +82,34 @@ export async function buildForest(mats, quality, ctx) {
   const ROCKSIT = onG(face.center.clone().addScaledVector(face.normal, 0.5));
   const rockOut = face.normal.clone().setY(0).normalize();
   const ARRIVE = path([V3(-13.5, 0, -36), V3(-8.5, 0, -19), V3(-4, 0, -9), V3(0.6, 0, -4.4), ROCKSIT]);
-  // ------------------------------------------------------------ the tally: six cuts in the pale bark, one each winter
-  // (on the side of the tree away from the camp, so the eye that watches him cut them looks past the tree at the camp
-  // growing through the years: the fire, the shelter against the rock, the hut, his uncle's stone)
+  // ------------------------------------------------------------ the tally: his height marked on the pale bark each winter
+  // (on the side of the tree away from the camp, toward the low sun: a ladder of short level cuts, each where his palm
+  // lay on his crown, a little higher each year)
   const TALLY = A.TALLY.clone();
   const tGy = hB(TALLY.x, TALLY.z);
-  const tn = flatDir(V3(-1.5, 0, -4.75), TALLY);           // the way the cuts face (away from the camp)
-  const tFace = tn.clone().negate();                        // the way he faces as he cuts
+  const tn = flatDir(V3(-1.5, 0, -4.75), TALLY);           // the way the marks face (away from the camp)
+  const tFace = tn.clone().negate();                        // the way he faces as he makes them
   const tRight = rightOf(tFace);                            // his right as he faces the tree
-  const TRUNK_R = 0.238;
-  // the trunk's axis at a height above the ground (it leans a little)
+  // the trunk's axis at a height above the ground (it leans a little), and its radius there (forest-set-camp.js)
   const trunkAt = h => V3(TALLY.x + 0.05 * (h + 0.3) / 4, tGy + h, TALLY.z + 0.04 * (h + 0.3) / 4);
+  const trunkR = h => { const t = (h + 0.3) / 12.55; return 0.25 * (1 - 0.7 * t) * (1 + 0.35 * Math.exp(-24 * t)); };
   const tA = Math.atan2(tn.x, tn.z);
-  const cuts = CUTS.map((C, i) => {
-    const a = tA + (i - 2.5) * 0.175, n = V3(Math.sin(a), 0, Math.cos(a));
-    // (a little higher each year: he was growing)
-    const hc = 1.15 + i * 0.017 + ((i * 7) % 3 - 1) * 0.008, H = 0.21 + ((i * 5) % 3) * 0.012;
-    const at = h => trunkAt(h).addScaledVector(n, TRUNK_R + 0.009);
-    const top = at(hc + H / 2), bottom = at(hc - H / 2), mid = at(hc);
-    // where he stands for it (the cut a little right of his middle, so his right hand is at it), a little taller each year
-    const stand = onG(TALLY.clone().addScaledVector(tn, 0.56).addScaledVector(tRight, tRight.dot(n) * TRUNK_R - 0.5));
-    return { C, i, a, n, hc, H, top, bottom, mid, stand };
+  // where he stands to mark it, facing the bark
+  const STAND = onG(trunkAt(1.7).addScaledVector(tn, trunkR(1.7) + 0.36));
+  const notch = MARK_AGE.map((age, k) => {
+    const h = STAND.y - tGy + crownOf(age), R = trunkR(h) + 0.011;
+    const a = tA + [0.012, -0.02, 0.006, 0.022, -0.01, 0.0][k], W = 0.12 + [0, 0.012, -0.006, 0.008, 0.015, 0.004][k];
+    const at = da => trunkAt(h).add(V3(Math.sin(a + da), 0, Math.cos(a + da)).multiplyScalar(R));
+    return { k, h, R, a, W, n: V3(Math.sin(a), 0, Math.cos(a)), mid: at(0), left: at(-W / (2 * R)), right: at(W / (2 * R)) };
   });
-  const sixMid = trunkAt(1.2).addScaledVector(tn, TRUNK_R + 0.03);
-  const TALLYSTAND = cuts[5].stand.clone();
-  // his left palm braced on the trunk beside the cuts
-  const braceAt = trunkAt(1.42).addScaledVector(V3(Math.sin(tA - 0.95), 0, Math.cos(tA - 0.95)), TRUNK_R + 0.035);
+  const TALLYSTAND = STAND;
   // the empty snare, beside the way just out of camp (round the tree from where he stands, and on toward the way)
   const SNARE = jAt(6);
   const snareSpot = SNARE.pos.clone().addScaledVector(rightOf(SNARE.dir), -0.75);
-  // (after each cut: back round the tree toward the camp)
-  const BACK_WAY = path([TALLY.clone().addScaledVector(tn, 0.6), TALLY.clone().addScaledVector(tRight, 1.15).addScaledVector(tn, 0.3), TALLY.clone().addScaledVector(tRight, 1.1).addScaledVector(tn, -1.5), V3(-1.6, 0, 1.4)]);
   const TO_SNARE = path([TALLYSTAND, TALLY.clone().addScaledVector(tRight, 1.15).addScaledVector(tn, 0.35), TALLY.clone().addScaledVector(tRight, 1.2).addScaledVector(tn, -1.6), SNARE.pos]);
+  // the years at the camp (years.js)
+  const yearsArgs = { anchors: A, hB, root, tally: { TALLY, tn, tRight, STAND, notch }, ROCKSIT, rockOut, wayOut: TO_SNARE.getPointAt(0.12) };
+  let years = createYears(yearsArgs);
 
   // ------------------------------------------------------------ the dell
   const LAND = A.LAND.clone();
@@ -127,14 +137,19 @@ export async function buildForest(mats, quality, ctx) {
   bow.arrow.visible = false;
   let bowMounted = false;
 
-  // ------------------------------------------------------------ the cuts: drawn down the bark as the knife goes, pale fresh wood
-  // greying over the years (a V groove: one face to the light, one in shadow, a dark seam where they meet, the torn lip
-  // of the bark along its edges)
+  // ------------------------------------------------------------ the marks: drawn across the bark as the knife goes, pale fresh
+  // wood greying over the years (a V groove: the lower face to the light, the upper in shadow, a dark seam where they
+  // meet, the torn lip of the bark along its edges)
   const notchMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0 });
-  const notchGeo = new THREE.PlaneGeometry(1, 1, 1, 1);
-  const notches = cuts.map(c => {
+  const notches = notch.map(c => {
+    // (a strip bent round the trunk)
+    const g = new THREE.PlaneGeometry(1, 1, 12, 1), gp = g.attributes.position;
+    for (let i = 0; i < gp.count; i++) { const th = gp.getX(i) * c.W / c.R; gp.setXYZ(i, c.R * Math.sin(th), gp.getY(i) * 0.014, c.R * Math.cos(th)); }
+    g.computeVertexNormals();
     const m = notchMat.clone();
-    const uni = { uProg: { value: 0 }, uFresh: { value: 1 }, uSeed: { value: c.i * 0.137 } };
+    // (drawn over the bark it lies on, which is a little rough)
+    m.polygonOffset = true; m.polygonOffsetFactor = -2; m.polygonOffsetUnits = -4;
+    const uni = { uProg: { value: 0 }, uFresh: { value: 1 }, uSeed: { value: c.k * 0.137 } };
     m.onBeforeCompile = sh => {
       Object.assign(sh.uniforms, uni, { uNoise: U.uNoise });
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vNUv;').replace('#include <uv_vertex>', '#include <uv_vertex>\nvNUv = uv;');
@@ -142,23 +157,24 @@ export async function buildForest(mats, quality, ctx) {
 varying vec2 vNUv; uniform float uProg, uFresh, uSeed; uniform sampler2D uNoise;`)
         .replace('vec4 diffuseColor = vec4( diffuse, opacity );', `vec4 diffuseColor = vec4( diffuse, opacity );
   {
-    vec2 q = vec2(vNUv.x * 2. - 1., 1. - vNUv.y);
-    float n1 = texture2D(uNoise, vec2(q.y * 2.3 + uSeed, .31 + uSeed)).r, n2 = texture2D(uNoise, vec2(q.y * 7.1 + uSeed, .71)).g;
-    // a long lens, ragged where the bark tore, sharper at the end the knife finished
-    float hw = pow(max(sin(3.1416 * clamp(q.y, 0., 1.)), 0.), mix(.45, .7, q.y)) * (.8 + .32 * (n1 - .5) + .12 * (n2 - .5));
-    if (abs(q.x) > hw || q.y > uProg) discard;
-    float sd = q.x / max(hw, 1e-3);
+    // (x along the cut from his left, y across it)
+    vec2 q = vec2(vNUv.x, vNUv.y * 2. - 1.);
+    float n1 = texture2D(uNoise, vec2(q.x * 2.3 + uSeed, .31 + uSeed)).r, n2 = texture2D(uNoise, vec2(q.x * 7.1 + uSeed, .71)).g;
+    // a long lens, ragged where the bark tore, deeper where the blade bit in at the start
+    float hw = pow(max(sin(3.1416 * clamp(q.x, 0., 1.)), 0.), mix(.7, .45, q.x)) * (.8 + .32 * (n1 - .5) + .12 * (n2 - .5));
+    if (abs(q.y) > hw || q.x > uProg) discard;
+    float sd = q.y / max(hw, 1e-3);
     vec3 fresh = vec3(1., .9, .66), old = vec3(.5, .44, .36);
     vec3 wood = mix(old, fresh, uFresh);
-    // the face toward the light, the face in shadow, the seam
-    wood *= mix(1.15, .5, smoothstep(-.3, .4, sd));
+    // the face below the seam toward the light, the face above it in shadow, the seam
+    wood *= mix(1.15, .5, smoothstep(-.4, .3, sd));
     wood = mix(wood, vec3(.1, .07, .05), smoothstep(.22, .03, abs(sd)) * .95);
-    // the bark's torn lip, the grain of the wood, the knife marks across it
+    // the bark's torn lip, the grain of the wood, the knife's chatter along it
     wood = mix(wood, vec3(.16, .11, .08), smoothstep(.62, .97, abs(sd)) * .85);
-    wood *= .86 + .22 * texture2D(uNoise, vec2(vNUv.x * 1.3 + uSeed, vNUv.y * 9.)).b;
-    wood *= .94 + .08 * sin(q.y * 70. + n1 * 6.);
+    wood *= .86 + .22 * texture2D(uNoise, vec2(vNUv.x * 9. + uSeed, vNUv.y * 1.3)).b;
+    wood *= .94 + .08 * sin(q.x * 70. + n1 * 6.);
     // the end the blade is at, fresh and bright
-    wood += vec3(.12, .1, .06) * exp(-(uProg - q.y) * 40.) * step(uProg, .999) * uFresh;
+    wood += vec3(.12, .1, .06) * exp(-(uProg - q.x) * 40.) * step(uProg, .999) * uFresh;
     diffuseColor.rgb = wood;
   }`)
         // (marked like a figure, so the ink draws it from its own light, outlined, and the painted pass leaves it alone:
@@ -166,10 +182,10 @@ varying vec2 vNUv; uniform float uProg, uFresh, uSeed; uniform sampler2D uNoise;
         .replace('#include <dithering_fragment>', '#include <dithering_fragment>\ngl_FragColor.a = 1.1;');
     };
     m.customProgramCacheKey = () => 'cf-notch';
-    const mesh = new THREE.Mesh(notchGeo, m);
-    mesh.scale.set(0.046, c.H, 1);
-    mesh.position.copy(c.mid);
-    mesh.lookAt(c.mid.clone().add(c.n));
+    const mesh = new THREE.Mesh(g, m);
+    mesh.position.copy(trunkAt(c.h));
+    const x = V3().crossVectors(UP, c.n).normalize();
+    mesh.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, UP, c.n));
     mesh.receiveShadow = true;
     mesh.visible = false;
     root.add(mesh);
@@ -195,7 +211,7 @@ varying vec2 vNUv; uniform float uProg, uFresh, uSeed; uniform sampler2D uNoise;
   let knifeMounted = false;
   // the chips the knife throws out of the cut (a pure function of the story position: out, down into the snow, gone)
   const chips = (() => {
-    const per = 36, N = per * cuts.length;
+    const per = 36, N = per * notch.length;
     const g = new THREE.BufferGeometry();
     const sd = new Float32Array(N * 4), kk = new Float32Array(N);
     let r = 991;
@@ -205,19 +221,23 @@ varying vec2 vNUv; uniform float uProg, uFresh, uSeed; uniform sampler2D uNoise;
     g.setAttribute('aSeed', new THREE.BufferAttribute(sd, 4));
     g.setAttribute('aK', new THREE.BufferAttribute(kk, 1));
     g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e5);
-    const uniforms = { uU: { value: 0 }, uPx: { value: 900 }, uTop: { value: cuts.map(c => new THREE.Vector4(c.top.x, c.top.y, c.top.z, c.C)) },
-      uBot: { value: cuts.map(c => new THREE.Vector4(c.bottom.x, c.bottom.y, c.bottom.z, tGy)) }, uN: { value: cuts.map(c => c.n.clone()) }, uR: { value: tRight.clone() }, uLight: { value: 1 } };
+    // (uTop: where the score starts and when; uBot: where it ends and the ground under it; uN: the bark's normal there,
+    // and how many story units to a second while it is made)
+    const rate = [0.225, 0.3375, 0.3825, 0.4275, 0.45, 0.2025];
+    const uniforms = { uU: { value: 0 }, uPx: { value: 900 }, uTop: { value: notch.map(c => new THREE.Vector4(c.left.x, c.left.y, c.left.z, scoreOf(c.k)[0])) },
+      uBot: { value: notch.map(c => new THREE.Vector4(c.right.x, c.right.y, c.right.z, tGy)) }, uN: { value: notch.map(c => new THREE.Vector4(c.n.x, c.n.y, c.n.z, rate[c.k])) },
+      uDur: { value: notch.map(c => scoreOf(c.k)[1] - scoreOf(c.k)[0]) }, uR: { value: tRight.clone() }, uLight: { value: 1 } };
     const material = new THREE.ShaderMaterial({
       uniforms, transparent: true, depthWrite: false, fog: false,
-      vertexShader: `attribute vec4 aSeed; attribute float aK; uniform float uU, uPx; uniform vec4 uTop[6], uBot[6]; uniform vec3 uN[6], uR; varying float vA, vS;
+      vertexShader: `attribute vec4 aSeed; attribute float aK; uniform float uU, uPx; uniform vec4 uTop[6], uBot[6], uN[6]; uniform float uDur[6]; uniform vec3 uR; varying float vA, vS;
 void main(){
   int k = int(aK + .5);
-  vec4 T = uTop[k], Bt = uBot[k]; vec3 n = uN[k];
-  // thrown out from where the blade was at that moment, as it went down the cut
-  float f = aSeed.x, ts = T.w - .15 + f * .35;
-  float t = (uU - ts) * 2.4;
+  vec4 T = uTop[k], Bt = uBot[k]; vec3 n = uN[k].xyz;
+  // thrown out from where the blade was at that moment, as it went across (t in seconds)
+  float f = aSeed.x, ts = T.w + f * uDur[k];
+  float t = (uU - ts) / uN[k].w;
   vec3 p0 = mix(T.xyz, Bt.xyz, f) + n * .01;
-  vec3 v = n * (.55 + .9 * aSeed.y) + uR * (aSeed.z - .5) * 1.5 + vec3(0., .35 + .9 * aSeed.w, 0.);
+  vec3 v = n * (.55 + .9 * aSeed.y) + uR * (aSeed.z - .2) * 1.2 + vec3(0., .25 + .8 * aSeed.w, 0.);
   // (until it lands in the snow at the foot of the tree)
   float dy = p0.y - Bt.w;
   float tl = (v.y + sqrt(v.y * v.y + 19.6 * max(dy, 0.))) / 9.8;
@@ -226,7 +246,7 @@ void main(){
   p.y = max(p.y, Bt.w + .01);
   vec4 mv = modelViewMatrix * vec4(p, 1.);
   gl_Position = projectionMatrix * mv;
-  vA = step(0., t) * (1. - smoothstep(tl + .4, tl + 2.2, t));
+  vA = step(0., t) * (1. - smoothstep(tl + .3, tl + 1.4, t));
   vS = aSeed.w;
   gl_PointSize = clamp((.011 + .012 * aSeed.y) * uPx / max(-mv.z, .05), 1., 7.);
 }`,
@@ -264,23 +284,58 @@ void main(){
   // what the engine needs of it each frame (its light on the lens: the flash, the shock, the beams through the leaves)
   const light = { foot: onG(SCROLL), canopy: onG(SCROLL).add(V3(0, CANOPY_H, 0)), gather: 0, beam: 0, strike: -1 };
 
-  // ------------------------------------------------------------ time-lapse ghosts of the years at the camp
-  const fireP = A.FIRE;
-  // (the first winter by the fire; then, in the years the tally counts, beyond the tree while the year turns: building
-  // against the rock, the bow, his strength, his uncle's stone once he has set it up)
-  const [C1, C2, C3, C4, C5, C6] = CUTS;
-  const ghostSpots = [
-    { a: 112.55, b: 114.75, p: onG(fireP.clone().add(V3(-1.15, 0, 1.0))), face: fireP, kind: 'huddle' },
-    { a: C1 + 0.3, b: C2 - 0.3, p: onG(face.center.clone().addScaledVector(face.normal, 1.15).add(V3(-0.8, 0, 0.5))), face: face.center, kind: 'build' },
-    { a: C2 + 0.3, b: C3 - 0.3, p: onG(A.TARGET.clone().lerp(A.CAMP, 0.62)), face: A.TARGET, kind: 'archery' },
-    { a: C3 + 0.3, b: C4 - 0.3, p: G(-2.6, 3.4), face: G(2.5, 4.2), kind: 'pushup' },
-    { a: C4 + 0.3, b: C5 - 0.3, p: A.MEDITATE.clone(), face: A.MEDITATE.clone().addScaledVector(A.meditateGap, 4), kind: 'meditate' },
-    { a: C5 + 0.3, b: C6 - 0.3, p: onG(A.MEMORIAL.clone().add(V3(0.75, 0, 1.05))), face: A.MEMORIAL, kind: 'mourn' },
-  ];
+
+  // ------------------------------------------------------------ the stride-cut (125.9–130.45)
+  const stretchS = STRETCH.map(x => x[0] === null ? J.s.CROSSING - 1.2 : x[0]);
+  const stretchAt = STRETCH.reduce((a, x) => (a.push(a[a.length - 1] + x[1]), a), [0]);
+  // strides since it began (the gait's phase: a left heel strike on each whole number), slowing to a stop after the
+  // missed beat
+  const stridePh = u => {
+    if (u <= MISSED) return Math.max(0, (u - STRIDE_U0) / STRIDE_DU);
+    const t = Math.min(u - MISSED, HALT);
+    return STRIDE_END + (t - t * t / (2 * HALT)) / STRIDE_DU;
+  };
+  function strideAt(u) {
+    const ph = stridePh(u);
+    let k = 0;
+    while (k < STRETCH.length - 1 && ph >= stretchAt[k + 1]) k++;
+    const s = stretchS[k] + (ph - stretchAt[k]) * STRIDE_LEN;
+    return { ph, k, s, speed: u <= MISSED ? 1.3 : 1.3 * Math.max(0, 1 - (u - MISSED) / HALT) };
+  }
+  const strideSun = u => { if (u < STRIDE_U0 || u > 130.45) return null; const { k } = strideAt(u); return V3(...STRETCH[k][2]).normalize(); };
+  // the giant he stops beside (forest-set-journey.js GIANTS: 302 m along, 11.5 m to the right of the way)
+  const GIANT = (() => { const w = jAt(302); return w.pos.clone().addScaledVector(rightOf(w.dir), 11.5); })();
+  // a mote of gold across the lens at the missed beat (one glow, turned to the eye)
+  const mote = (() => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, fog: false,
+      uniforms: { uA: { value: 0 } },
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
+      fragmentShader: 'varying vec2 vUv; uniform float uA; void main(){ float r = length(vUv - .5) * 2.; float core = exp(-r * r * 40.), c = core + .5 * exp(-r * r * 7.) + .18 * exp(-r * r * 1.6); gl_FragColor = vec4(mix(vec3(1., .74, .3), vec3(1., .97, .85), core) * c * uA * 2.6, 1.); }',
+    }));
+    m.frustumCulled = false; m.renderOrder = 10; m.visible = false; m.name = 'mote';
+    root.add(m);
+    return m;
+  })();
+  const _mr = V3(), _mu = V3(), _mf = V3();
+  function moteAt(u, camera) {
+    const t = clamp((u - MISSED + 0.01) / 0.17);
+    mote.visible = t > 0 && t < 1 && !!camera;
+    if (!mote.visible) return null;
+    camera.updateMatrixWorld();
+    _mr.setFromMatrixColumn(camera.matrixWorld, 0); _mu.setFromMatrixColumn(camera.matrixWorld, 1); _mf.setFromMatrixColumn(camera.matrixWorld, 2).negate();
+    // (from the right of the frame across to the left, near the lens, over the shade of the giant's roots and past his
+    // head, drifting a little up)
+    mote.position.copy(camera.position).addScaledVector(_mf, 1.6).addScaledVector(_mr, lerp(0.78, -0.62, t)).addScaledVector(_mu, -0.06 + 0.1 * t + 0.03 * Math.sin(t * 9));
+    mote.quaternion.copy(camera.quaternion);
+    mote.scale.setScalar(0.11);
+    mote.material.uniforms.uA.value = Math.sin(t * Math.PI);
+    return mote.position;
+  }
 
   // ------------------------------------------------------------ the journey: where he is, where the camera is
   const stageAt = u => { for (let i = 0; i < STAGES.length; i++) { const [a, b] = STAGES[i]; if (u >= a && u <= b) return i; } return -1; };
-  const stageS = (i, u) => { const [a, b, s0, s1] = STAGES[i]; return lerp(s0, s1, clamp((u - a) / (b - a))); };
+  const stageS = (i, u) => { const [a, b, s0, s1, kind] = STAGES[i]; return kind === 'stride' ? strideAt(u).s : lerp(s0, s1, clamp((u - a) / (b - a))); };
   // where he is along the way (metres)
   function heroS(u) {
     if (u <= STAGES[0][0]) return STAGES[0][2];
@@ -293,7 +348,6 @@ void main(){
   // forest; then down over the clearing in the falling snow to the boulder he comes to)
   const descent = new THREE.CatmullRomCurve3([V3(27, 8.5, 43), V3(19, 6.6, 31), V3(10.5, 5.0, 20), V3(3.6, 3.9, 12.8), V3(-2.6, 3.0, 9.2)], false, 'centripetal');
   const descentLook = new THREE.CatmullRomCurve3([V3(-150, 30, -230), V3(-80, 12, -120), V3(-16, 2, -36), V3(0.5, 1.3, -6), ROCKSIT.clone().add(V3(0, 0.75, 0))], false, 'centripetal');
-  const campC = V3(0.4, 1.1, -1.4);
 
   // ------------------------------------------------------------ Wuhen here: pose state for the engine's 3D hero
   function wuhen(u) {
@@ -310,48 +364,12 @@ void main(){
       o.age = 0;
       o.speed = k < 0.82 ? 0.9 : 0;
       o.visible = u > 110.6;
-      o.fade = 1 - smooth(112.45, 112.9, u);
       o.lookAt = u < 111.75 ? ROCKSIT.clone().add(V3(0, 1, 0)) : null;
       return o;
     }
     if (u < 124.6) {
-      // the six winters at the tally tree: each winter he is at it (a year older), draws the knife down the bark, and
-      // goes back round the tree to the camp while the year turns; the sixth time he stays, and in the sixth autumn lays
-      // his hand on the six cuts and turns for the way out
-      let k = 0;
-      while (k < 5 && u > CUTS[k] + 0.8) k++;
-      const cut = cuts[k], C = cut.C, last = k === 5;
-      o.age = k / 5;
-      o.speed = 0;
-      o.P = cut.stand.clone();
-      o.heading = tFace.clone();
-      // (from the cut in to the eye until he is out of sight behind the tree on his way back to the camp)
-      o.visible = u > C - 0.4 && (last || u < C + 0.9);
-      o.fade = last ? 1 : 1 - smooth(C + 0.8, C + 0.9, u);
-      // the knife: up to the top of the cut, drawn down it, away
-      const down = smooth(C - 0.15, C + 0.2, u);
-      o.carve = band(C - 0.38, C - 0.2, C + 0.2, C + 0.34, u);
-      o.carveTarget = cut.top.clone().lerp(cut.bottom, down).addScaledVector(cut.n, 0.04).addScaledVector(tRight, -0.012).add(V3(0, 0.125, 0)).add(V3(0, 0.02 * Math.sin(u * 90) * band(C - 0.15, C - 0.1, C + 0.15, C + 0.2, u), 0));
-      o.braceTarget = braceAt.clone();
-      o.gripR = o.carve > 0.05 ? 'rod' : null;
-      o.lookAt = cut.mid.clone();
-      o.lookW = 1 - smooth(C + 0.25, C + 0.4, u) * (last ? 0 : 1);
-      if (!last && u > C + 0.42) {
-        // back round the tree toward the camp
-        const t = smooth(C + 0.42, C + 0.9, u);
-        o.P = cut.stand.clone().lerp(BACK_WAY.getPointAt(Math.min(t, 0.999)), smooth(0, 0.08, t));
-        o.heading = flatDir(o.P, BACK_WAY.getPointAt(Math.min(1, t + 0.06)));
-        if (t < 0.1) o.heading = yawLerp(tFace, o.heading, t / 0.1);
-        o.speed = 1.2;
-      }
-      if (last) {
-        // (the sixth autumn: his palm on the six; then he turns from the tree for the way out)
-        o.palm = band(123.66, 123.9, 124.08, 124.25, u);
-        o.palmTarget = sixMid.clone().addScaledVector(tn, 0.012);
-        o.lookAt = sixMid.clone();
-        o.lookW = 1 - smooth(124.05, 124.4, u);
-        o.heading = yawLerp(tFace, flatDir(TALLYSTAND, TO_SNARE.getPointAt(0.12)), smooth(124.18, 124.6, u));
-      }
+      // the six years at the camp (years.js)
+      years.hero(u, o);
       return o;
     }
     if (u < 133.3) {
@@ -372,13 +390,23 @@ void main(){
         o.lookW = o.crouch;
         return o;
       }
+      if (kind === 'stride') {
+        // his walk locked to the story, the world cut under his feet on the heel strikes
+        const st = strideAt(u), w = jAt(st.s);
+        o.P = w.pos;
+        o.heading = w.dir.clone();
+        o.speed = st.speed;
+        o.phase = st.ph % 1;
+        // (the missed beat: he looks after the mote that crossed in front of him, then up at the giant)
+        const look = band(MISSED + 0.03, MISSED + 0.1, 130.1, 130.3, u);
+        if (look > 0) { o.lookAt = w.pos.clone().addScaledVector(w.dir, 2).addScaledVector(rightOf(w.dir), -2.5).add(V3(0, 1.7, 0)).lerp(GIANT.clone().add(V3(0, 9, 0)), smooth(129.95, 130.3, u)); o.lookW = 0.8 * look; o.lookUp = 0.5 * smooth(129.95, 130.3, u) * (1 - smooth(130.3, 130.45, u)); }
+        return o;
+      }
       const s = stageS(i, u);
       const w = jAt(s);
       o.P = w.pos;
       o.heading = w.dir.clone();
-      o.speed = kind === 'slide' ? 0 : kind === 'ford' ? 1.15 : 1.3;
-      // (in the old wood he looks up at the giants as he goes; after the streams, ahead where they go)
-      if (kind === 'oldwood') { o.lookAt = w.pos.clone().addScaledVector(w.dir, 6).add(V3(0, 4.5, 0)); o.lookW = 0.6 * band(129.5, 129.8, 130.1, 130.4, u); }
+      o.speed = kind === 'slide' ? 0 : 1.3;
       if (kind === 'streams') { o.lookAt = w.pos.clone().addScaledVector(w.dir, 10).add(V3(0, 1.8, 0)); o.lookW = 0.5 * smooth(130.6, 130.9, u); }
       if (kind === 'rim') {
         // at the rim he stops: below, the streams of light go down into the dell
@@ -416,17 +444,9 @@ void main(){
     return o;
   }
 
-  // ------------------------------------------------------------ the ghosts: [{ i, P, heading, kind, fade, age, reachTarget }]
-  function ghosts(u) {
-    const out = [];
-    ghostSpots.forEach((g, i) => {
-      const k = band(g.a, g.a + 0.28, g.b - 0.28, g.b, u);
-      if (k <= 0.01) return;
-      const P = g.p.clone();
-      out.push({ i, P, heading: flatDir(P, g.face), kind: g.kind, fade: k * 0.86, age: clamp((u - 112.6) / 10.6), reachTarget: g.kind === 'build' ? face.center.clone().add(V3(0, 0.9, 0)) : null });
-    });
-    return out;
-  }
+  // ------------------------------------------------------------ the others: him in the moments of the years, the engine's spare
+  // figures ([{ i, P, heading, state, fade, age }])
+  const ghosts = u => (u > 112.9 && u < 124.6 ? years.others(u) : []);
 
   // ------------------------------------------------------------ the shots that belong to this place
   // the shots of the way out (between the snare and the rim)
@@ -461,8 +481,24 @@ void main(){
     cp.y = Math.max(cp.y, hB(cp.x, cp.z) + 0.4);
     return { cp, lk };
   }
+  // the stride-cut's lens: locked at his hip behind his right shoulder; at the missed beat it leaves him, up the giant
+  function strideShot(u) {
+    const st = strideAt(u), w = jAt(st.s), P = w.pos, d = w.dir, r = rightOf(d);
+    const cp = P.clone().addScaledVector(d, -3.6).addScaledVector(r, 1.2).add(V3(0, 1.05, 0));
+    const lk = P.clone().addScaledVector(d, 7).addScaledVector(r, 0.9).add(V3(0, 0.95, 0));
+    const cr = smooth(CRANE[0], CRANE[1], u);
+    if (cr > 0) {
+      // (rising beside him and turning to the giant's trunk, its crown, as the motes begin)
+      const e = cr * cr * (3 - 2 * cr);
+      cp.lerp(P.clone().addScaledVector(d, -2.2).addScaledVector(r, 2.4).add(V3(0, 5.5, 0)), e);
+      lk.lerp(GIANT.clone().lerp(P, 0.25).add(V3(0, lerp(4, 16, e), 0)), e);
+    }
+    return { cp, lk };
+  }
   const xuanAt = V3(), xuanN = V3(0, 1, 0);
+  const shotOut = { fov: 46, fovW: 0, shot: '' };
   function shots(u, pos, look) {
+    shotOut.fovW = 0; shotOut.shot = '';
     // the descent: out of the white over the basin, down the gold thread, into the clearing where he arrives
     const dw = cam.descent(u);
     if (dw > 0) {
@@ -471,46 +507,13 @@ void main(){
       pos.lerp(descent.getPointAt(e), dw);
       look.lerp(descentLook.getPointAt(e), dw);
     }
-    // the first winter: a slow arc round the camp in the snow, coming round to the tally tree
+    // the six years at the camp: the lens of years.js (its own focal length, and the shot it is in, so a cut is a cut)
     const yw = cam.years(u);
     if (yw > 0) {
-      const t = smooth(112.3, 114.95, u);
-      const th = lerp(0.95, -0.42, t), rr = lerp(11.5, 8.6, t), hh = lerp(5.4, 2.6, t);
-      const o = V3(campC.x + Math.sin(th) * rr, 0, campC.z + Math.cos(th) * rr);
-      o.y = hB(o.x, o.z) + hh;
-      pos.lerp(o, yw);
-      look.lerp(campC.clone().add(V3(0, lerp(0.2, 0.0, t), 0)), yw);
-    }
-    // the tally: wide on the tree and the camp past it while the year turns; for each cut, a cut in close to the bark,
-    // the knife going down it and the chips flying, his fist coming in from the side (never his face); out again as he
-    // goes; the last time, behind him at the tree while the year turns round him, his hand on the six
-    const tw = cam.tally(u);
-    if (tw > 0) {
-      let k = 0;
-      while (k < 5 && u > CUTS[k] + 0.8) k++;
-      const cut = cuts[k], C = cut.C, last = k === 5;
-      const yr = clamp((u - 114.3) / (CUTS[5] - 114.3));
-      let cp, lk;
-      if (u > C - 0.38 && u < C + 0.42) {
-        // (in close: the cut in the middle of the frame, a little from his right, the earlier cuts beside it)
-        // (across the bark from his right, low against it: the blade biting in, the chips coming toward the eye)
-        const drift = smooth(C - 0.38, C + 0.42, u);
-        cp = cut.mid.clone().addScaledVector(tn, lerp(0.74, 0.8, drift)).addScaledVector(tRight, lerp(0.26, 0.3, drift)).add(V3(0, lerp(0.22, 0.19, drift), 0));
-        lk = cut.mid.clone().addScaledVector(tRight, -0.05).add(V3(0, -0.03, 0));
-      } else if (last) {
-        // (the last: behind him and off his right shoulder, the tree before him, while the year turns round him to the
-        // sixth autumn and his hand comes to rest on the six cuts)
-        const fin = smooth(C + 0.42, 124.15, u);
-        cp = TALLYSTAND.clone().addScaledVector(tn, lerp(2.1, 1.45, fin)).addScaledVector(tRight, lerp(1.05, 0.82, fin)).add(V3(0, lerp(1.72, 1.6, fin), 0));
-        lk = sixMid.clone().addScaledVector(tRight, 0.05).add(V3(0, 0.06, 0));
-      } else {
-        // (out: the whole tree and the camp past it, a little further round each year, drifting)
-        const sw = V3().copy(tn).applyAxisAngle(UP, lerp(0.34, -0.1, yr) + 0.05 * Math.sin(u * 1.7));
-        cp = trunkAt(0).addScaledVector(sw, 4.4 - 0.25 * smooth(C - 1.1, C - 0.4, u)).add(V3(0, 2.05, 0));
-        lk = trunkAt(1.25).addScaledVector(tn, -2.6).add(V3(0, -0.15, 0));
-      }
-      pos.lerp(cp, tw);
-      look.lerp(lk, tw);
+      const c = years.camera(u);
+      pos.lerp(c.pos, yw);
+      look.lerp(c.look, yw);
+      shotOut.fov = c.fov; shotOut.fovW = yw; shotOut.shot = c.shot;
     }
     // the journey: a shot to each stretch of the way, cut straight from one to the next
     const jw = smooth(124.35, 124.75, u) * (1 - smooth(133.05, 133.45, u));
@@ -540,6 +543,10 @@ void main(){
           lk.lerp(hp.addScaledVector(w, 5).addScaledVector(sw, -0.5).add(V3(0, 1.0, 0)), ap);
         }
         if (sn > 0) lk.lerp(snareSpot, sn);
+      } else if (kind === 'stride') {
+        ({ cp, lk } = strideShot(u));
+        // (a long lens on him; wider as it rises up the giant)
+        shotOut.fov = lerp(30, 50, smooth(CRANE[0], CRANE[1], u)); shotOut.fovW = jw; shotOut.shot = 'stride' + strideAt(u).k;
       } else ({ cp, lk } = wayShot(i, u));
       pos.lerp(cp, jw);
       look.lerp(lk, jw);
@@ -601,6 +608,7 @@ void main(){
       pos.lerp(cp, sw);
       look.lerp(lk, sw);
     }
+    return shotOut;
   }
 
   // ------------------------------------------------------------ the sun through the day
@@ -608,6 +616,8 @@ void main(){
   const sunDirs = [[108, V3(0.36, 0.2, -0.91)], [111.5, V3(0.36, 0.24, -0.9)], [112.6, V3(-0.62, 0.55, 0.56)], [123.6, V3(-0.62, 0.55, 0.56)],
     [124.6, V3(-0.5, 0.42, -0.76)], [128.6, V3(-0.58, 0.36, -0.73)], [131.4, V3(-0.62, 0.3, -0.72)], [133.0, V3(-0.5, 0.56, -0.66)], [145, V3(-0.5, 0.56, -0.66)]];
   function sunDir(u) {
+    const ss = strideSun(u);
+    if (ss) return ss;
     let i = 0;
     while (i < sunDirs.length - 2 && u > sunDirs[i + 1][0]) i++;
     const [u0, a] = sunDirs[i], [u1, b] = sunDirs[i + 1];
@@ -619,7 +629,7 @@ void main(){
   const heldPos = V3(), heldQ = new THREE.Quaternion();
   let heldOpen = 0, heldOnce = false;
   let px = 900;
-  function update(u, time, camera, { inB, sample, hero, pxScale, lamp }) {
+  function update(u, time, camera, { inB, sample, hero, ghosts: ghostFigures, pxScale, lamp }) {
     trailB.uniforms.uTime.value = time;
     if (pxScale) px = pxScale;
     if (!inB) { bow.group.visible = false; bowBack.group.visible = false; qiFar.points.visible = qiNear.points.visible = false; return; }
@@ -629,19 +639,19 @@ void main(){
     U.uBlossom.value = sample('blossom');
     U.uMoss.value = 0.8;
     U.uStage.value = FT.stage(u);
-    // (the old tally marks of the camp kit stay hidden: the cuts are made in front of the eye now)
+    // (the old tally marks of the camp kit stay hidden: the marks are made in front of the eye now)
     U.uYears.value = 0;
-    // the cuts: each drawn down the bark with the knife, then greying through the years after
-    notches.forEach((nt, i) => {
-      const C = CUTS[i];
-      nt.uni.uProg.value = smooth(C - 0.15, C + 0.2, u);
-      nt.uni.uFresh.value = 1 - 0.85 * smooth(C + 0.6, C + 4.2, u);
-      nt.mesh.visible = u > C - 0.16 && u < 124.8;
+    // the marks: each drawn across the bark with the knife, then greying through the years after
+    notches.forEach((nt, k) => {
+      const [a, b] = scoreOf(k);
+      nt.uni.uProg.value = smooth(a, b, u);
+      nt.uni.uFresh.value = 1 - 0.85 * smooth(b + 0.4, b + 4.2, u);
+      nt.mesh.visible = u > a && u < 124.8;
     });
     chips.uniforms.uU.value = u;
     chips.uniforms.uPx.value = px;
     chips.uniforms.uLight.value = lerp(0.85, 1.15, sample('snowCover'));
-    chips.pts.visible = u > CUTS[0] - 0.2 && u < CUTS[5] + 1.2;
+    chips.pts.visible = u > scoreOf(0)[0] - 0.02 && u < scoreOf(5)[1] + 0.6;
     U.uCollapse.value = 0;
     // the camp fire through the years, cold once he has gone
     set.fx.setFire(u > 112.4 && u < 124.6 ? 1 : 0, time);
@@ -654,14 +664,15 @@ void main(){
     trailB.uniforms.uAlpha.value = 1 - smooth(111.3, 111.95, u);
     trailB.mesh.visible = u > 109.5 && u < 111.95;
     // the bow: in his left fist on the way, on his back from the rim
-    // the knife in his right fist while he cuts
+    // the knife in his right fist while he works with it (the blade out of the thumb side for the marks)
     if (hero && !knifeMounted) { knife.rotation.set(0, 0, 0); knife.position.set(0, 0, 0); hero.attach('handR', knife); knifeMounted = true; }
     {
-      let k = 0;
-      while (k < 5 && u > CUTS[k] + 0.8) k++;
-      const C = CUTS[k];
-      knife.visible = knifeMounted && u > C - 0.42 && u < C + (k === 5 ? 0.42 : 0.5) && u < 124.6;
+      const w = u > 112.9 && u < 124.6 ? years.hero(u, {}) : null;
+      knife.visible = knifeMounted && !!w && w.visible && (w.carve || 0) > 0.04;
+      knife.rotation.z = w && w.knifeFlip ? Math.PI : 0;
     }
+    // the things in his hands through the years (the engine's spare figures hold some of them)
+    years.update(u, { ghosts: ghostFigures || [] });
     if (hero && !bowMounted) {
       bow.group.rotation.set(0, Math.PI, 0); bow.group.position.set(0, 0, -0.2); hero.attach('handL', bow.group);
       bowBack.group.rotation.set(0.25, 0, Math.PI * 0.5 + 0.35); bowBack.group.position.set(0.02, 0.05, -0.12); hero.attach('back', bowBack.group);
@@ -673,6 +684,8 @@ void main(){
     bow.group.visible = bowMounted && u > 125.9 && u < 132.0;
     bowBack.group.visible = bowMounted && u >= 132.0 && u < 141;
     bow.update(0); bowBack.update(0);
+    // the missed beat's mote
+    moteAt(u, camera);
     // the old wood: the fungi wake with the qi
     const qk = FT.qi(u);
     if (set.fungi && set.fungi.glow) set.fungi.glow.value = 0.5 + qk * 1.5;
@@ -748,7 +761,9 @@ void main(){
     set.update(time, camera);
   }
 
-  // (the lens may come close by him without hiding him: in close on the knife at the bark, where his head is out of the frame)
-  const allowNear = u => CUTS.some(C => u > C - 0.4 && u < C + 0.44);
-  return { root, set, anchors: A, fogFloor: 0, sunDir, wuhen, ghosts, shots, update, scroll, trail: trailB, allowNear, tally: { cuts, sixMid, tn, tRight, knife }, dell: { KNEEL, SCROLL, LAND }, light };
+  // (the lens may come close by him without hiding him: on the bark over his shoulder)
+  const allowNear = u => years.closeNow(u);
+  // (for staging: a fresh copy of years.js swapped in without loading the page again)
+  const restageYears = mod => { years.dispose(); years = mod.createYears(yearsArgs); return years; };
+  return { root, set, anchors: A, fogFloor: 0, sunDir, wuhen, ghosts, shots, update, scroll, trail: trailB, allowNear, get years() { return years; }, restageYears, tally: { notch, STAND, tn, tRight, knife }, dell: { KNEEL, SCROLL, LAND }, light };
 }

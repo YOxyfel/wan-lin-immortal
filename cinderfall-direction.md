@@ -183,9 +183,9 @@ cut from the mask; the gauntlet run; crystal shards hanging in slow motion; the 
 ## Order of work
 1. Foundations: the story clock (done); protected passages (speed cap and ink catch-up); impacts and flashes fired on
    crossing and the flash cap; the phone buttons (done).
-2. The launch and the dive.
-3. The six winters (with the notches planted on the door frame).
-4. The walk out.
+2. The launch and the dive (the launch done; the dive's chase still to come).
+3. The six winters (done, see the review's round 7; the notches on the uncle's door frame still to plant).
+4. The walk out (the stride-cut done; the omen's top-down insert of the frost still to come).
 5. The heart: the uncle at the door, the hands, the last words, the morning rewound.
 6. The war made legible: the shadow-play, the masked fighter, the fall, the scroll in the light; violet for the sect.
 7. The lens pass over act 01, the street, the smith, the gate, the quiet stretch, the ink climbing.

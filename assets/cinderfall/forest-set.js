@@ -214,7 +214,7 @@ export async function buildForestSet(mats, quality = {}, { renderer, gate = null
   const anchors = {
     CAMP: at(P.CAMP), ROCK: at(P.ROCK), FIRE: at(P.FIRE), HOME: at(P.HOME), TALLY: at(P.TALLY), tallyFace: camp.tallyFace,
     notch: i => { const n = camp.notches[Math.max(1, Math.min(6, Math.round(i))) - 1]; return { pos: n.pos.clone(), normal: n.normal.clone() }; },
-    TARGET: at(P.TARGET), MEDITATE: at(P.MEDITATE), BIGPINE: at(P.BIGPINE), MAPLE1: at(P.MAPLE1), POOL: V3(P.POOL[0], waterY(P.POOL[1]), P.POOL[1]), MEMORIAL: at(P.MEMORIAL),
+    TARGET: at(P.TARGET), RANGE: at(P.RANGE), BULL: camp.target.bull.clone(), targetN: camp.target.normal.clone(), MEDITATE: at(P.MEDITATE), BIGPINE: at(P.BIGPINE), MAPLE1: at(P.MAPLE1), POOL: V3(P.POOL[0], waterY(P.POOL[1]), P.POOL[1]), MEMORIAL: at(P.MEMORIAL),
     rockFace: camp.rockFace,
     // the journey: control points (ground) of a centripetal Catmull-Rom, its length, a ground-true sampler, waypoints
     JOURNEY: P.JOURNEY.map(p => at(p)),
