@@ -854,7 +854,53 @@ void main(){
   const envScene = new THREE.Scene();
   envScene.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), envMat));
   const pmrem = new THREE.PMREMGenerator(renderer);
-  let envRT = null;
+  // The environment light is rebuilt in place: one render target, camera and backdrop, kept for good. (three's
+  // fromScene makes a new target, a new backdrop material and a new box on every call. A new target made every lit
+  // material in the scene check its shader program again, and the backdrop's program was compiled, used once and
+  // deleted: about four times a second whenever the story moved.) The steps are fromScene's own (three 0.180.0,
+  // pinned in package.json): six faces into the cube-UV layout, then the generator's blur into the lower levels.
+  const env = { rt: null, cam: new THREE.PerspectiveCamera(90, 1, 0.1, 100), box: null, clear: new THREE.Color(), alpha: 1 };
+  const UP = [1, -1, 1, 1, 1, 1], FWD = [1, 1, 1, -1, -1, -1];
+  function envInPlace() {
+    const r = renderer;
+    if (!env.rt) {
+      pmrem._setSize(64);
+      env.rt = pmrem._allocateTargets();   // (the first call also makes the generator's ping-pong target, blur and planes)
+      env.rt.depthBuffer = true;
+      env.box = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial({ name: 'env.backdrop', side: THREE.BackSide, depthWrite: false, depthTest: false }));
+    }
+    const rt = env.rt, cam = env.cam, size = pmrem._cubeSize;
+    const oldT = r.getRenderTarget(), oldFace = r.getActiveCubeFace(), oldMip = r.getActiveMipmapLevel();
+    const oldXr = r.xr.enabled, oldAuto = r.autoClear, oldTone = r.toneMapping;
+    r.getClearColor(env.clear); env.alpha = r.getClearAlpha();
+    r.xr.enabled = false; r.toneMapping = THREE.NoToneMapping; r.autoClear = false;
+    env.box.material.color.copy(env.clear);
+    // (last time's depth would otherwise be tested against: the target is not new any more)
+    rt.scissorTest = false;
+    r.setRenderTarget(rt);
+    r.clearDepth();
+    rt.scissorTest = true;
+    for (let i = 0; i < 6; i++) {
+      const col = i % 3;
+      cam.position.set(0, 0, 0);
+      if (col === 0) { cam.up.set(0, UP[i], 0); cam.lookAt(FWD[i], 0, 0); }
+      else if (col === 1) { cam.up.set(0, 0, UP[i]); cam.lookAt(0, FWD[i], 0); }
+      else { cam.up.set(0, UP[i], 0); cam.lookAt(0, 0, FWD[i]); }
+      rt.viewport.set(col * size, i > 2 ? size : 0, size, size);
+      rt.scissor.set(col * size, i > 2 ? size : 0, size, size);
+      r.setRenderTarget(rt);
+      r.render(env.box, cam);
+      r.render(envScene, cam);
+    }
+    pmrem._applyPMREM(rt);
+    r.setRenderTarget(oldT, oldFace, oldMip);
+    r.xr.enabled = oldXr; r.toneMapping = oldTone; r.autoClear = oldAuto;
+    r.setClearColor(env.clear, env.alpha);
+    rt.scissorTest = false;
+    rt.viewport.set(0, 0, rt.width, rt.height);
+    rt.scissor.set(0, 0, rt.width, rt.height);
+    return rt.texture;
+  }
 
   let w = 1, h = 1;
   const clashOffset = new THREE.Vector3();
@@ -883,11 +929,9 @@ void main(){
     updateEnv() {
       const flash = uniforms.uFlash.value;
       uniforms.uFlash.value = 0;
-      const next = pmrem.fromScene(envScene, 0, 0.1, 100, { size: 64 });
+      const tex = envInPlace();
       uniforms.uFlash.value = flash;
-      if (envRT) envRT.dispose();
-      envRT = next;
-      return next.texture;
+      return tex;
     },
   };
 }

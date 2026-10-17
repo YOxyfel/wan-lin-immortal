@@ -1970,5 +1970,78 @@ export async function createEngine(canvas) {
     for (const u of [50.2, 62.4, 0]) { update(u, 0, 0.016); render(); await new Promise(r => setTimeout(r, 0)); }
   }).catch(e => console.warn('precompile', e));
 
-  return { renderer, scene, camera, update, render, resize, metrics, quality, world, post, sky, prepareForest, forceStrike, debug, compiled, get forest() { return B; } };
+  // ---------------------------------------------------------------- the rehearsal
+  // Every look the story takes, drawn once behind the loading screen. Measured on a desktop GPU (Chromium on
+  // Windows), first uses froze the page for 0.1–0.6 s at a time at nearly every key moment of a first read: the driver
+  // compiles a program again for each way it is first drawn, and textures and buffers go up on their first draw. Paid
+  // here they never recur. What is paid is per program, texture and buffer, not per pixel, so the rehearsal is drawn
+  // small; at a few positions everything shown is drawn whatever the camera faces (frustum culling off), so every mesh
+  // goes up, not only those in view. Each position is drawn twice a moment apart, so the strikes and bursts fired on
+  // the way have their shapes. The story's own clock is used, and what the storm keeps of it is reset afterwards.
+  const WARM_US = [
+    0, 1.5, 4, 5.5, 7, 10, 14, 18, 22, 26.5, 30, 34, 38, 42, 44, 46, 46.8, 47.5, 48.5, 50, 51.4, 53, 54.1, 54.45, 54.6,
+    55.3, 56, 57.5, 58.8, 60.5, 62, 62.65, 64, 65.5, 66.7, 68.4, 70.5, 72.7, 75.1, 77, 78.6, 79.5, 81, 83, 84.5, 86, 88,
+    90, 91.5, 92.1, 92.5, 93.5, 95, 96.5, 98, 100, 101.3, 102.4, 103.6, 105, 106.5, 107.5, 108.05, 108.4, 109, 110,
+    110.7, 111.5, 112.5, 114, 115.5, 117, 118.5, 120, 121.5, 123, 124.5, 126, 128, 129.1, 129.6, 130.5, 131.1, 132.5,
+    134, 136, 137.5, 139.3, 139.45, 139.7, 140.2, 141.2, 141.8, 143, 144.5,
+  ];
+  const SWEEP_US = new Set([4, 48.5, 54.6, 64, 79.5, 98, 105, 112.5, 131.1, 139.45]);
+  function renderUnculled() {
+    const flipped = [];
+    scene.traverseVisible(o => { if ((o.isMesh || o.isPoints || o.isLine || o.isSprite) && o.frustumCulled) { o.frustumCulled = false; flipped.push(o); } });
+    try { render(); } finally { for (const o of flipped) o.frustumCulled = true; }
+  }
+  // wait (without blocking the page) until the GPU has done everything asked of it so far
+  async function gpuDone(maxMs = 8000) {
+    const gl = renderer.getContext();
+    if (!gl.fenceSync) return;
+    const f = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    gl.flush();
+    const t0 = performance.now();
+    try {
+      while (performance.now() - t0 < maxMs) {
+        const st = gl.clientWaitSync(f, 0, 0);
+        if (st === gl.ALREADY_SIGNALED || st === gl.CONDITION_SATISFIED || st === gl.WAIT_FAILED) break;
+        await new Promise(r => setTimeout(r, 4));
+      }
+    } finally { gl.deleteSync(f); }
+  }
+  async function warmUp({ onProgress = null, us = WARM_US, sweep = SWEEP_US, scale = 0.35 } = {}) {
+    const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
+    const pr = renderer.getPixelRatio();
+    renderer.setPixelRatio(Math.min(pr, scale));
+    resize();
+    let slice = performance.now(), tPrev = 0;
+    try {
+      for (let i = 0; i < us.length; i++) {
+        // (the story's clock, never running backwards: each position's second look is a moment after its first)
+        const u = us[i], t = Math.max(performance.now() / 1000, tPrev + 0.4);
+        tPrev = t + 0.35;
+        try {
+          update(u, t, 0.016);
+          await renderer.compileAsync(scene, camera);
+          if (sweep.has(u)) renderUnculled(); else render();
+          update(u + 0.01, t + 0.35, 0.016);
+          render();
+        } catch (e) { console.warn('rehearsal', u, e); }
+        if (onProgress) onProgress((i + 1) / us.length, u);
+        // (a slice of work, then a frame for the page; every so often the GPU is let catch up)
+        if (i % 12 === 11) { await gpuDone(); slice = performance.now(); }
+        else if (performance.now() - slice > 28) { await nextFrame(); slice = performance.now(); }
+      }
+    } finally {
+      renderer.setPixelRatio(pr);
+      resize();
+    }
+    // what the storm keeps of its clock (the rehearsal's ran ahead of the real one), and where the story was
+    const fresh = () => { lightning.reset(); gStrikes.reset(); nextStrike = 0; nextSheet = 0; sheetT0 = -9; envT = -9; envU = -99; lastU = 0; };
+    fresh();
+    // the first frame at full size (its targets are made here), then wait for the GPU to finish everything
+    update(0, performance.now() / 1000, 0.016);
+    render();
+    await gpuDone();
+    fresh();
+  }
+
+  return { renderer, scene, camera, update, render, resize, metrics, quality, world, post, sky, prepareForest, warmUp, forceStrike, debug, compiled, get forest() { return B; } };
 }

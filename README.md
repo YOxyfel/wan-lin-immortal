@@ -130,7 +130,9 @@ Code (`assets/cinderfall/`):
 Assets (`Images/Cinderfall/`) are regenerated with `python tools/gen_textures.py`, `python tools/prepare_wuhen.py`
 (Wuhen's over-the-shoulder card from `Images/Prologue/shoulder.png`) and `python tools/glyphs.py` (calligraphy
 outlines from Noto Serif CJK, SIL Open Font License). Debug: `?debug=1` pauses the loop and `window.__cf.frame(u)`
-renders any story position; `?q=low|high` forces quality; `?motion=off` shows the static story.
+renders any story position; `?q=low|high` forces quality; `?motion=off` shows the static story; `?res=fixed` turns off
+the resolution governor; `?warm=0` skips the rehearsal under the title (every look of the story drawn once, unseen, so
+nothing is compiled or uploaded mid-story) and `?noforest` the forest build.
 
 The earlier prologue scripts (`assets/prologue*.js`, `village-scene.js`) are no longer loaded by `index.html`.
 A copy of the previous homepage is in `../website-before-cinderfall/`. See `cinderfall-review.md` for verification notes.

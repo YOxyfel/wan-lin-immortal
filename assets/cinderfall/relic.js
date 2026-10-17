@@ -156,16 +156,21 @@ export function createBow() {
     }
     return pts;
   };
-  let bowMesh = null;
-  const setBend = k => {
-    if (bowMesh) { bowMesh.geometry.dispose(); group.remove(bowMesh); }
+  // (the limbs at each of the seven steps of the draw, made once: the mesh only swaps its geometry as the string comes back)
+  const bendGeo = new Map();
+  const limbGeo = k => {
+    if (bendGeo.has(k)) return bendGeo.get(k);
     const geo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(limbPts(k)), 40, 0.013, 6);
     const p = geo.attributes.position;
     for (let i = 0; i < p.count; i++) { const yy = p.getY(i); const s = 1 - Math.abs(yy) / 0.68 * 0.45; p.setX(i, p.getX(i) * (s + 0.3)); p.setZ(i, p.getZ(i)); }
-    bowMesh = new THREE.Mesh(geo, wood);
-    bowMesh.castShadow = true;
-    group.add(bowMesh);
+    bendGeo.set(k, geo);
+    return geo;
   };
+  for (let i = 0; i <= 6; i++) limbGeo(i / 6);
+  const bowMesh = new THREE.Mesh(limbGeo(0), wood);
+  bowMesh.castShadow = true;
+  group.add(bowMesh);
+  const setBend = k => { bowMesh.geometry = limbGeo(k); };
   setBend(0);
   const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.14, 8), wrap);
   grip.position.z = -0.2;

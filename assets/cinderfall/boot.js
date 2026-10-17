@@ -97,25 +97,69 @@ async function boot() {
   const audio = createAudio();
 
   // ---------------------------------------------------------------- engine (three.js is code-split)
-  let engine = null, ready = false, storyU = 0, inputAt = 0;
+  let engine = null, ready = false, storyU = 0;
   const loading = $('#loading');
-  // (when the reader last turned the wheel, swiped or pressed a key: heavy work in the background waits for a pause)
-  for (const ev of ['wheel', 'touchstart', 'touchmove', 'keydown', 'pointerdown']) addEventListener(ev, () => { inputAt = performance.now(); }, { passive: true });
-  const calm = () => new Promise(res => {
-    const check = () => { if (performance.now() - inputAt > 450 || storyU > 90) res(); else setTimeout(check, 150); };
-    check();
-  });
-  // (the engine's shader programs compile without blocking: the loading screen keeps drawing until they are ready)
-  import('./engine.js').then(m => m.createEngine($('#world'))).then(e => e.compiled.then(() => e)).then(e => {
+  // the ink overlay's own passes, drawn once: the flood, a drop and its splash, the splat, the crossing's stroke and painting
+  function warmInk() {
+    const base = { blots: [{ x: 0.5, y: 0.58, r: 0.1, a: 1 }], flood: 0, floodC: [0.5, 0.5], floodLift: 0, drop: [0.5, 0.58, 0, 0], splat: 0, splatSeed: 3, stroke: null, land: null };
+    try {
+      ink.render(1, { ...base, flood: 0.6, floodLift: 0.2 });
+      ink.render(2, { ...base, drop: [0.5, 0.9, 0.022, 0] });
+      ink.render(3, { ...base, drop: [0.5, 0.58, 0.03, 0.5] });
+      ink.render(4, { ...base, splat: 0.7 });
+      ink.render(5, { ...base, stroke: { progress: 0.5, width: 0.02, alpha: 1, tail: 0.3, pts: [[0.4, 0.58], [0.55, 0.9], [0.86, 0.86], [0.62, 0.5]] }, land: { reveal: 0.6, alpha: 1, clear: 0, zoom: 1.2, center: [0.62, 0.5], sun: [0.4, 0.58] } });
+      ink.render(6, { ...base, blots: [] });
+    } catch (e) { console.warn('ink rehearsal', e); }
+  }
+  // Getting ready. A short loading screen while the valley is built and its shader programs compiled (without
+  // blocking); then the curtain lifts and the opening plays (the drop, the sign written, the title) while nothing heavy
+  // runs; then, under the finished title, the forest beyond the ridges is built and every look the story takes is
+  // rehearsed (drawn once, unseen), so the driver's own compiling and every upload happen here and not on the way.
+  // Measured on a desktop GPU, doing these on the way froze the page for 0.1–0.6 s at a time at nearly every key
+  // moment of a first read. Until it is done the hint under the title says so, with a line of progress; a reader who
+  // scrolls meanwhile is taken straight to where they are once it is. `?noforest` skips the forest and `?warm=0` the
+  // rehearsal (for debugging).
+  const loadText = loading.querySelector('small');
+  const hint = title.querySelector('.cf-hint'), hintHTML = hint ? hint.innerHTML : '';
+  // (--p: the loading screen's line; --q: the line under the title while the story is prepared)
+  const progress = (text, p) => { if (loadText && text && loadText.textContent !== text) loadText.textContent = text; root.style.setProperty('--p', clamp(p).toFixed(3)); };
+  const prep = q => root.style.setProperty('--q', clamp(q).toFixed(3));
+  const nextFrame = () => new Promise(res => requestAnimationFrame(() => res()));
+  let opened = false;
+  import('./engine.js').then(m => m.createEngine($('#world'))).then(async e => {
+    progress('PREPARING CINDERFALL', 0.6);
+    await e.compiled;
+    if (ink) warmInk();
+    progress('', 1);
+    window.__cf.engine = e;
+    // the curtain lifts
+    if (hint) hint.textContent = 'PREPARING THE STORY';
+    prep(0);
+    opened = true;
+    introAt = performance.now();
+    root.dataset.ready = 'opening';
+    loading.classList.add('loaded');
+    // the opening plays undisturbed (or until the reader moves on)
+    const startSu = uFromScroll();
+    await new Promise(res => { const check = () => (performance.now() - introAt > 5800 || Math.abs(uFromScroll() - startSu) > 0.3 || autoplay ? res() : setTimeout(check, 100)); check(); });
+    let built = false;
+    if (!/[?&]noforest\b/.test(location.search)) {
+      let stages = 0;
+      await e.prepareForest({ gate: async () => { stages++; prep(Math.min(0.25, stages * 0.025)); await nextFrame(); } });
+      built = !!e.forest;
+    }
+    if (!/[?&]warm=0\b/.test(location.search)) {
+      prep(0.25);
+      await e.warmUp({ onProgress: k => prep(0.25 + k * 0.75) });
+    }
+    prep(1);
+    if (hint) hint.innerHTML = hintHTML;
     engine = e;
     ready = true;
+    su = target = autoU = uFromScroll(); suV = 0;
     root.dataset.ready = 'true';
-    loading.classList.add('loaded');
+    if (built) root.dataset.forest = 'true';
     addEventListener('resize', () => engine.resize());
-    window.__cf.engine = engine;
-    // the forest beyond the ridges is built once the valley is on screen, in pauses of the reading
-    const later = window.requestIdleCallback || (f => setTimeout(f, 1200));
-    if (!/[?&]noforest\b/.test(location.search)) later(() => engine.prepareForest({ gate: calm }).then(() => { root.dataset.forest = 'true'; }), { timeout: 4000 });
   }).catch(err => {
     console.error('Cinderfall failed to start', err);
     document.body.classList.add('failed', 'reduced-motion');
@@ -160,7 +204,7 @@ async function boot() {
     const rect = root.getBoundingClientRect();
     const inView = rect.bottom > 0;
     if (forced == null) {
-      if (autoplay) {
+      if (autoplay && ready) {
         autoU = Math.min(TOTAL_U, autoU + paceAt(uToS(autoU)) * dt);
         scrollToU(autoU);
         target = autoU;
@@ -175,11 +219,14 @@ async function boot() {
       if (Math.abs(su - target) < 0.0005 && Math.abs(suV) < 0.002) { su = target; suV = 0; }
     }
     // the story position (held moments run slow); forced test frames are given in story time
-    const u = forced != null ? forced : uToS(su);
+    // (while the loading screen is up the page shows the opening; scrolling meanwhile takes the reader straight there)
+    const u = forced != null ? forced : ready ? uToS(su) : 0;
     root.dataset.u = u.toFixed(3);
     storyU = u;
     const time = forceTime ?? now / 1000;
-    const intro = (now - introAt) / 1000;
+    // (the opening — the drop, the sign written, the title — waits for the loading screen to lift: played under it,
+    // it stuttered with every heavy task of the loading)
+    const intro = opened ? (now - introAt) / 1000 : 0;
 
     // ---------------------------------------------------------------- world
     rendered = !!(engine && inView);
@@ -187,7 +234,7 @@ async function boot() {
       // hold the cloud while the forest is still being built
       const hold = u > 107.9 && !engine.forest;
       engine.update(hold ? Math.min(u, 108.25) : u, time, dt);
-      engine.render();
+      renderTimed();
     }
     // ---------------------------------------------------------------- ink overlay
     if (ink) {
@@ -267,27 +314,58 @@ async function boot() {
     if (forceTime == null) forced = null;
   }
   // ---------------------------------------------------------------- keep the frame rate
-  // When frames run long for a while, and the time is not going on our own script (the GPU is the bottleneck), the
-  // world is drawn at a lower resolution, a step at a time; when there has been room for a good while it goes back up a
-  // step, and once a step up has proved too much it stays put for a long while.
-  const gov = { on: params.get('res') !== 'fixed', pr: 0, max: 0, min: 0, ema: 16.7, cpu: 2, slow: 0, fast: 0, cool: 2, failAt: -1e9, upAt: -1e9 };
+  // The world is drawn at a lower resolution, a step at a time, only when the GPU itself is the bottleneck: its own
+  // time per frame is read through the timer-query extension where the browser offers one. (Guessed from frame
+  // intervals, as before, the governor cut the resolution to 60% on a desktop whose GPU had ten milliseconds to spare:
+  // a stalled frame, or a pane the app was throttling, looked like a slow one.) Without the extension the interval
+  // heuristic remains, needing a plainly slow rate; stalls (frames over 80 ms) never count either way. Once a step up
+  // has proved too much it stays put for a long while.
+  const gov = { on: params.get('res') !== 'fixed', pr: 0, max: 0, min: 0, ema: 16.7, gpu: 8, cpu: 2, slow: 0, fast: 0, cool: 2, failAt: -1e9, upAt: -1e9 };
+  let gl = null, tq = null, tqN = 0;
+  const pendQ = [], doneQ = [];
+  function timerOn() {
+    if (!engine) return false;
+    if (!gl) { gl = engine.renderer.getContext(); try { tq = gl.getExtension('EXT_disjoint_timer_query_webgl2'); } catch { tq = null; } }
+    return !!tq;
+  }
+  // (one frame in four is timed; results are read without waiting, and the GPU's disjoint flag — which costs a round
+  // trip to the GPU process — once for a batch of them)
+  function renderTimed() {
+    if (!gov.on || !timerOn() || (tqN++ & 3) || pendQ.length > 8) { engine.render(); return; }
+    const q = gl.createQuery();
+    gl.beginQuery(tq.TIME_ELAPSED_EXT, q);
+    engine.render();
+    gl.endQuery(tq.TIME_ELAPSED_EXT);
+    pendQ.push(q);
+  }
+  function readTimed() {
+    while (pendQ.length && gl.getQueryParameter(pendQ[0], gl.QUERY_RESULT_AVAILABLE)) {
+      const q = pendQ.shift();
+      doneQ.push(gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6);
+      gl.deleteQuery(q);
+    }
+    if (doneQ.length >= 6) {
+      if (!gl.getParameter(tq.GPU_DISJOINT_EXT)) for (const ms of doneQ) if (ms < 80) gov.gpu += (ms - gov.gpu) * 0.25;
+      doneQ.length = 0;
+    }
+  }
   function setPR(pr) {
-    gov.pr = pr; gov.slow = gov.fast = 0; gov.cool = 1.5; gov.ema = 16.7;
+    gov.pr = pr; gov.slow = gov.fast = 0; gov.cool = 1.5; gov.ema = 16.7; gov.gpu = 8;
     engine.renderer.setPixelRatio(pr);
     engine.resize();
   }
   function govern(intervalMs, cpuMs) {
-    // (a pause of a second or more is the tab hidden or the page stalled, not the frame rate)
-    if (!gov.on || !engine || !rendered || intervalMs > 1000) return;
+    if (!gov.on || !engine || !rendered || intervalMs > 80) return;
     if (!gov.max) { gov.max = gov.pr = engine.renderer.getPixelRatio(); gov.min = Math.max(0.6, gov.max * 0.5); }
-    intervalMs = Math.min(intervalMs, 250);
     const dt = intervalMs / 1000;
     gov.ema += (intervalMs - gov.ema) * 0.08;
     gov.cpu += (cpuMs - gov.cpu) * 0.08;
     if ((gov.cool -= dt) > 0) return;
-    const gpuBound = gov.cpu < gov.ema * 0.6;
-    if (gov.ema > 23 && gpuBound) gov.slow += dt; else gov.slow = Math.max(0, gov.slow - dt * 0.5);
-    if (gov.ema < 18.5) gov.fast += dt; else gov.fast = 0;
+    const timed = !!tq;
+    const slow = timed ? gov.gpu > 15 : (gov.ema > 28 && gov.cpu < gov.ema * 0.5);
+    const fast = timed ? gov.gpu < 9 : gov.ema < 18.5;
+    if (slow) gov.slow += dt; else gov.slow = Math.max(0, gov.slow - dt * 0.5);
+    if (fast) gov.fast += dt; else gov.fast = 0;
     const now = performance.now();
     if (gov.slow > 1 && gov.pr > gov.min + 1e-3) {
       if (now - gov.upAt < 12000) gov.failAt = now;
@@ -306,6 +384,7 @@ async function boot() {
     if (document.hidden || debug) return;
     const t0 = performance.now();
     frame(now);
+    if (tq) readTimed();
     govern(iv, performance.now() - t0);
   };
   requestAnimationFrame(loop);

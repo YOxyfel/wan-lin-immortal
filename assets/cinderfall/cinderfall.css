@@ -1,22 +1,31 @@
 /* Cinderfall prologue stage. Layers: world (0) · ink (10) · captions (11) · title / last page (12) · hud (13) */
 #prologue { position: relative; }
 #prologue .stage { background: #e9e2d1; }
-#world { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+#world { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; transition: opacity .9s ease; }
+/* (while the story is prepared the world is drawn at every look it takes: unseen) */
+#prologue:not([data-ready="true"]) #world { opacity: 0; transition: none; }
 #ink { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
 #prologue .memory, #prologue .quote { display: none !important; }
 
 #loading.loading { background: transparent; color: #3a352d; z-index: 14; align-content: end; padding-bottom: 7vh; pointer-events: none; font: italic 15px "Cormorant Garamond", Georgia, serif; letter-spacing: .04em; }
 #loading.loading small { color: #7b6f5b; margin-top: 6px; }
+/* while it loads: an ink dot breathing where the first drop will land (animated by the compositor, so it stays smooth
+   while the page works), and a hairline of progress under the words */
+#loading.loading::before { content: ''; position: absolute; left: 50%; top: 42%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: #1f1c18; opacity: .5; animation: cf-breathe 2.6s ease-in-out infinite; }
+@keyframes cf-breathe { 0%, 100% { transform: scale(.55); opacity: .28; } 50% { transform: scale(1); opacity: .62; } }
+#loading.loading::after { content: ''; position: absolute; left: 50%; bottom: calc(7vh - 16px); width: min(46vw, 240px); height: 1px; transform: translateX(-50%); background: linear-gradient(90deg, #7b6f5b calc(var(--p, 0) * 100%), #7b6f5b26 0); }
 
 /* ------------------------------------------------------------ title */
 .cf-title { position: absolute; inset: 0; z-index: 12; pointer-events: none; color: #1f1c18; }
 .cf-seal { position: absolute; left: 50%; top: 42%; width: min(25vw, 31vh); height: min(26.5vw, 33vh); transform: translate(-50%, -50%); overflow: visible; filter: drop-shadow(0 0 1px #0004); }
 .cf-title-text { position: absolute; left: 50%; top: calc(42% + min(20vw, 25vh)); transform: translateX(-50%); width: min(92vw, 900px); text-align: center; }
-.cf-title h1 { font: 500 clamp(40px, 6.4vw, 92px)/1 "Cormorant Garamond", Georgia, serif; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 14px; filter: blur(calc((1 - var(--reveal, 0)) * 7px)); -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--reveal, 0) * 140% - 40%), transparent calc(var(--reveal, 0) * 140%)); mask-image: linear-gradient(90deg, #000 calc(var(--reveal, 0) * 140% - 40%), transparent calc(var(--reveal, 0) * 140%)); }
+.cf-title h1 { font: 500 clamp(40px, 6.4vw, 92px)/1 "Cormorant Garamond", Georgia, serif; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 14px; -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--reveal, 0) * 140% - 40%), transparent calc(var(--reveal, 0) * 140%)); mask-image: linear-gradient(90deg, #000 calc(var(--reveal, 0) * 140% - 40%), transparent calc(var(--reveal, 0) * 140%)); }
 .cf-title .eyebrow { color: #8a2a1e; letter-spacing: .42em; opacity: var(--reveal, 0); }
 .cf-sub { font: italic clamp(18px, 1.8vw, 26px) "Cormorant Garamond", Georgia, serif; margin-top: 18px; opacity: calc(var(--reveal, 0) * 1.2 - .2); }
 .cf-hint { font: 500 9px "Manrope", Arial, sans-serif; letter-spacing: .3em; margin-top: 26px; color: #6d6150; opacity: var(--hint, 0); }
 .cf-title.waiting .cf-hint { opacity: calc(var(--hint, 0) * .5); }
+/* while the story is prepared: a line of progress under the hint */
+.cf-title.waiting .cf-hint::after { content: ''; display: block; width: min(42vw, 220px); height: 1px; margin: 12px auto 0; background: linear-gradient(90deg, currentColor calc(var(--q, 0) * 100%), #6d615033 0); }
 .cf-stamp { position: absolute; right: calc(50% - min(44vw, 420px)); top: -6px; display: grid; gap: 1px; padding: 6px 5px; background: #a3261b; color: #f3e8d4; font: 700 15px/1.05 "Noto Serif TC", "Songti TC", "SimSun", serif; border-radius: 2px; box-shadow: inset 0 0 0 2px #f3e8d455; transform: rotate(3deg) scale(calc(.6 + var(--reveal, 0) * .4)); opacity: calc(var(--reveal, 0) * 1.5 - .5); }
 .cf-stamp i { font-style: normal; display: block; }
 
@@ -25,7 +34,8 @@
 .cf-cap { position: absolute; bottom: 15vh; left: 7vw; max-width: min(620px, 80vw); color: #f1e9d8; visibility: hidden; opacity: 0; }
 .cf-cap .eyebrow { color: #d8c7a5; margin-bottom: 16px; text-shadow: 0 1px 14px #000a; }
 .cf-cap p { font: 400 clamp(32px, 4.2vw, 64px)/1.04 "Cormorant Garamond", Georgia, serif; letter-spacing: -.01em; text-shadow: 0 2px 28px #000b, 0 0 2px #0006;
-  filter: blur(calc((1 - var(--reveal, 0)) * 8px));
+  /* (written in from the left under a soft edge; no blur filter: a blur whose radius changed every frame made the
+     browser re-render the line, with its wide shadow, every frame of the reveal) */
   -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--reveal, 0) * 150% - 50%), transparent calc(var(--reveal, 0) * 150%));
   mask-image: linear-gradient(90deg, #000 calc(var(--reveal, 0) * 150% - 50%), transparent calc(var(--reveal, 0) * 150%)); }
 .cf-cap p em { font-style: italic; color: #f0b48f; }

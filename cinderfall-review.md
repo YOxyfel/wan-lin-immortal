@@ -226,3 +226,43 @@ line of light races home over the land ahead of the camera, back to him at the e
   the bridge crossing (and the run home back over it at night) at 640×360 and 800×450, a phone-sized viewport
   (390×844), the built single-page preview, and the GPU-like NaN audit over the changed scenes: no broken pixels, no
   console errors. Not checked on a real GPU or phone.
+
+## Round 5: smoothness, measured on a real GPU (16–17 October 2026)
+
+The first measurements on real hardware (an RTX 4080 Super at 3440×1440, Chromium on Windows, driven from the browser
+pane): the GPU spends 5–8 ms a frame across the whole story, so neither resolution nor the scenes' weight was the
+problem. The lag was freezes: 7 s of them during load, then 0.1–0.6 s at a time at nearly every key moment the first
+time through (the storm, the end of the chase, about 6 s in all over the forest). They are first-use costs: on
+Windows the driver compiles a program again for each way it is first drawn, textures and buffers go up on their first
+draw, and the forest was built in the pauses of the reading, so it ran the moment the reader stopped scrolling.
+Running costs found on the way: the environment light was rebuilt about four times a second while the story moved,
+each time into a new render target (every lit material then re-checked its shader) with a backdrop material that
+was compiled, used once and deleted; the seal's brush strokes each carried an SVG turbulence filter re-run every
+frame of the writing; the captions revealed through a CSS blur and an animated mask; the ink canvas was hidden and
+shown around every drop and flood.
+
+- Getting ready (`boot.js`, `engine.js` `warmUp`): a short loading screen while the valley is built and its programs
+  compiled (an ink dot breathing where the first drop lands, animated by the compositor so it stays smooth while the
+  page works, and a hairline of progress). Then the curtain lifts and the opening plays (the drop, the sign written,
+  the title) with nothing heavy running. Then, under the finished title, the forest is built (its stages a frame
+  apart) and every look the story takes is rehearsed: 96 positions from the timeline, each drawn twice a moment
+  apart (so strikes and bursts have their shapes) at a small size (what is paid is per program, texture and buffer,
+  not per pixel), with frustum culling off at ten of them so every mesh is uploaded, not only those in view, and a
+  GPU fence every twelve positions and at the end, so nothing is still compiling when the story starts. The hint
+  under the title reads PREPARING THE STORY over a line of progress until then; a reader who scrolls meanwhile is
+  taken straight to where they are. The world canvas stays unseen until it is done. `?warm=0` skips the rehearsal,
+  `?noforest` the forest.
+- The environment light (`sky.js`): rebuilt in place, the generator's own steps into one render target, camera and
+  backdrop kept for good (three 0.180.0, pinned). The bow in the hunt keeps its seven drawn shapes (`relic.js`).
+- The seal (`ink.js` `writeGlyph`): for each stroke a map of where it is first reached is computed once, roughened
+  once by the same turbulence, and the writing is a threshold of those maps (one cheap colour filter, only on the
+  stroke being written; finished strokes are plain images). This also fixes the sign itself: each stroke's filter
+  region had been taken from its centre line, which cut the strokes off, so the top bar of 玄 was never written and
+  its dot was a sliver. Now the whole sign is written, with the brush's rough edge on the strokes and a clean outline.
+- Captions and title (`cinderfall.css`): written in from the left with a clip and a fade, no filter and no mask.
+- The ink canvas (`ink.js`): stays in the page; with nothing to draw it is cleared once and left.
+- The frame-rate governor (`boot.js`): reads the GPU's own time (timer queries on one frame in four, the disjoint flag
+  once a batch) and lowers the resolution only when that is over budget; stalls never count. Guessing from frame
+  intervals, it had cut the resolution to 60% on a desktop whose GPU had ten milliseconds to spare.
+- Checked headless (software GL): no console errors; no shader program created after the rehearsal anywhere in the
+  story; the seal written stroke by stroke and whole at the end. Then measured again on the desktop above.

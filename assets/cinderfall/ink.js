@@ -392,7 +392,7 @@ export function createInkOverlay(canvas, noiseURL) {
   img.src = noiseURL;
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-  let w = 0, h = 0;
+  let w = 0, h = 0, clearedW = 0, clearedH = 0;
   const blots = new Float32Array(32), cols = new Float32Array(24);
   // the painting, drawn once into a texture at a little more than the overlay's size (the eye pushes into it)
   const ptex = gl.createTexture(), fbo = gl.createFramebuffer();
@@ -443,8 +443,13 @@ export function createInkOverlay(canvas, noiseURL) {
       const st = s.stroke || null;
       const ld = s.land || null;
       const any = s.blots.some(b => b.a > 0.001) || s.flood > 0.001 || s.drop[2] > 0 || s.splat > 0.001 || (st && st.alpha > 0.001) || (ld && ld.alpha > 0.001);
-      canvas.style.visibility = any ? 'visible' : 'hidden';
-      if (!any) return;
+      // (the canvas stays in the page: hiding and showing it made the browser rebuild its surface each time; with
+      // nothing to draw it is cleared once and left)
+      if (!any) {
+        if (!clearedW || clearedW !== w || clearedH !== h) { gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); clearedW = w; clearedH = h; }
+        return;
+      }
+      clearedW = 0;
       if (ld && ld.alpha > 0.001) paintCache(ld.sun || [0.4, 0.6]);
       gl.viewport(0, 0, w, h);
       gl.clearColor(0, 0, 0, 0);
@@ -483,47 +488,180 @@ export function createInkOverlay(canvas, noiseURL) {
   };
 }
 
-// Brush-written calligraphy: a glyph outline revealed by thick strokes following hand-placed medians.
+// Brush-written calligraphy: a glyph outline revealed by thick strokes following hand-placed medians. The strokes'
+// edges are roughened by turbulence, as a brush's would be; the sign itself keeps its clean outline.
+// Done once, not every frame: for each stroke a map of how far along it each point is first reached (the stroke drawn
+// with round ends and joins, 190 wide) is computed here, roughened once by the same SVG turbulence the strokes used to
+// carry, and kept as a bitmap; writing the sign is then a threshold of those maps, a colour lookup per pixel. (With
+// the filter on the strokes themselves the browser re-ran the turbulence every frame of the writing, 0.1–0.5 s a
+// frame; and each filter's region, taken from its stroke's centre line, cut the strokes off: the top bar of 玄 was
+// never written and its dot was a sliver.)
 export function writeGlyph(svg, glyph, medians, { color = '#a3201a', id = 'g' + Math.random().toString(36).slice(2) } = {}) {
   const NS = 'http://www.w3.org/2000/svg';
-  svg.setAttribute('viewBox', '0 -60 1000 1060');
+  const VB = [0, -60, 1000, 1060], W = 95;              // viewBox; half the stroke width
+  const MW = 800, MH = 848;                              // the maps' size (0.8 px a unit)
+  svg.setAttribute('viewBox', VB.join(' '));
+  const lens = medians.map(pts => pts.slice(1).reduce((a, q, i) => a + Math.hypot(q[0] - pts[i][0], q[1] - pts[i][1]), 0));
+  const total = lens.reduce((a, b) => a + b, 0);
+  const acc = lens.map((_, i) => lens.slice(0, i).reduce((a, b) => a + b, 0));
   const defs = document.createElementNS(NS, 'defs');
   const mask = document.createElementNS(NS, 'mask');
   mask.id = id;
-  const filt = document.createElementNS(NS, 'filter');
-  filt.id = id + 'f';
-  filt.innerHTML = '<feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7"/><feDisplacementMap in="SourceGraphic" scale="28"/>';
-  defs.append(mask, filt);
-  const strokes = medians.map(pts => {
-    const path = document.createElementNS(NS, 'path');
-    path.setAttribute('d', 'M' + pts.map(p => p.join(' ')).join(' L'));
-    path.setAttribute('fill', 'none');
-    path.setAttribute('stroke', '#fff');
-    path.setAttribute('stroke-width', '190');
-    path.setAttribute('stroke-linecap', 'round');
-    path.setAttribute('stroke-linejoin', 'round');
-    path.setAttribute('filter', `url(#${id}f)`);
-    mask.appendChild(path);
-    return path;
-  });
+  for (const [k, v] of [['maskUnits', 'userSpaceOnUse'], ['x', VB[0] - 100], ['y', VB[1] - 100], ['width', VB[2] + 200], ['height', VB[3] + 200]]) mask.setAttribute(k, v);
+  defs.appendChild(mask);
   const shape = document.createElementNS(NS, 'path');
   shape.setAttribute('d', glyph.d);
   shape.setAttribute('fill', color);
   shape.setAttribute('mask', `url(#${id})`);
   svg.append(defs, shape);
-  const lens = strokes.map(s => s.getTotalLength ? s.getTotalLength() || 600 : 600);
-  strokes.forEach((s, i) => { s.style.strokeDasharray = `${lens[i] + 1} ${lens[i] + 400}`; s.style.strokeDashoffset = lens[i] + 1; });
-  const total = lens.reduce((a, b) => a + b, 0);
+
+  // the map of one stroke: where it is first reached, as a grey (1 at its start, 0.05 at its end, black where never)
+  function strokeMap(pts, len) {
+    const c = document.createElement('canvas');
+    c.width = MW; c.height = MH;
+    const g = c.getContext('2d');
+    const img = g.createImageData(MW, MH), d = img.data;
+    for (let i = 3; i < d.length; i += 4) d[i] = 255;
+    const sx = VB[2] / MW, sy = VB[3] / MH;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+    const ci0 = Math.max(0, Math.floor((x0 - W - VB[0]) / sx)), ci1 = Math.min(MW - 1, Math.ceil((x1 + W - VB[0]) / sx));
+    const cj0 = Math.max(0, Math.floor((y0 - W - VB[1]) / sy)), cj1 = Math.min(MH - 1, Math.ceil((y1 + W - VB[1]) / sy));
+    const segs = [];
+    let cum = 0;
+    for (let k = 1; k < pts.length; k++) {
+      const [ax, ay] = pts[k - 1], [bx, by] = pts[k];
+      const ex = bx - ax, ey = by - ay, l = Math.hypot(ex, ey);
+      segs.push({ ax, ay, ex, ey, ee: ex * ex + ey * ey, l, cum });
+      cum += l;
+    }
+    for (let j = cj0; j <= cj1; j++) {
+      const py = VB[1] + (j + 0.5) * sy;
+      for (let i = ci0; i <= ci1; i++) {
+        const px = VB[0] + (i + 0.5) * sx;
+        let s = -1;
+        for (const q of segs) {
+          const dx = px - q.ax, dy = py - q.ay, de = dx * q.ex + dy * q.ey, dd = dx * dx + dy * dy - W * W;
+          if (q.ee < 1e-9) { if (dd <= 0) { s = q.cum; break; } continue; }
+          const disc = de * de - q.ee * dd;
+          if (disc < 0) continue;
+          const r = Math.sqrt(disc), t1 = (de - r) / q.ee, t2 = (de + r) / q.ee;
+          if (t2 < 0 || t1 > 1) continue;
+          s = q.cum + Math.max(0, t1) * q.l;
+          break;
+        }
+        if (s < 0) continue;
+        const v = Math.round(255 * (1 - 0.95 * Math.min(1, s / len)));
+        const o = (j * MW + i) * 4;
+        d[o] = d[o + 1] = d[o + 2] = v;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    return c.toDataURL('image/png');
+  }
+  // roughened once by the turbulence the strokes used to carry (the same noise, in the same units)
+  function roughen(url) {
+    const src = `<svg xmlns="${NS}" viewBox="${VB.join(' ')}" width="${MW}" height="${MH}"><defs><filter id="d" filterUnits="userSpaceOnUse" x="${VB[0] - 100}" y="${VB[1] - 100}" width="${VB[2] + 200}" height="${VB[3] + 200}"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7"/><feDisplacementMap in="SourceGraphic" scale="28"/></filter></defs><rect x="${VB[0] - 100}" y="${VB[1] - 100}" width="${VB[2] + 200}" height="${VB[3] + 200}" fill="#000"/><image href="${url}" x="${VB[0]}" y="${VB[1]}" width="${VB[2]}" height="${VB[3]}" preserveAspectRatio="none" filter="url(#d)"/></svg>`;
+    return new Promise((res, rej) => {
+      const im = new Image();
+      const u = URL.createObjectURL(new Blob([src], { type: 'image/svg+xml' }));
+      im.onload = () => {
+        try {
+          const c = document.createElement('canvas');
+          c.width = MW; c.height = MH;
+          c.getContext('2d').drawImage(im, 0, 0, MW, MH);
+          URL.revokeObjectURL(u);
+          c.toBlob(b => (b ? res(URL.createObjectURL(b)) : rej(new Error('toBlob'))), 'image/png');
+        } catch (e) { URL.revokeObjectURL(u); rej(e); }
+      };
+      im.onerror = e => { URL.revokeObjectURL(u); rej(e); };
+      im.src = u;
+    });
+  }
+  // a threshold per stroke: shown where reached by `p` of the way along it (a soft edge of a few grey levels). Only the
+  // stroke being written carries its filter, over its own area; a finished stroke shows a ready-made image, no filter.
+  const K = 85, M = 24;
+  const boxes = medians.map(pts => {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+    return [x0 - W - M, y0 - W - M, x1 - x0 + 2 * (W + M), y1 - y0 + 2 * (W + M)];
+  });
+  const layers = medians.map((_, i) => {
+    const f = document.createElementNS(NS, 'filter');
+    f.id = `${id}t${i}`;
+    const [bx, by, bw, bh] = boxes[i];
+    for (const [k, v] of [['filterUnits', 'userSpaceOnUse'], ['x', bx], ['y', by], ['width', bw], ['height', bh], ['color-interpolation-filters', 'sRGB']]) f.setAttribute(k, v);
+    // (grey to alpha, then white with the threshold on alpha: the strokes' layers add up in the mask)
+    const lum = document.createElementNS(NS, 'feColorMatrix');
+    lum.setAttribute('type', 'luminanceToAlpha');
+    const ct = document.createElementNS(NS, 'feComponentTransfer');
+    for (const n of ['feFuncR', 'feFuncG', 'feFuncB']) { const e = document.createElementNS(NS, n); e.setAttribute('type', 'linear'); e.setAttribute('slope', '0'); e.setAttribute('intercept', '1'); ct.appendChild(e); }
+    const fa = document.createElementNS(NS, 'feFuncA');
+    fa.setAttribute('type', 'linear'); fa.setAttribute('slope', String(K)); fa.setAttribute('intercept', '0');
+    ct.appendChild(fa);
+    f.append(lum, ct);
+    defs.appendChild(f);
+    const im = document.createElementNS(NS, 'image');
+    for (const [k, v] of [['x', VB[0]], ['y', VB[1]], ['width', VB[2]], ['height', VB[3]], ['preserveAspectRatio', 'none']]) im.setAttribute(k, v);
+    im.style.display = 'none';
+    mask.appendChild(im);
+    return { im, fa, fid: f.id, state: 'off', c: null, grey: null, full: null };
+  });
+  let want = 0, ready = false;
+  function apply(t) {
+    const target = Math.max(0, Math.min(1, t)) * total;
+    layers.forEach((L, i) => {
+      const p = Math.max(0, Math.min(1, (target - acc[i]) / lens[i]));
+      const state = p <= 0 ? 'off' : p >= 1 ? 'full' : 'writing';
+      if (state !== L.state) {
+        L.state = state;
+        if (state === 'off') L.im.style.display = 'none';
+        else if (state === 'full') { L.im.setAttribute('href', L.full); L.im.removeAttribute('filter'); L.im.style.display = ''; }
+        else { L.im.setAttribute('href', L.grey); L.im.setAttribute('filter', `url(#${L.fid})`); L.im.style.display = ''; }
+      }
+      if (state !== 'writing') return;
+      // revealed where grey >= 1 - 0.95 p: alpha = K (grey - thr) + 1, clamped
+      const c = (1 - K * (1 - 0.95 * p)).toFixed(2);
+      if (c !== L.c) { L.fa.setAttribute('intercept', c); L.c = c; }
+    });
+  }
+  // a finished stroke: white where it reached, as the threshold at its end would give
+  function fullOf(greyUrl) {
+    return new Promise((res, rej) => {
+      const im = new Image();
+      im.onload = () => {
+        try {
+          const c = document.createElement('canvas');
+          c.width = MW; c.height = MH;
+          const g = c.getContext('2d', { willReadFrequently: true });
+          g.drawImage(im, 0, 0);
+          const img = g.getImageData(0, 0, MW, MH), d = img.data;
+          for (let o = 0; o < d.length; o += 4) {
+            const a = Math.max(0, Math.min(1, K * (d[o] / 255 - 0.05) + 1));
+            d[o] = d[o + 1] = d[o + 2] = 255; d[o + 3] = Math.round(a * 255);
+          }
+          g.putImageData(img, 0, 0);
+          c.toBlob(b => (b ? res(URL.createObjectURL(b)) : rej(new Error('toBlob'))), 'image/png');
+        } catch (e) { rej(e); }
+      };
+      im.onerror = rej;
+      im.src = greyUrl;
+    });
+  }
+  // made at once (the page is loading); until they are ready nothing is shown, then whatever was asked for last
+  (async () => {
+    try {
+      const greys = await Promise.all(medians.map((pts, i) => roughen(strokeMap(pts, lens[i]))));
+      const fulls = await Promise.all(greys.map(fullOf));
+      // (decoded now, so showing them later costs nothing)
+      await Promise.all([...greys, ...fulls].map(u => { const im = new Image(); im.src = u; return im.decode().catch(() => {}); }));
+      layers.forEach((L, i) => { L.grey = greys[i]; L.full = fulls[i]; });
+      ready = true;
+      apply(want);
+    } catch (e) { console.warn('glyph maps', e); }
+  })();
   return {
     // progress 0..1 across all strokes in order
-    set(t) {
-      let acc = 0;
-      const target = Math.max(0, Math.min(1, t)) * total;
-      strokes.forEach((s, i) => {
-        const local = Math.max(0, Math.min(lens[i], target - acc));
-        s.style.strokeDashoffset = lens[i] + 1 - local;
-        acc += lens[i];
-      });
-    },
+    set(t) { want = t; if (ready) apply(t); },
   };
 }
