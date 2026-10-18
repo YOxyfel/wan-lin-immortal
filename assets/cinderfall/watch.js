@@ -15,7 +15,7 @@ export const CAPTIONS = [
   { a: 37.4, b: 41.4, pos: 'left', eyebrow: 'THE OLD ROAD', text: 'Same road. Same pines.<br>Same quiet.' },
   { a: 43.2, b: 45.75, pos: 'right', eyebrow: 'THE EDGE OF THE PINES', text: 'Right where<br>they always were.', small: true },
   { a: 46.1, b: 47.38, pos: 'right', text: 'Then the forest<br>held its breath.', big: true },
-  { a: 49.8, b: 52.4, pos: 'right', eyebrow: 'ABOVE THE CLOUDS', text: 'Something was at war.' },
+  { a: 49.36, b: 50.15, pos: 'right', eyebrow: 'ABOVE THE CLOUDS', text: 'Something was at war.', rv: 0.3 },
   { a: 52.95, b: 54.3, pos: 'right', text: 'The sky gathered<br>its thunder.' },
   { a: 54.5, b: 55.35, pos: 'center', eyebrow: 'A STONE\'S THROW FROM CINDERFALL', text: 'Something fell.', big: true },
   { a: 55.45, b: 56.85, pos: 'right', eyebrow: 'WEST, OVER THE RIDGES', text: 'Out of the fire,<br>a light fled west.' },
@@ -53,7 +53,8 @@ const plain = t => t.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 // a little longer than it fades in; and how much Watch slows while it is up (at least 1.2 s and 60 ms a letter written
 // and at full strength)
 export const CAPS = CAPTIONS.map(c => {
-  const as = sToU(c.a), bs = sToU(c.b), f = Math.min(0.5, (bs - as) / 4), rv = Math.max(f * 1.6, 0.7);
+  // (a line may be written in quicker than the rest: rv, in scroll units)
+  const as = sToU(c.a), bs = sToU(c.b), f = Math.min(0.5, (bs - as) / 4), rv = c.rv ?? Math.max(f * 1.6, 0.7);
   let t = 0;
   for (let x = as + Math.max(f, rv); x < bs - f; x += 0.02) t += 0.02 / paceAt(uToS(x));
   return { ...c, as, bs, f, rv, slow: clamp(t / (1.2 + 0.06 * plain(c.text).length), 0.22, 1) };

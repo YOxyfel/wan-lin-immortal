@@ -175,10 +175,13 @@ export function createBow() {
   const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.14, 8), wrap);
   grip.position.z = -0.2;
   group.add(grip);
-  const strMat = new THREE.LineBasicMaterial({ color: 0xd8d0c0 });
-  const strGeo = new THREE.BufferGeometry().setFromPoints([V3(), V3(), V3()]);
-  const string = new THREE.Line(strGeo, strMat);
-  group.add(string);
+  // the string: two thin cords from the tips to the nock point (a one-pixel line vanished at any distance, and the bow
+  // with no string read as a stick, or a blade; the same kind of material as the wood, so no new shader)
+  const strMat = new THREE.MeshStandardMaterial({ color: 0xe2d9c6, roughness: 0.7 });
+  const cord = () => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.0035, 0.0035, 1, 5, 1), strMat); group.add(m); return m; };
+  const cords = [cord(), cord()];
+  const _ca = V3(), _cb = V3(), _UP = V3(0, 1, 0);
+  const span = (m, a, b) => { m.position.copy(a).lerp(b, 0.5); m.scale.set(1, a.distanceTo(b), 1); m.quaternion.setFromUnitVectors(_UP, _cb.copy(b).sub(a).normalize()); };
   // arrow (child of the scene, positioned by the caller)
   const arrow = new THREE.Group();
   const shaftMat = new THREE.MeshStandardMaterial({ color: 0xb08a5a, roughness: 0.7 });
@@ -189,7 +192,7 @@ export function createBow() {
   const fl = new THREE.MeshStandardMaterial({ color: 0xe8e2d6, side: THREE.DoubleSide, roughness: 0.9 });
   for (let i = 0; i < 3; i++) { const f = new THREE.Mesh(new THREE.PlaneGeometry(0.03, 0.1), fl); f.position.set(Math.cos(i * 2.09) * 0.012, Math.sin(i * 2.09) * 0.012, 0.07); f.rotation.set(Math.PI / 2, 0, i * 2.09); arrow.add(f); }
   let lastBend = -1;
-  return {
+  const api = {
     group, arrow,
     // draw: 0..1 how far the string is pulled back (local -z)
     update(draw) {
@@ -197,8 +200,13 @@ export function createBow() {
       if (k !== lastBend) { setBend(k); lastBend = k; }
       const tipZ = -0.06 - k * 0.0;
       const pull = tipZ + draw * 0.52;
-      strGeo.setFromPoints([V3(0, 0.68, tipZ), V3(0, 0, pull), V3(0, -0.68, tipZ)]);
+      _ca.set(0, 0, pull);
+      span(cords[0], V3(0, 0.68, tipZ), _ca);
+      span(cords[1], _ca, V3(0, -0.68, tipZ));
       return pull;
     },
   };
+  // (strung from the start, before anyone draws it)
+  api.update(0);
+  return api;
 }

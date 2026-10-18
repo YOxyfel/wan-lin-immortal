@@ -40,10 +40,12 @@ const slerpDir = (a, b, w) => {
 const STAGES = [
   [124.6, 125.9, 0, 6, 'snare'],
   [125.9, 130.45, 23, 292, 'stride'],
-  [130.45, 131.65, 360, 370.5, 'streams'],
-  [131.65, 132.3, 396.6, 401.8, 'rim'],
+  [130.45, 131.65, 360, 364.7, 'streams'],
+  [131.65, 132.3, 401.1, 401.8, 'rim'],
   [132.3, 133.3, 401.8, 413.5, 'slide'],
 ];
+// (the run down the bank into the dell begins once the held moment at the rim lets go, timeline.js PAUSES)
+const SLIDE0 = 132.45;
 const CAM_BACK = 3.0;
 // The way out (125.9–130.45) as a stride-cut: the lens locked at his hip, behind him off his right shoulder on a long
 // lens, his walk locked to the story. On the heel strike that ends a stretch the world cuts to the next stretch of the
@@ -88,7 +90,8 @@ export async function buildForest(mats, quality, ctx) {
   const face = A.rockFace;
   const ROCKSIT = onG(face.center.clone().addScaledVector(face.normal, 0.5));
   const rockOut = face.normal.clone().setY(0).normalize();
-  const ARRIVE = path([V3(-13.5, 0, -36), V3(-8.5, 0, -19), V3(-4, 0, -9), V3(0.6, 0, -4.4), ROCKSIT]);
+  // (the last few steps to the boulder: the thirty-nine metres out of the trees in under three seconds were a glide)
+  const ARRIVE = path([V3(-1.6, 0, -6.6), V3(0.6, 0, -4.4), ROCKSIT]);
   // ------------------------------------------------------------ the tally: his height marked on the pale bark each winter
   // (on the side of the tree away from the camp, toward the low sun: a ladder of short level cuts, each where his palm
   // lay on his crown, a little higher each year)
@@ -114,6 +117,18 @@ export async function buildForest(mats, quality, ctx) {
   const SNARE = jAt(6);
   const snareSpot = SNARE.pos.clone().addScaledVector(rightOf(SNARE.dir), -0.75);
   const TO_SNARE = path([TALLYSTAND, TALLY.clone().addScaledVector(tRight, 1.15).addScaledVector(tn, 0.35), TALLY.clone().addScaledVector(tRight, 1.2).addScaledVector(tn, -1.6), SNARE.pos]);
+  // the walk out to it at a walker's pace: a few steps away from the tally, then a cut to the last few before the snare,
+  // slowing to it (fourteen metres in under four seconds was a glide); 0..1 along the way
+  const SNARE_CUT = 124.78;
+  let snareLen = 0;
+  const snareT = u => {
+    if (!snareLen) snareLen = TO_SNARE.getLength();
+    if (u <= 124.6) return 0;
+    if (u >= 125.15) return 1;
+    if (u < SNARE_CUT) { const k = (u - 124.6) / (SNARE_CUT - 124.6); return 1.12 * k * k / snareLen; }
+    const k = (u - SNARE_CUT) / (125.15 - SNARE_CUT);
+    return (snareLen - 1.5 + 1.5 * k * (2 - k)) / snareLen;
+  };
   // the omen: a frost that morning, unbroken but for his own prints out to the snare, which is empty; seen once from
   // straight above (OMEN): the white, the prints, the open loop, not one other track
   const OMEN = [125.32, 125.66];
@@ -251,6 +266,8 @@ varying vec2 vNUv; uniform float uProg, uFresh, uSeed; uniform sampler2D uNoise;
     guard.position.set(0, -0.052, 0.002);
     knife.add(blade, tip, grip, guard);
     knife.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    // (seen only while he cuts with it: it hangs on the same hero who walks the valley, so it is never left showing)
+    knife.visible = false;
   }
   let knifeMounted = false;
   // the chips the knife throws out of the cut (a pure function of the story position: out, down into the snow, gone)
@@ -379,7 +396,20 @@ void main(){
 
   // ------------------------------------------------------------ the journey: where he is, where the camera is
   const stageAt = u => { for (let i = 0; i < STAGES.length; i++) { const [a, b] = STAGES[i]; if (u >= a && u <= b) return i; } return -1; };
-  const stageS = (i, u) => { const [a, b, s0, s1, kind] = STAGES[i]; return kind === 'stride' ? strideAt(u).s : lerp(s0, s1, clamp((u - a) / (b - a))); };
+  // (each stage at a walker's pace, 1.45 m/s in Watch; at the rim he slows to a stop at its edge, and stands)
+  const stageS = (i, u) => {
+    const [a, b, s0, s1, kind] = STAGES[i];
+    if (kind === 'stride') return strideAt(u).s;
+    if (kind === 'rim') { const k = clamp((u - a) / (132.05 - a)); return lerp(s0, s1, k * (2 - k)); }
+    // (down into the dell: he waits at the rim while the story holds there, then runs down the bank, slowing to a stop
+    // at its foot: at a runner's pace, his legs running, never sliding down it crouched with them still)
+    if (kind === 'slide') {
+      const k = clamp((u - SLIDE0) / (b - SLIDE0)), A = 1 / 0.9;
+      const f = k < 0.8 ? A * k : A * (0.8 + (k - 0.8) - (k - 0.8) * (k - 0.8) / 0.4);
+      return lerp(s0, s1, f);
+    }
+    return lerp(s0, s1, clamp((u - a) / (b - a)));
+  };
   // where he is along the way (metres)
   function heroS(u) {
     if (u <= STAGES[0][0]) return STAGES[0][2];
@@ -406,8 +436,9 @@ void main(){
       o.sit = smooth(0.84, 1, k);
       o.grief = smooth(0.6, 1, k) * 0.9;
       o.age = 0;
-      o.speed = k < 0.82 ? 0.9 : 0;
-      o.visible = u > 110.6;
+      // (his stride from how far he goes: the engine measures it)
+      o.speed = null;
+      o.visible = u > 110.25;
       o.lookAt = u < 111.75 ? ROCKSIT.clone().add(V3(0, 1, 0)) : null;
       return o;
     }
@@ -417,16 +448,17 @@ void main(){
       return o;
     }
     if (u < 133.3) {
-      o.gripL = u > 125.9 && u < 132.0 ? 'bow' : null;
+      // (his hands free on the way: the bow is on his back)
+      o.gripL = null;
       const i = Math.max(0, stageAt(u));
       const [a, b, , , kind] = STAGES[i];
       o.fade = 1;
       if (kind === 'snare') {
         // to the snare by the way: he crouches, looks — nothing; stands
-        const t = smooth(124.6, 125.15, u);
+        const t = snareT(u);
         o.P = t < 1 ? TO_SNARE.getPointAt(t) : SNARE.pos.clone();
         o.heading = t < 0.98 ? flatDir(o.P, TO_SNARE.getPointAt(Math.min(1, t + 0.03))) : SNARE.dir.clone();
-        o.speed = t > 0 && t < 1 ? 1.25 : 0;
+        o.speed = null;
         o.crouch = band(125.15, 125.35, 125.6, 125.8, u);
         o.reach = o.crouch * 0.8;
         o.reachTarget = snareSpot.clone().add(V3(0, 0.05, 0));
@@ -450,15 +482,14 @@ void main(){
       const w = jAt(s);
       o.P = w.pos;
       o.heading = w.dir.clone();
-      o.speed = kind === 'slide' ? 0 : 1.3;
+      o.speed = null;
       if (kind === 'streams') { o.lookAt = w.pos.clone().addScaledVector(w.dir, 10).add(V3(0, 1.8, 0)); o.lookW = 0.5 * smooth(130.6, 130.9, u); }
       if (kind === 'rim') {
         // at the rim he stops: below, the streams of light go down into the dell
-        o.speed = 1.2 * (1 - smooth(131.95, 132.15, u));
         o.lookAt = A.DELL.clone().add(V3(0, 2, 0));
         o.lookW = smooth(131.9, 132.15, u);
       }
-      if (kind === 'slide') { o.crouch = 0.55 * band(132.3, 132.45, 133.0, 133.3, u); o.lookAt = SCROLL.clone(); o.lookW = smooth(132.9, 133.3, u); }
+      if (kind === 'slide') { o.run = band(SLIDE0, SLIDE0 + 0.04, 133.0, 133.22, u); o.crouch = 0.4 * band(133.05, 133.18, 133.22, 133.32, u); o.lookAt = SCROLL.clone(); o.lookW = smooth(132.9, 133.3, u); }
       return o;
     }
     // the dell: he stands in the leaves and looks up at it; goes to it; kneels; touches the crystal; it breaks
@@ -466,7 +497,7 @@ void main(){
     o.P = t > 0 ? APPROACH.getPointAt(t) : LAND.clone();
     o.heading = t <= 0 ? flatDir(LAND, SCROLL) : t < 0.98 ? flatDir(o.P, APPROACH.getPointAt(Math.min(1, t + 0.03))) : flatDir(KNEEL, SCROLL);
     if (t > 0.85) o.heading = yawLerp(o.heading, flatDir(KNEEL, SCROLL), smooth(0.85, 1, t));
-    o.speed = t > 0 && t < 1 ? 1.1 : 0;
+    o.speed = null;
     o.lookAt = u < 134.4 ? crownAt.clone() : SCROLL.clone();
     o.lookW = u < 134.4 ? band(133.3, 133.6, 134.0, 134.4, u) : 1;
     o.kneel = smooth(136.0, 136.6, u);
@@ -499,7 +530,7 @@ void main(){
   function wayShot(i, u) {
     const [a, b, s0, s1, kind] = STAGES[i];
     const k = clamp((u - a) / (b - a));
-    const w = jAt(lerp(s0, s1, k)), P = w.pos, d = w.dir, r = rightOf(d);
+    const w = jAt(stageS(i, u)), P = w.pos, d = w.dir, r = rightOf(d);
     const cp = V3(), lk = V3();
     if (kind === 'leave') {
       // (the lens stays where it is: he walks away from it, out of the woods he knows, smaller and smaller)
@@ -595,7 +626,7 @@ void main(){
         // the snare (his face is never seen), the way ahead of him
         const ap = band(124.3, 124.62, 125.15, 125.38, u);
         if (ap > 0) {
-          const tt = smooth(124.6, 125.15, u) * 0.999;
+          const tt = snareT(u) * 0.999;
           const hp = u < 124.6 ? TALLYSTAND.clone() : TO_SNARE.getPointAt(tt);
           const w = flatDir(hp, TO_SNARE.getPointAt(Math.min(1, tt + 0.2))), sw = rightOf(w);
           cp.lerp(hp.clone().addScaledVector(w, -2.4).addScaledVector(sw, 1.0).add(V3(0, 1.7, 0)), ap);
@@ -725,7 +756,9 @@ void main(){
   function update(u, time, camera, { inB, sample, hero, ghosts: ghostFigures, pxScale, lamp }) {
     trailB.uniforms.uTime.value = time;
     if (pxScale) px = pxScale;
-    if (!inB) { bow.group.visible = false; bowBack.group.visible = false; qiFar.points.visible = qiNear.points.visible = false; return; }
+    // (out of the forest: nothing of it in his hands or on his back; the knife too, which the valley's hero carries mounted
+    // once the forest has been seen, and which showed in his fist all the way through the village)
+    if (!inB) { bow.group.visible = false; bowBack.group.visible = false; knife.visible = false; qiFar.points.visible = qiNear.points.visible = false; return; }
     U.uSnow.value = sample('snowCover');
     U.uWet.value = sample('wet');
     U.uAutumn.value = sample('autumn');
@@ -774,10 +807,10 @@ void main(){
       bowBack.arrow.visible = false;
       bowMounted = true;
     }
-    // (on his back from the years he has had it, while he cuts and through the snare; in his left fist on the way out;
-    // on his back again from the rim)
-    bow.group.visible = bowMounted && u > 125.9 && u < 132.0;
-    bowBack.group.visible = bowMounted && u >= 132.0 && u < 141;
+    // (on his back the whole way out, his hands free: held low at his side the bow read as a blade; and none in the dell,
+    // where the frame is his hands, the crystal and the scroll)
+    bow.group.visible = false;
+    bowBack.group.visible = bowMounted && u >= 124.6 && u < 132.0;
     bow.update(0); bowBack.update(0);
     // the missed beat's mote
     moteAt(u, camera);

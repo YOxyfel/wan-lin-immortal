@@ -14,6 +14,8 @@ export default defineConfig({
       const out = resolve(import.meta.dirname, 'dist');
       // Gallery and story sources are selected at runtime, so retain their paths.
       cpSync(resolve(import.meta.dirname, 'Images'), resolve(out, 'Images'), { recursive: true });
+      // The prologue's recorded sound and music are loaded at runtime by name (assets/cinderfall/audio/manifest.json).
+      cpSync(resolve(import.meta.dirname, 'assets/cinderfall/audio'), resolve(out, 'assets/cinderfall/audio'), { recursive: true });
       mkdirSync(resolve(out, 'assets'), { recursive: true });
       for (const file of ['favicon.svg', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']) {
         cpSync(resolve(import.meta.dirname, 'assets', file), resolve(out, 'assets', file));

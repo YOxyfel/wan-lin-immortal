@@ -16,7 +16,7 @@ const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const VIOLET = new THREE.Color(0x6b21a8);
 
 // dissolve: discard by noise from the hem upward, leaving a violet ink edge
-function dissolving(mat, dis, opts = {}) {
+export function dissolving(mat, dis, opts = {}) {
   mat.onBeforeCompile = sh => {
     sh.uniforms.uDis = dis; sh.uniforms.uNoise = U.uNoise; sh.uniforms.uTime = U.uTime; sh.uniforms.uBase = { value: opts.base ?? 0 };
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vDW;')
@@ -80,7 +80,7 @@ function sealTexture() {
   return t;
 }
 
-function maskGeometry() {
+export function maskGeometry() {
   const s = new THREE.Shape();
   const pts = [[0, 0.17], [0.1, 0.11], [0.115, -0.01], [0.07, -0.13], [0, -0.19], [-0.07, -0.13], [-0.115, -0.01], [-0.1, 0.11]];
   pts.forEach(([a, b], i) => (i ? s.lineTo(a, b) : s.moveTo(a, b)));
@@ -90,6 +90,35 @@ function maskGeometry() {
   for (let i = 0; i < p.count; i++) { const X = p.getX(i), Y = p.getY(i); p.setZ(i, p.getZ(i) + 0.035 * (1 - Math.abs(X) / 0.115) - 0.012 * (Y < -0.05 ? (-Y - 0.05) * 6 : 0)); }
   g.computeVertexNormals();
   return g;
+}
+
+// the sect's robes on the villagers' body, and what goes over them: a deep hood open in front with a peak falling back,
+// the angular iron mask with violet slits, a mantle over the shoulders (on the crag, and the one who fights above the
+// clouds); dis: the dissolve's uniform, base: the height it rises from, rim: the violet at its edges (less by day)
+export const SECT_ROBES = { robe: [0.045, 0.04, 0.05], under: [0.06, 0.05, 0.07], pants: [0.04, 0.035, 0.04], sash: [0.32, 0.08, 0.5] };
+export function sectGarb(dis, base = 0, rim = 0.55) {
+  const robeMat = dissolving(new THREE.MeshStandardMaterial({ color: 0x0d0b10, roughness: 0.92, side: THREE.DoubleSide }), dis, { base, rim });
+  const maskMat = dissolving(new THREE.MeshStandardMaterial({ color: 0x3a3a40, roughness: 0.32, metalness: 0.88 }), dis, { base });
+  const trimMat = dissolving(new THREE.MeshStandardMaterial({ color: 0x2a0d40, emissive: VIOLET, emissiveIntensity: 0.9, roughness: 0.6 }), dis, { base });
+  const eyeMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 0.7, 4.2) });
+  const maskG = maskGeometry();
+  const slitG = new THREE.BoxGeometry(0.05, 0.009, 0.012);
+  const hoodG = new THREE.SphereGeometry(0.142, 18, 12, Math.PI / 2 + 0.78, Math.PI * 2 - 1.56, 0, Math.PI * 0.66);
+  hoodG.scale(1.0, 1.12, 1.1);
+  const peakG = new THREE.ConeGeometry(0.075, 0.26, 10, 1, true);
+  const mantleG = new THREE.CylinderGeometry(0.17, 0.4, 0.5, 20, 3, true, Math.PI / 2 + 0.55, Math.PI * 2 - 1.1);
+  return {
+    robeMat, maskMat, trimMat, eyeMat,
+    dress(p, shadow = false) {
+      const head = p.head, chest = p.spine;
+      const hood = new THREE.Mesh(hoodG, robeMat); hood.position.set(0, 0.085, -0.012); hood.castShadow = shadow; head.add(hood);
+      const peak = new THREE.Mesh(peakG, robeMat); peak.position.set(0, 0.2, -0.1); peak.rotation.x = -0.62; head.add(peak);
+      const mask = new THREE.Mesh(maskG, maskMat); mask.position.set(0, 0.06, 0.068); mask.scale.setScalar(0.92); head.add(mask);
+      for (const sx of [-1, 1]) { const sl = new THREE.Mesh(slitG, eyeMat); sl.position.set(sx * 0.038, 0.085, 0.112); head.add(sl); }
+      const mantle = new THREE.Mesh(mantleG, robeMat); mantle.position.set(0, 0.12, -0.02); mantle.castShadow = shadow; chest.add(mantle);
+      return { hood, peak, mask, mantle };
+    },
+  };
 }
 
 export function createSect(mats, quality) {
@@ -148,33 +177,17 @@ export function createSect(mats, quality) {
   const night = new THREE.Group();
   night.name = 'fentian';
   group.add(night);
-  const robeMat = dissolving(new THREE.MeshStandardMaterial({ color: 0x0d0b10, roughness: 0.92, side: THREE.DoubleSide }), dis, { base: top, rim: 0.55 });
-  const maskMat = dissolving(new THREE.MeshStandardMaterial({ color: 0x3a3a40, roughness: 0.32, metalness: 0.88 }), dis, { base: top });
-  const trimMat = dissolving(new THREE.MeshStandardMaterial({ color: 0x2a0d40, emissive: VIOLET, emissiveIntensity: 0.9, roughness: 0.6 }), dis, { base: top });
-  const eyeMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 0.7, 4.2) });
-  // the cultivators: tall figures in black robes (the villagers' body under them), deep hoods with a peak, a
-  // mantle over the shoulders, the angular iron mask with violet slits, a violet sash
-  const maskG = maskGeometry();
-  const slitG = new THREE.BoxGeometry(0.05, 0.009, 0.012);
-  // a hood open in front (sphere segment), its peak falling back; a mantle over the shoulders
-  const hoodG = new THREE.SphereGeometry(0.142, 18, 12, Math.PI / 2 + 0.78, Math.PI * 2 - 1.56, 0, Math.PI * 0.66);
-  hoodG.scale(1.0, 1.12, 1.1);
-  const peakG = new THREE.ConeGeometry(0.075, 0.26, 10, 1, true);
-  const mantleG = new THREE.CylinderGeometry(0.17, 0.4, 0.5, 20, 3, true, Math.PI / 2 + 0.55, Math.PI * 2 - 1.1);
+  const G = sectGarb(dis, top);
+  const { robeMat, trimMat } = G;
   const spots = [[-1.6, 0, 1.06], [-1.0, -2.7, 1.0], [-1.0, 2.7, 0.99], [0.4, -4.8, 0.96], [0.4, 4.8, 0.97]];
   const figures = [];
   spots.forEach(([dx, dz, s], i) => {
-    const p = makePerson({ seed: 701 + i * 17, robe: [0.045, 0.04, 0.05], under: [0.06, 0.05, 0.07], pants: [0.04, 0.035, 0.04], sash: [0.32, 0.08, 0.5], long: true, female: false, scale: s * 1.08, shadow: true });
+    const p = makePerson({ seed: 701 + i * 17, ...SECT_ROBES, long: true, female: false, scale: s * 1.08, shadow: true });
     const x = CRAG.x + dx, z = CRAG.z + dz;
     p.root.position.set(x, top, z);
     // face the village
     p.root.rotation.y = Math.atan2(2 - x, 30 - z);
-    const head = p.head, chest = p.spine;
-    const hood = new THREE.Mesh(hoodG, robeMat); hood.position.set(0, 0.085, -0.012); hood.castShadow = true; head.add(hood);
-    const peak = new THREE.Mesh(peakG, robeMat); peak.position.set(0, 0.2, -0.1); peak.rotation.x = -0.62; head.add(peak);
-    const mask = new THREE.Mesh(maskG, maskMat); mask.position.set(0, 0.06, 0.068); mask.scale.setScalar(0.92); head.add(mask);
-    for (const sx of [-1, 1]) { const sl = new THREE.Mesh(slitG, eyeMat); sl.position.set(sx * 0.038, 0.085, 0.112); head.add(sl); }
-    const mantle = new THREE.Mesh(mantleG, robeMat); mantle.position.set(0, 0.12, -0.02); mantle.castShadow = true; chest.add(mantle);
+    const { hood, mask } = G.dress(p, true);
     night.add(p.root);
     figures.push({ f: p.root, person: p, hood, mask, seed: r() * 10 });
   });

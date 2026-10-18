@@ -189,6 +189,7 @@ async function boot() {
     ready = true;
     su = target = autoU = uFromScroll(); suV = 0;
     root.dataset.ready = 'true';
+    if (playQueued) { playQueued = false; playBtn && playBtn.classList.remove('queued'); scrollToU(0); su = target = autoU = 0; setAuto(true); }
     if (built) root.dataset.forest = 'true';
     addEventListener('resize', () => engine.resize());
     // the rest of the title, then the hint
@@ -213,7 +214,33 @@ async function boot() {
   let clock = 0;
   let autoplay = false, autoU = 0, forced = null, rendered = false;
   const watchBtn = $('#watch');
-  const setAuto = on => { autoplay = on; autoU = target; watchBtn.textContent = on ? 'Pause' : 'Watch'; watchBtn.setAttribute('aria-pressed', String(on)); };
+  const setAuto = on => {
+    autoplay = on; autoU = target; watchBtn.textContent = on ? 'Pause' : 'Watch'; watchBtn.setAttribute('aria-pressed', String(on));
+    // (cinema: while it plays by itself the page's own furniture draws back, and the cursor with it, until the mouse
+    // moves; each chapter's name comes up in its corner as it begins)
+    document.body.classList.toggle('cf-cinema', on);
+    audio.setWatch(on);
+    if (!on) document.body.classList.remove('cf-peek');
+  };
+  let peekT = 0, chapterT = 0;
+  addEventListener('mousemove', () => {
+    if (!autoplay) return;
+    document.body.classList.add('cf-peek');
+    clearTimeout(peekT); peekT = setTimeout(() => document.body.classList.remove('cf-peek'), 2200);
+  }, { passive: true });
+  // the way in: the film as it is meant to be seen, by itself, with its sound (and the whole screen, on a desktop);
+  // pressed before the story is ready, it starts the moment it is
+  const playBtn = title.querySelector('.cf-play');
+  let playQueued = false;
+  const soundBtn = $('#sound');
+  async function startFilm() {
+    if (!audio.on) { const on = await audio.toggle(); soundBtn.textContent = on ? 'Sound on' : 'Sound off'; soundBtn.setAttribute('aria-pressed', String(on)); }
+    const de = document.documentElement;
+    if (!document.fullscreenElement && de.requestFullscreen && matchMedia('(pointer: fine)').matches) de.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+    if (ready) { scrollToU(0); su = target = 0; suV = 0; setAuto(true); }
+    else { playQueued = true; playBtn && playBtn.classList.add('queued'); if (playBtn) playBtn.lastChild.textContent = '\u00a0 Starting as soon as it is ready'; }
+  }
+  if (playBtn) playBtn.addEventListener('click', startFilm);
   watchBtn.addEventListener('click', () => setAuto(!autoplay));
   for (const ev of ['wheel', 'touchstart', 'keydown']) addEventListener(ev, e => { if (autoplay && (ev !== 'keydown' || ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key))) setAuto(false); }, { passive: true });
   $('#sound').addEventListener('click', async () => { const on = await audio.toggle(); $('#sound').textContent = on ? 'Sound on' : 'Sound off'; $('#sound').setAttribute('aria-pressed', String(on)); });
@@ -405,7 +432,10 @@ async function boot() {
       const qh = ritual.at('hint', now), hs = ritual.started('hint');
       const wait = !replaying && (hs ? qh < 0.35 : true);
       if (hint && wait !== hintWait) { hintWait = wait; title.classList.toggle('waiting', wait); hint.innerHTML = wait ? WAIT_HTML : hintHTML; }
-      setVar(title, '--hint', wait ? (hs ? 1 - qh / 0.35 : 1) : (hs ? smooth(0.35, 1, qh) : 0) * (1 - smooth(0.4, 1.4, u)));
+      const hintV = wait ? (hs ? 1 - qh / 0.35 : 1) : (hs ? smooth(0.35, 1, qh) : 0) * (1 - smooth(0.4, 1.4, u));
+      setVar(title, '--hint', hintV);
+      // (the way in shows from the start, the title's first beat, and goes with the hint once the story is under way)
+      if (playBtn) { const pv = u > 0.4 ? hintV : Math.max(hintV, smooth(0, 1, ritual.at('sub', now))); setVar(title, '--play', pv); playBtn.style.visibility = pv > 0.02 && !autoplay ? 'visible' : 'hidden'; }
     }
     const endShow = smooth(141.4, 141.8, u);
     op(end, endShow);
@@ -432,7 +462,10 @@ async function boot() {
     // ---------------------------------------------------------------- HUD
     let ch = CHAPTERS[0][1];
     for (const [a, name] of CHAPTERS) if (u >= a) ch = name;
-    if (chapter.textContent !== ch) chapter.textContent = ch;
+    if (chapter.textContent !== ch) {
+      chapter.textContent = ch;
+      if (autoplay) { document.body.classList.add('cf-chapter'); clearTimeout(chapterT); chapterT = setTimeout(() => document.body.classList.remove('cf-chapter'), 3600); }
+    }
     meter.style.transform = `scaleX(${(su / TOTAL_U).toFixed(4)})`;
     // (over the cinema bars the page's own furniture is light on their black, whatever the picture between them is)
     const barsOn = !!(engine && inView && (engine.metrics.bars || 0) > 0.01);

@@ -21,6 +21,7 @@ import { WAKE } from './decor.js';
 import { createBirdBurst } from './bird-burst.js';
 import { createFighters } from './fighters.js';
 import { createDuel, DUEL_P } from './duel.js';
+import { createWar, WAR, shot as warShotAt, goldAt as warGold, BLOWS as WAR_BLOWS, BOLTS as WAR_BOLTS, TRENCH as WAR_TRENCH, W0 as WAR_C } from './war.js';
 import { createMegaBolt } from './mega-bolt.js';
 import { createCharge } from './charge.js';
 import { createImpact } from './impact.js';
@@ -338,7 +339,8 @@ export async function createEngine(canvas) {
   // (the one that is not like the others, and where he stops to look at it: a step off the road toward the stall)
   const legendAura = A.auras ? (A.auras.find(x => x.tier === 4) || A.auras[0]) : null;
   const legend = legendAura ? legendAura.base.clone().addScaledVector(legendAura.dir, legendAura.len * 0.45) : null;
-  const stallK = u => band(25.3, 26.05, 27.45, 28.25, u);
+  // (done stepping back into the middle of the street before the cut ahead at 28.05: mcZ)
+  const stallK = u => band(25.4, 26.15, 27.4, 28.0, u);
   scene.add(charge.group);
   // the shreds of cloud rushing past the eye as it dives through the sea's top and the storm
   const rush = createCloudRush({ count: quality.low ? 40 : 70, noise: U.uNoise.value });
@@ -357,10 +359,13 @@ export async function createEngine(canvas) {
   scene.add(leadQi.points);
   const flies = createQi({ count: quality.low ? 320 : 640, color: [0.55, 1.0, 0.72], intensity: 2.6, size: 0.075, seed: 13 });
   scene.add(flies.points);
-  const lightning = createLightning(5);
+  const lightning = createLightning(12);
   // the two lights fighting above the clouds, drawn crisp over the deck
   const fighters = createFighters();
   scene.add(fighters.group);
+  // the war, close to: the two as people, what they throw at each other, the lens among them (war.js)
+  const war = createWar();
+  scene.add(war.group);
   scene.add(lightning.group);
   // the strikes that hunt him down the road on the run home (their own channels, burns and sparks)
   const gStrikes = createGroundStrikes(heightAt, 2);
@@ -372,7 +377,7 @@ export async function createEngine(canvas) {
   // ---------------------------------------------------------------- Wuhen, near and far, and the uncle
   // the 3D hero (hero.js): origin at his feet, faces +Z; the engine yaws him to `heading` and drives his pose state.
   // Built in idle time once the valley is on screen (prepareForest), or on demand when he is first needed.
-  let wuhen = null, heldAnchor = null, wPrev = null;
+  let wuhen = null, heldAnchor = null, wPrev = null, lastSpeed = 0;
   const basketGeo = new THREE.LatheGeometry([[0, 0], [0.13, 0], [0.18, 0.2], [0.17, 0.22], [0, 0.22]].map(p => new THREE.Vector2(p[0], p[1])), 12);
   const basketMat = new THREE.MeshStandardMaterial({ map: mats.straw.map, roughness: 0.95 });
   const held = new THREE.Group();
@@ -583,6 +588,8 @@ export async function createEngine(canvas) {
 
   const metrics = { frames: 0, u: 0, wind: 0.4, crossUV: [0.4, 0.58], bellToll: 0, ripples: [] };
   const debug = { noInk: false, noPost: false, hero: null };
+  // (for measuring his walk: where he is at each story position, valley or forest, without drawing anything)
+  debug.heroPath = us => us.map(u => { const p = u < 108.3 || !B ? valleyP(u) : B.wuhen(u).P; return p ? [+p.x.toFixed(3), +p.y.toFixed(3), +p.z.toFixed(3)] : null; });
   debug.where = () => ({ sect: sect.center.toArray(), top: sect.top, uncle: UH.uncleSpot.toArray(), kneel: UH.kneelSpot.toArray(), door: UH.door.toArray(), mush: A.mushrooms.toArray(), cam: camera.position.toArray(), dir: camera.getWorldDirection(V3()).toArray(), soul: soulP.toArray(), orbVis: soulOrb.mesh.visible, orbI: soulOrb.uniforms.uI.value, scr: soulP.clone().project(camera).toArray(), far: far ? far.group.position.toArray() : null, farVis: far ? far.group.visible : null, fov: camera.fov, P: metrics.P ? metrics.P.toArray() : null, gate: A.gate ? A.gate.center.toArray() : null });
   debug.uncleFire = () => A.fire.filter(f => f.house === 'uncle').map(f => [+f.p.x.toFixed(2), +f.p.y.toFixed(2), +f.p.z.toFixed(2), f.s]);
   const aerialPos = [V3(70, 118, 250), V3(34, 78, 168), V3(6, 30, 100), V3(1.5, 6.5, 58)];
@@ -688,7 +695,7 @@ export async function createEngine(canvas) {
   const BURN_IN = [61.6, 63.7];
   const BURN = { pos: V3(7.5, 14.0, -153), pos2: V3(7.4, 13.9, -151), look: V3(0, 4.6, -8), fov: [17.5, 15.8] };
   const GOLD_FALL = (() => {
-    const K = [[SMASH, V3(-1310, 3262, 684)], [52.6, V3(-1262, 3070, 652)], [52.75, V3(-1120, 2800, 610)], [53.0, V3(-850, 2380, 500)], [53.25, V3(-690, 1930, 300)],
+    const K = [[SMASH, warGold(SMASH)], [52.6, V3(-1266, 2800, 660)], [52.75, V3(-1120, 2640, 610)], [53.0, V3(-850, 2380, 500)], [53.25, V3(-690, 1930, 300)],
       [53.5, V3(-490, 1440, 90)], [53.75, V3(-262, 900, -80)], [53.97, C_F.clone()]];
     const c = new THREE.CatmullRomCurve3(K.map(k => k[1]), false, 'centripetal');
     const t = monoKeys(K.map((k, i) => [k[0], i / (K.length - 1)]));
@@ -697,7 +704,7 @@ export async function createEngine(canvas) {
   // the eye of the gathering: the two fight low in it while the deck forms round them (seen from the pines, west-south-
   // west and high), then go up out of it over the sea, where the eye follows them up through it
   const D_EYE = V3(EYE.x, 1500, EYE.z);
-  const _dc = V3(), _gf = V3();
+  const _dc = V3(), _gf = V3(), _wg = V3(), _wm = V3();
   let lastBlowT = 0, lastArc = -1, lastBlowBolt = -9;
   const duelUp = u => Math.pow(smooth(47.9, 48.8, u), 0.8);
   function duelCentre(u, out) {
@@ -788,7 +795,8 @@ export async function createEngine(canvas) {
   const mushFace = V3(0, 0, -1);
   const mushPick = A.mushrooms.clone().add(V3(-0.27, 0.06, 0.33));
   // (he goes back to the road once the eye has left him for the sky)
-  const mushK = u => smooth(42.45, 43.85, u) * (1 - smooth(48.0, 49.2, u));
+  // (off the road to them from the cut onto its last stretch, at a walk: mcZ)
+  const mushK = u => smooth(40.7, 43.85, u) * (1 - smooth(48.0, 49.2, u));
   // where he looks when the sky turns: the fight low in the eye of the gathering, west-south-west and high
   const SKYFIGHT = V3(EYE.x, 1450, EYE.z);
   const toEye = EYE.clone().sub(mushSpot).setY(0).normalize();
@@ -899,7 +907,7 @@ export async function createEngine(canvas) {
     const sk = stallK(u);
     if (sk > 0 && A.stall) {
       const T = A.stall.clone().lerp(P, 0.62);
-      P.lerp(T.setY(P.y), sk * 0.8);
+      P.lerp(T.setY(P.y), sk * 0.5);
     }
     const pb = porchBlend(u);
     if (pb > 0) {
@@ -923,7 +931,7 @@ export async function createEngine(canvas) {
     if (u >= 61.2) yaw = Math.PI;
     const h = northDir(z).applyAxisAngle(UP, yaw);
     // to the mushrooms and back: he faces the way he walks, and the camera's side while he picks
-    const walk = Math.max(band(42.45, 42.65, 43.65, 43.9, u), band(47.95, 48.2, 48.9, 49.2, u));
+    const walk = Math.max(band(40.7, 40.9, 43.65, 43.9, u), band(47.95, 48.2, 48.9, 49.2, u));
     if (walk > 0) { const d = valleyP(u + 0.04).sub(valleyP(u - 0.04)).setY(0); if (d.lengthSq() > 1e-8) turnTo(h, d.normalize(), walk); }
     turnTo(h, mushFace, smooth(43.65, 44.0, u) * (1 - smooth(47.9, 48.2, u)));
     // (the sky turns: he turns round to it, to his left, away from the lens)
@@ -1283,7 +1291,28 @@ export async function createEngine(canvas) {
     const pt = THREE.MathUtils.degToRad(HANG_PITCH(u));
     return _wa.copy(h).multiplyScalar(Math.cos(pt)).add(V3(0, Math.sin(pt), 0));
   }
+  // (the war's own shots, cut on its beats; jolted by each blow, harder the nearer)
+  const _wsd = V3();
+  function warShot(u, time) {
+    const ws = warShotAt(u);
+    if (!ws) return null;
+    const dir = _wsd.copy(ws.look).sub(ws.pos);
+    const dl = dir.length(); dir.divideScalar(Math.max(dl, 1e-3));
+    let jolt = 0;
+    for (const b of WAR_BLOWS) { if (!b.shake) continue; const age = cueAge(b.u, u, time); if (age < 0.9) jolt += b.shake * Math.exp(-age / 0.11); }
+    jolt = Math.min(jolt, 3) * THREE.MathUtils.degToRad(1);
+    let roll = 0;
+    if (jolt > 1e-5) {
+      const jx = Math.sin(time * 41.3) * 0.6 + Math.sin(time * 23.1 + 1.3) * 0.4, jy = Math.sin(time * 37.7 + 2.1) * 0.6 + Math.sin(time * 19.9 + 0.4) * 0.4;
+      const rgt = V3().crossVectors(dir, UP).normalize(), upv = V3().crossVectors(rgt, dir);
+      dir.addScaledVector(rgt, jx * jolt).addScaledVector(upv, jy * jolt).normalize();
+      roll = jolt * 0.6 * Math.sin(time * 29.3);
+    }
+    return { pos: ws.pos.clone(), look: ws.pos.clone().addScaledVector(dir, Math.max(dl, 1)), fov: ws.fov, roll, war: ws.id };
+  }
   function flightShot(u, portrait = 0, time = 0) {
+    const wsh = warShot(u, time);
+    if (wsh) return wsh;
     const pos = flightAt(u, V3());
     // (on a tall screen, while the eye is behind him at the edge of the pines, closer in behind him: he stays in it)
     const pk = portrait * band(54.3, 54.42, 57.9, 58.9, u);
@@ -1363,6 +1392,16 @@ export async function createEngine(canvas) {
     duelFloor = lerp(1150, DUEL_FLOOR, duelUp(u));
     duelFlight(time, S.uC1.value, S.uC2.value);
     for (let k = 0; k < 4; k++) duelFlight(time - (k + 1) * 0.06, S.uT1.value[k], S.uT2.value[k]);
+    // (the war, close to: the two where war.js has them, from the cut to the two of them facing each other until the
+    // violet one is gone)
+    const inWar = !inB && u >= WAR[0] && u < 53.1;
+    const warFlight = inWar ? war.flight(u, time) : null;
+    if (inWar) {
+      warFlight(time, S.uC1.value, S.uC2.value);
+      for (let k = 0; k < 4; k++) warFlight(time - (k + 1) * 0.06, S.uT1.value[k], S.uT2.value[k]);
+      // (the fight's centre is between the two of them now)
+      _dc.copy(S.uC1.value).lerp(S.uC2.value, 0.5);
+    }
     const falling = inB ? 0 : smooth(SMASH - 0.02, SMASH + 0.04, u) * (u < 54.02 ? 1 : 0);
     if (falling > 0) {
       S.uC1.value.lerp(GOLD_FALL(u, _gf), falling);
@@ -1378,7 +1417,7 @@ export async function createEngine(canvas) {
       const g = GOLD_FALL(u, V3()), q = Math.floor(at * 97);
       lightning.strike(time, g.clone().add(V3(side * 340, 260 + (q % 3) * 60, -side * 180)), g, { seed: q, strength: 0.85, width: 2.4, branches: 6, levels: 6, color: new THREE.Color(0.7, 0.48, 1.0) });
     }
-    const blows = duel.blows(time, 3, duelFloor - _dc.y);
+    const blows = inWar && u < SMASH ? [] : duel.blows(time, 3, duelFloor - _dc.y);
     const lastBlow = blows[0];
     const blowAge = lastBlow ? time - lastBlow.t : 9;
     if (lastBlow) S.uImpact.value.set(lastBlow.pos.x + _dc.x, lastBlow.pos.y + _dc.y, lastBlow.pos.z + _dc.z, clashK > 0.01 && blowAge < 0.8 ? blowAge / 0.8 : -1);
@@ -1387,13 +1426,51 @@ export async function createEngine(canvas) {
     // (cut off by the sheets as they form across the well: from inside it, end-on, it would only be a glare)
     S.uBeam.value.set(1.0, 0.8, 0.56, (inB ? 0 : band(45.75, 46.5, 47.55, 47.72, u)) * (0.4 + 1.0 * Math.exp(-blowAge / 0.18)));
     // (under the screen the fight is only its shadows: its own light, glaring through the cloud, drawn back)
-    { const scr = inB ? 1 : 1 - 0.88 * band(48.07, 48.1, 48.19, 48.212, u); S.uClashGV.value.set(scr * (1 - 0.92 * band(52.64, 52.82, 53.9, 54.0, u)), scr * (1 - smooth(SMASH + 0.08, SMASH + 0.4, u))); }
+    { const scr = 1; S.uClashGV.value.set(scr * (1 - 0.92 * band(52.64, 52.82, 53.9, 54.0, u)), scr * (1 - smooth(SMASH + 0.08, SMASH + 0.4, u))); }
     S.uEye.value.set(0, 0, 0, 0);
     // the blows punch holes in the cloud tops under them
     for (let i = 0; i < 3; i++) {
       const b = blows[i], c = S.uCrater.value[i];
       if (b && clashK > 0.01 && b.kind === 3) { const age = (time - b.t) / 1.8; c.set(b.pos.x + _dc.x, duelFloor + 10, b.pos.z + _dc.z, age < 1 ? age : -1); }
       else c.w = -1;
+    }
+    // the war's blows (war.js BLOWS): fired as the story crosses them, played on the clock
+    const warBw = [];
+    if (inWar && u < SMASH) {
+      for (const b of WAR_BLOWS) { const age = cueAge(b.u, u, time); if (age < 1.8) warBw.push({ b, age }); }
+      warBw.sort((x, y) => x.age - y.age);
+      // (the light of the newest running out over the sea)
+      const nb = warBw.find(w => w.b.kind !== 4 && w.b.kind !== 8);
+      // (the hardest run out over the sea for longer: the ring of light crossing it)
+      if (nb) { const L0 = nb.b.crater ? 3.2 : 0.8; if (nb.age < L0) { const p = nb.b.at(u); S.uImpact.value.set(p.x, p.y, p.z, nb.age / L0); } }
+      // (the hardest tear a ring out of the sea under them: its cloud thrown out and up, filling back in)
+      let ci = 0;
+      for (const w of warBw) {
+        if (!w.b.crater || ci > 2) continue;
+        const age = w.age / w.b.crater[3];
+        if (age >= 1) continue;
+        const p = w.b.at(u);
+        S.uCrater.value[ci].set(p.x, DUEL_FLOOR + 10, p.z, age); S.uCraterS.value[ci] = w.b.crater[2]; ci++;
+      }
+      for (; ci < 3; ci++) { S.uCrater.value[ci].w = -1; S.uCraterS.value[ci] = 1; }
+      // (each throws lightning out of it, gold and violet, as it strikes)
+      for (const w of warBw) {
+        const b = w.b;
+        if (!b.bolts || w.age !== 0) continue;
+        const M = b.at(u), q = Math.floor(b.u * 97);
+        for (let i = 0; i < b.bolts; i++) {
+          const a1 = (q * 2.399 + i * 2.1) % (Math.PI * 2), r = 460 + i * 70;
+          lightning.strike(time + i * 0.02, M, M.clone().add(V3(Math.cos(a1) * r, (i % 2 ? 1 : -1) * (180 + (q % 5) * 50), Math.sin(a1) * r)), { seed: q * 31 + i * 7, strength: 0.9, width: 2.6, branches: 8, levels: 6, color: i % 2 ? new THREE.Color(1.0, 0.82, 0.5) : new THREE.Color(0.66, 0.5, 1.0) });
+        }
+      }
+    } else if (!inWar) for (let i = 0; i < 3; i++) S.uCraterS.value[i] = 1;
+    // (the storm the masked one calls down on the bell about the gold one, war.js BOLTS)
+    if (inWar) for (const Bt of WAR_BOLTS) if (cueAge(Bt.u, u, time) === 0) lightning.strike(time, Bt.from(), Bt.to(), { seed: Math.floor(Bt.u * 131), strength: 1.0, width: 3.0, branches: 7, levels: 6, color: new THREE.Color(0.72, 0.46, 1.0) });
+    // (the trenches the crescent's halves cut into the sea behind the masked one, filling back in)
+    for (let k = 0; k < 2; k++) {
+      const T = WAR_TRENCH[k];
+      S.uTrench.value[k].set(T.a.x, T.a.z, T.b.x, T.b.z);
+      S.uTrenchK.value[k].set(inB ? 0 : smooth(T.u0, T.u1, u), smooth(51.6, 52.6, u));
     }
     // each blow throws lightning: down into the cloud tops and out through the air
     if (lastBlow && clashK > 0.5 && u < SMASH && lastBlow.t > lastBlowT && lastBlow.kind !== 4 && time - lastBlowBolt > 0.34) {
@@ -1658,8 +1735,11 @@ export async function createEngine(canvas) {
     if (!inB) {
       P = valleyP(u);
       heading = valleyHeading(u, P);
-      speed = scrub ? Math.min(6, valleyP(u + 0.05).distanceTo(valleyP(u - 0.05)) / 0.1 * 0.6) : Math.min(6, P.distanceTo(wPrev || P) / dt);
-      run = Math.max(band(65.5, 66.5, 78.6, 79.6, u), band(82.6, 82.8, 83.4, 83.6, u) * 0.7);
+      // (from how far he went this frame; across a cut, where the road jumps ahead under him, his stride goes on as it was)
+      const moved = P.distanceTo(wPrev || P);
+      speed = scrub ? Math.min(6, valleyP(u + 0.05).distanceTo(valleyP(u - 0.05)) / 0.1 * 0.6) : moved > 1.2 ? lastSpeed : Math.min(6, moved / dt);
+      // (a jog down off the porch into the street, eager to be off; the run home; the rush to his uncle)
+      run = Math.max(band(18.35, 18.8, 19.7, 20.3, u) * 0.45, band(65.5, 66.5, 78.6, 79.6, u), band(82.6, 82.8, 83.4, 83.6, u) * 0.7);
       kneel = kneelK(u);
       reach = smooth(84.6, 85.8, u) * (1 - handDrop(u) * 0.6);
       wave = band(29.3, 29.8, 30.6, 31.1, u) * 0.85;
@@ -1687,7 +1767,8 @@ export async function createEngine(canvas) {
       const w = B.wuhen(u);
       P = w.P; heading = w.heading; run = w.run; kneel = w.kneel || 0; draw = w.draw || 0; scale = w.scale; wVis = w.visible; lie = w.lie || 0;
       reach = w.reach || 0;
-      speed = w.speed != null ? w.speed : scrub ? Math.min(7, B.wuhen(u + 0.05).P.distanceTo(B.wuhen(u - 0.05).P) / 0.1 * 0.45) : Math.min(7, P.distanceTo(wPrev || P) / dt);
+      const movedB = P.distanceTo(wPrev || P);
+      speed = w.speed != null ? w.speed : scrub ? Math.min(7, B.wuhen(u + 0.05).P.distanceTo(B.wuhen(u - 0.05).P) / 0.1 * 0.45) : movedB > 1.2 ? lastSpeed : Math.min(7, movedB / dt);
       Object.assign(hs, { fall: w.fall || 0, getUp: w.getUp || 0, hold: w.hold || 0, holdWidth: w.holdWidth || 0, release: w.release || 0, gripL: w.gripL || null, gripR: w.gripR || null, sit: w.sit || 0, grief: w.grief || 0, crouch: w.crouch || 0, reachTarget: w.reachTarget || null,
         carve: w.carve || 0, carveTarget: w.carveTarget || null, carveMode: w.carveMode || null, braceTarget: w.braceTarget || null, palm: w.palm || 0, palmTarget: w.palmTarget || null, lookUp: w.lookUp || 0,
         measure: w.measure || 0, measureTarget: w.measureTarget || null, measureSlide: w.measureSlide || 0, pushup: w.pushup || 0, phase: w.phase ?? null, lean: w.lean || 0 });
@@ -1703,6 +1784,7 @@ export async function createEngine(canvas) {
     if (!inB && u > 91.3 && u < 92.7) { const hp = handsMeet(_hm).project(camera); metrics.tearUV = [hp.x * 0.5 + 0.5, hp.y * 0.5 + 0.5]; } else metrics.tearUV = null;
     const right = V3().crossVectors(heading, UP).normalize();
     wPrev = P.clone();
+    lastSpeed = speed;
     // a warm rim from the fires behind him (real lights do most of the work)
     const facingFire = smooth(57, 61, u) * (u < 96 ? 1 : 0);
     // (and from the fire on the slope where the bolt came down, before him while the dark comes on)
@@ -2028,6 +2110,8 @@ export async function createEngine(canvas) {
     S.uSeaK.value = inB ? 0 : band(45.9, 47.0, 53.05, 53.4, u);
     S.uDive.value = inB ? 0 : band(52.95, 53.08, 53.8, 53.94, u);
     S.uHole.value.set(EYE.x, EYE.z, smooth(45.8, 46.6, u) * (1 - smooth(49.05, 49.75, u)), 1.0);
+    // (the war's arena: open sea under it, no tower of cloud rising into the fight)
+    S.uArena.value.set(WAR_C.x, WAR_C.z, 2900, 1);
     // (the sheets across the well: there while the eye goes up it, gone once it is out over the sea)
     // (they form across it as the eye rushes up toward its mouth)
     S.uBands.value.set(inB ? 0 : band(47.72, 47.96, 48.62, 48.8, u), SHEETS[0][1], SHEETS[1][1], SHEETS[2][1]);
@@ -2043,7 +2127,8 @@ export async function createEngine(canvas) {
         const f = V3(dir.x, 0, dir.z).normalize();
         STAGE = { c: sh.pos.clone().addScaledVector(dir, t), up: f.clone().negate(), r: V3().crossVectors(f, UP).normalize() };
       }
-      const on = inB ? 0 : band(48.075, 48.1, 48.2, 48.212, u);
+      // (no longer: the light of the fight itself glares through the screen, flaring with each blow)
+      const on = 0;
       S.uStage.value.set(STAGE.c.x, STAGE.c.z, 82, on);
       S.uStageR.value.set(STAGE.r.x, STAGE.r.z, STAGE.up.x, STAGE.up.z);
       if (on > 0) {
@@ -2265,14 +2350,22 @@ export async function createEngine(canvas) {
       // (after the smash the fight is over: no more meetings but the smash's own, the violet one fading away above, the
       // gold one's head and trail falling with it down through the storm, its trail laid back along the fall)
       const over = !inB && u > SMASH;
-      const bw = clashK > 0.01 && !inB && !over ? blows.map(bl => ({ pos: V3(bl.pos.x + _dc.x, bl.pos.y + _dc.y, bl.pos.z + _dc.z), t: bl.t, kind: bl.kind, amt: clashK * (bl.kind === 3 ? 0.9 : 1.25) })) : [];
+      const bw = inWar && !over ? warBw.filter(w => w.age < 1.3).slice(0, 3).map(w => ({ pos: w.b.at(u), t: time - w.age, kind: w.b.kind, amt: 1.25 }))
+        : clashK > 0.01 && !inB && !over ? blows.map(bl => ({ pos: V3(bl.pos.x + _dc.x, bl.pos.y + _dc.y, bl.pos.z + _dc.z), t: bl.t, kind: bl.kind, amt: clashK * (bl.kind === 3 ? 0.9 : 1.25) })) : [];
       if (over && smashAge < 1.3) bw.unshift({ pos: GOLD_FALL(SMASH, V3()), t: time - smashAge, kind: 2, amt: 1.3 });
-      const flight = falling > 0 ? (t, o1, o2) => { duelFlight(t, o1, o2); o1.lerp(GOLD_FALL(u - Math.max(0, time - t) * 0.15, _gf), falling); } : duelFlight;
+      const fl0 = inWar ? warFlight : duelFlight;
+      const flight = falling > 0 ? (t, o1, o2) => { fl0(t, o1, o2); o1.lerp(GOLD_FALL(u - Math.max(0, time - t) * 0.15, _gf), falling); } : fl0;
       const violetK = clashK * (1 - smooth(SMASH + 0.08, SMASH + 0.4, u));
+      // (close to, the two are people: their lights are only the haze about them, not stars over them)
+      let heads = [1, 1];
+      if (inWar) { flight(time, _wg, _wm); heads = [smooth(45, 170, camera.position.distanceTo(_wg)), smooth(45, 170, camera.position.distanceTo(_wm))]; }
       fighters.update({
-        time, flight, amts: inB ? [0, 0] : [Math.max(clashK, falling), violetK], blows: bw, camera,
+        time, flight, amts: inB ? [0, 0] : [Math.max(clashK, falling), violetK], blows: bw, camera, headK: heads,
         skyTex: sky.rt.textures[2], res: _fRes.set(sky.rt.width * div, sky.rt.height * div),
       });
+      // the two as people, and what they throw at each other
+      war.shared.tSky.value = sky.rt.textures[2]; war.shared.uRes.value.copy(_fRes);
+      war.update(u, time, camera, inB ? 0 : 1, at => cueAge(at, u, time), { sunDir: S.uSunDir.value, sunCol: S.uSunCol.value, sky: S.uZenith.value });
       // the shock of the newest blow bends the light round it; the hardest ones strike the frame into two tones
       const I2 = post.ink;
       I2.uShockR.value.w = 0; I2.uImpactF.value = 0;
@@ -2283,9 +2376,11 @@ export async function createEngine(canvas) {
         if (age >= 0 && age < 1 && _ss.z < 1 && Math.abs(_ss.x) < 1.3 && Math.abs(_ss.y) < 1.3) {
           const near = clamp(700 / Math.max(camera.position.distanceTo(nb.pos), 1));
           I2.uShockR.value.set(_ss.x * 0.5 + 0.5, _ss.y * 0.5 + 0.5, lerp(0.02, 0.55, 1 - Math.pow(1 - age, 3)), Math.pow(1 - age, 2) * clashK * near * (nb.kind === 1 ? 0.6 : 1));
-          if ((nb.kind === 3 || nb.kind === 2 || nb.kind === 5) && time - nb.t < 0.07) I2.uImpactF.value = 0.85 * clashK * near;
+          if (!inWar && (nb.kind === 3 || nb.kind === 2 || nb.kind === 5) && time - nb.t < 0.07) I2.uImpactF.value = 0.85 * clashK * near;
         }
       }
+      // (the war's hardest blows strike the frame into two tones, a few frames)
+      for (const w of warBw) if (w.b.frame && w.age < w.b.frame) I2.uImpactF.value = Math.max(I2.uImpactF.value, 0.85);
     }
     // (the instant it strikes, the frame is struck into two tones)
     if (!inB) { const ca = cueAge(STAR[1], u, time); post.ink.uImpactF.value = Math.max(post.ink.uImpactF.value, band(STAR[1], STAR[1] + 0.006, STAR[1] + 0.022, STAR[1] + 0.04, u) * 0.85, ca < 0.06 ? 0.85 : 0); }
@@ -2623,7 +2718,7 @@ export async function createEngine(canvas) {
   // goes up, not only those in view. Each position is drawn twice a moment apart, so the strikes and bursts fired on
   // the way have their shapes. The story's own clock is used, and what the storm keeps of it is reset afterwards.
   const WARM_US = [
-    0, 1.5, 1.95, 4, 5.5, 7, 10, 14, 18, 22, 26.5, 30, 34, 38, 42, 44, 46, 46.8, 47.5, 48.15, 48.5, 50, 51.4, 51.75, 53,
+    0, 1.5, 1.95, 4, 5.5, 7, 10, 14, 18, 22, 26.5, 30, 34, 38, 42, 44, 46, 46.8, 47.5, 48.15, 48.5, 49.7, 50, 50.8, 51.4, 51.75, 51.95, 53,
     53.75, 54.02, 54.1, 54.45, 54.6, 55.3, 56, 57.5, 58.8, 60.5, 62, 62.65, 64, 65.5, 66.7, 68.4, 70.5, 72.7, 75.1,
     77, 78.6, 79.5, 81, 83, 84.5, 86, 88, 90, 91.5, 92.1, 92.5, 93.5, 95, 96.5, 98, 100, 101.3, 102.4, 103.6, 105,
     106.5, 107.5, 108.05, 108.2, 108.3, 108.4, 109, 110, 110.7, 111.5, 112.5, 112.6, 114, 115.5, 116.4, 117, 117.1, 118.5,
@@ -2634,7 +2729,9 @@ export async function createEngine(canvas) {
   // (what each position costs, in multiples of a plain one, measured on a Windows desktop: where the story first shows
   // something, its shaders are first drawn there. The progress reported goes by these, so the page's beats come at
   // even times rather than bunched up behind the burning village.)
-  const WARM_COST = { 0: 12, 10: 16, 46: 6, 58.8: 4, 72.7: 10, 75.1: 15, 77: 7, 78.6: 6, 79.5: 10, 81: 6, 84.5: 5, 88: 4,
+  // (the war, war.js: the masked one close to at 49.7, the gold one under his great sword at 50, the crescent at 50.8,
+  // the bell at 51.4, the lock at 51.75, its light from below at 51.95: each drawn here first, not mid-fight)
+  const WARM_COST = { 0: 12, 10: 16, 46: 6, 49.7: 4, 50: 4, 50.8: 3, 51.95: 3, 58.8: 4, 72.7: 10, 75.1: 15, 77: 7, 78.6: 6, 79.5: 10, 81: 6, 84.5: 5, 88: 4,
     91.5: 8, 92.1: 8, 92.5: 5, 93.5: 10, 95: 7, 98: 30, 100: 12, 101.3: 8, 102.4: 7, 103.6: 9, 105: 7, 108.3: 10, 115.5: 7,
     128: 3, 129.1: 4, 130.5: 4, 132.5: 6 };
   function renderUnculled() {

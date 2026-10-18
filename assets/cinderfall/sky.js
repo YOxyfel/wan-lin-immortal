@@ -73,17 +73,20 @@ const SEAGEN = `precision highp float; varying vec2 vUv;
 vec2 h2(vec2 p){ p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3))); return fract(sin(p) * 43758.5453); }
 float h1(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
 float lobes(vec2 x, float C, float N, float seed){
-  vec2 c0 = floor(x / C); float best = 0.;
+  vec2 c0 = floor(x / C); float sum = 1., k = 3.2 / C;
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
     vec2 nc = c0 + vec2(float(i), float(j));
     vec2 id = mod(nc, N);
     vec2 r2 = h2(id + seed);
     vec2 ctr = (nc + .15 + .7 * r2) * C;
     float R = C * (.55 + .4 * h1(id + seed * 1.7));
-    vec2 dv = x - ctr; float d2 = dot(dv, dv);
-    if (d2 < R * R) best = max(best, sqrt(R * R - d2) + C * .25 * h1(id + seed * 3.1));
+    vec2 dv = x - ctr; float q = dot(dv, dv) / (R * R);
+    // (a round head, each its own height, its flanks never steeper than a heightfield can hold: seen from just above
+    // the sea no head's side smears into a curtain; the heads run into each other in soft folds, not creases, so the
+    // texture's own grid never shows along them)
+    if (q < 1.) sum += exp(k * R * (1. + .45 * h1(id + seed * 3.1)) * (1. - q) * (1. + .3 * q));
   }
-  return best;
+  return log(sum) / k;
 }
 void main(){
   vec2 x = vUv * ${SEA_P}.;
@@ -138,7 +141,7 @@ uniform vec4 uEye, uHit, uDark; uniform vec2 uClashGV; uniform vec3 uHitCol;
 // blasts punched into the cloud tops by the fight (xyz: where, w: how long ago 0..1, -1 none); the distance to what the
 // eye is following (the fight), for the transmittance up to it; the ground drawn far below when the eye is up among
 // the clouds; how far the fair-weather layer has thickened into a floor of cloud
-uniform vec4 uCrater[3]; uniform float uFocus, uGroundK, uSeaK, uDive;
+uniform vec4 uCrater[3]; uniform float uCraterS[3]; uniform vec4 uTrench[2]; uniform vec2 uTrenchK[2]; uniform float uFocus, uGroundK, uSeaK, uDive;
 // the sheets of cloud across the well that the launch bursts up through (x: how much, yzw: their heights) and their
 // thicknesses (xyz, metres); the well itself while the eye climbs it (x: how ragged its walls are, 1 as they are)
 uniform vec4 uBands, uBandT, uWell;
@@ -150,7 +153,7 @@ uniform sampler2D tSea;
 uniform sampler2D tPuppet; uniform vec4 uStage, uStageR, uPup0, uPup1, uPupFx;
 // the charge gathering in the cloud (xyz, w: how bright), and the great bolt's channel lighting it from within
 // (A: its top and how bright, B: where its leader has come to)
-uniform vec4 uCharge, uChanA, uChanB, uHole;
+uniform vec4 uCharge, uChanA, uChanB, uHole, uArena;
 // the gathering the fight stirs up (xy: the eye under it, z: how far the cloud has wound round it, w: how far the deck
 // has formed out from it, 1 = everywhere); the light of the fight pouring down the eye (rgb, w: how bright)
 uniform vec4 uVort, uBeam;
@@ -253,20 +256,26 @@ float formed(vec2 pv, vec2 xz){
   float gap = (1. - smoothstep(.5, .9, uVort.w)) * smoothstep(300., 900., d);
   return f * mix(1., smoothstep(.22, .62, arm + (n - .5) * .7), gap);
 }
+// (the war's arena, war.js: no great tower of cloud rises within it, so the two fight over open sea and the lens can
+// go low over it anywhere there; set by each caller for the point it asks about)
+float gArena = 1.;
+float arenaAt(vec2 xz){ return 1. - uArena.w * (1. - smoothstep(uArena.z * .55, uArena.z, length(xz - uArena.xy))); }
 float seaAt(vec2 xz, out float ao){
   vec2 w = xz + vec2(6., 2.) * uTime;
   float sw = texture(tShape, vec3(w * .000045 + .17, .13)).r;
   float tc = texture(tDetail, vec3(w * .00009 + .5, .27)).r;
   vec2 lb = texture(tSea, w / ${SEA_P}.).rg;
   // (the towers' flanks are heads too: their edge scalloped by them)
-  float tw = smoothstep(.64, .8, tc + (lb.g - .5) * .06);
-  float top = 2040. + 340. * (sw - .5) + lb.r;
+  // (the heads' relief a cloud sea's, rolling: a heightfield cannot hold the cliffs of a mountain range without
+  // smearing them; the towers' flanks as steep as it can hold)
+  float tw = smoothstep(.6, .86, tc + (lb.g - .5) * .06) * gArena;
+  float top = 2040. + 340. * (sw - .5) + lb.r * .62;
   ao = lb.g;
   if (tw > 0.) {
     // (a great head of cumulus: the same heads made four times bigger, swelling up out of the sea)
     vec2 lt = texture(tSea, w / ${(SEA_P * 4.1).toFixed(1)} + .37).rg;
     float tw2 = tw * tw * (3. - 2. * tw);
-    top += tw2 * (520. + lt.r * 1.05);
+    top += tw2 * (430. + lt.r * .75);
     ao = mix(ao, max(ao, lt.g), tw2);
   }
   return top;
@@ -296,6 +305,7 @@ float density(vec3 p, float sk, bool detail, out float hf){
   gDepth = 1e4;
   gSeaThick = 0.;
   if (uSeaK > 0. && !gNoSea && sk < .995 && p.y > 600. && p.y < 4000.) {
+    gArena = arenaAt(p.xz);
     float tS = mix(980., seaTop(pv, detail), seaHole3(p));
     gDepth = tS - p.y;
     // (its underside uneven, its inside torn into wisps and denser veils: something to fly through)
@@ -368,7 +378,7 @@ float density(vec3 p, float sk, bool detail, out float hf){
     vec4 cr = uCrater[k];
     if (cr.w >= 0. && cr.w < 1.) {
       vec3 dc = p - cr.xyz; dc.y *= 1.5;
-      float R = mix(60., 760., sqrt(cr.w));
+      float R = mix(60., 760., sqrt(cr.w)) * uCraterS[k];
       float dd = length(dc) + (n - .5) * 180.;
       c *= 1. - smoothstep(R, R * .55, dd) * (1. - cr.w * cr.w);
     }
@@ -399,17 +409,33 @@ float density(vec3 p, float sk, bool detail, out float hf){
 float seaSurf(vec2 xz, out float ao){
   // (the well: a smooth fall from its rim, its heads only on the rim, never drawn down its walls)
   float hk = seaHole(xz);
+  gArena = arenaAt(xz);
   float top = seaAt(vortex(xz), ao);
   top = mix(mix(980., 2280., hk), top, smoothstep(.82, 1., hk));
   for (int k = 0; k < 3; k++) {
     vec4 cr = uCrater[k];
     if (cr.w >= 0. && cr.w < 1.) {
-      float R = mix(90., 700., sqrt(cr.w)), dd = length(xz - cr.xz) / R + (ao - .5) * .2;
+      float cs = uCraterS[k];
+      float R = mix(90., 700., sqrt(cr.w)) * cs, dd = length(xz - cr.xz) / R + (ao - .5) * .2;
       float fill = 1. - cr.w * cr.w;
-      top -= 430. * fill * (1. - smoothstep(.25, 1., dd));
-      top += 110. * (1. - cr.w) * exp(-pow((dd - 1.) / .2, 2.));
+      top -= 430. * sqrt(cs) * fill * (1. - smoothstep(.25, 1., dd));
+      top += 110. * cs * (1. - cr.w) * exp(-pow((dd - 1.) / .2, 2.));
       ao *= 1. - .5 * fill * (1. - smoothstep(.3, 1., dd));
     }
+  }
+  // the trenches cut into it by the halves of the crescent (war.js): run out along their line, the cloud thrown up
+  // along their lips, filling back in
+  for (int k = 0; k < 2; k++) {
+    vec2 tk = uTrenchK[k];
+    if (tk.x <= 0. || tk.y >= 1.) continue;
+    vec4 T = uTrench[k];
+    vec2 a = T.xy, ab = T.zw - T.xy;
+    float h = clamp(dot(xz - a, ab) / dot(ab, ab), 0., 1.);
+    float dl = length(xz - a - ab * h) + (ao - .5) * 26.;
+    float head = smoothstep(tk.x * 1.04, tk.x * 1.04 - .05, h), w = mix(34., 85., h), fill = 1. - tk.y * tk.y;
+    top -= 320. * fill * head * (1. - smoothstep(w * .45, w, dl));
+    top += 50. * fill * head * exp(-pow((dl - w) / (w * .32), 2.));
+    ao *= 1. - .45 * fill * head * (1. - smoothstep(w * .5, w, dl));
   }
   return top;
 }
@@ -421,29 +447,36 @@ vec3 seaShade(vec3 hp, vec3 rd, float tS, float ao){
   // (the light spreads inside a cloud: its shading follows the big forms, so the normal is taken wide)
   float e = 24. + tS * .004;
   vec3 n = normalize(vec3(seaH(hp.xz - vec2(e, 0.)) - seaH(hp.xz + vec2(e, 0.)), 2. * e, seaH(hp.xz - vec2(0., e)) - seaH(hp.xz + vec2(0., e))));
-  // (close to, the heads break up into smaller billows: their shading lumpy, their shadows' edges soft)
+  // (close to, the heads break up into smaller billows: their shading lumpy; and down the steep side of a tower the
+  // shading is the billows of its own wall, in three dimensions, never the heads' shade drawn down it in streaks)
   float kc = 1. - smoothstep(350., 1800., tS);
-  float lump = .5;
-  if (kc > 0.) {
+  float steep = 1. - smoothstep(.35, .75, n.y);
+  float lump = .5, dk = max(kc, steep);
+  if (dk > 0.) {
     vec3 d1 = texture(tDetail, hp * .011 + vec3(.13, .37, .71)).rgb - .5;
     vec3 d2 = texture(tDetail, hp * .033 + vec3(.53, .11, .29)).rgb - .5;
-    n = normalize(n + (d1 * 1.1 + d2 * .55) * kc * vec3(1., .35, 1.));
-    lump = .5 + (d1.r + d2.g * .5) * kc;
+    n = normalize(n + (d1 * .6 + d2 * .28) * kc * vec3(1., .35, 1.) + (d1 * 1.1 + d2 * .5) * steep * (1. - .5 * kc));
+    lump = .5 + (d1.r + d2.g * .5) * .7 * dk;
+    ao = mix(ao, clamp(.62 + d1.g * 1.2 + d2.b * .6, 0., 1.), steep * .85);
   }
-  float sh = 1.;
+  // the sun's way through the cloud from here: how deep under the top it runs, and how far (soft, as in cloud: the
+  // thin parts let the light through, the deep ones shade)
+  float od = 0.;
   for (int j = 0; j < SHSTEPS; j++) {
-    float dj = 22. * pow(2.3, float(j));
-    vec3 q = hp + uSunDir * dj + n * 4.;
-    sh = min(sh, smoothstep(-.14 - .22 * kc, .3 + .35 * kc, (q.y - seaH(q.xz)) / dj));
+    float dj = 16. * pow(2.25, float(j));
+    vec3 q = hp + uSunDir * dj + n * 3.;
+    od += max(seaH(q.xz) - q.y, 0.) * dj * .45;
   }
+  float sh = mix(exp(-od * .00011), 1., .06);
   float ndl = dot(n, uSunDir);
-  float lit = smoothstep(-.35, .75, ndl) * sh * uSunVis;
+  float lit = smoothstep(-.45, .8, ndl) * sh * uSunVis;
   vec3 sunL = uCloudLit * mix(vec3(1.), uSunCol * 1.15, .55);
   vec3 skyL = uZenith * .95 + uHorizon * .18;
-  skyL = mix(skyL, vec3(dot(skyL, vec3(.2126, .7152, .0722))), .38);
-  float occ = mix(.3, 1., ao) * mix(1., .8 + .4 * lump, kc);
-  // sun on the heads; the sky's blue in the shade, with the light that has gone into the cloud and come out again
-  vec3 col = sunL * lit * 2.3 + (skyL * (.5 + .5 * n.y) * 1.1 + sunL * .2 * (.45 + .55 * sh) * uSunVis) * occ;
+  skyL = mix(skyL, vec3(dot(skyL, vec3(.2126, .7152, .0722))), .5);
+  float occ = mix(.45, 1., ao) * mix(1., .85 + .3 * lump, dk);
+  // sun on the heads; in the shade the sky's blue, and the light that has gone into the cloud and come out again
+  // (a cloud is bright all through: its shade is pale)
+  vec3 col = sunL * lit * 2.1 + (skyL * (.55 + .45 * n.y) * 1.15 + sunL * (.3 + .32 * sh) * uSunVis) * occ;
   // a warm band where the light goes over the edge into the shade
   col += sunL * .32 * exp(-pow(ndl / .26, 2.)) * sh * uSunVis * occ;
   // the silver rim: edges seen against the light glow
@@ -568,6 +601,7 @@ void main(){
   // over the sea of clouds: find where the ray meets its top (relaxed steps, then halving); the march stops there
   float tS = -1.; float aoS = 1.;
   // (down in the well the walls are drawn as cloud, not as a surface)
+  gArena = arenaAt(ro.xz);
   if (aloftK > .5 && ro.y > seaTop(ro.xz, false) + 4.) {
     gNoSea = true;
     float tEnd = rd.y < 0. ? min(70000., (1400. - ro.y) / rd.y) : (rd.y > 1e-4 ? min(70000., (4100. - ro.y) / rd.y) : 70000.);
@@ -855,8 +889,11 @@ void main(){
     float g1 = pow(max(dot(rd, d1), 0.), 2500.) * .7 + pow(max(dot(rd, d1), 0.), 300.) * .25;
     float g2 = pow(max(dot(rd, d2), 0.), 2500.) * .7 + pow(max(dot(rd, d2), 0.), 300.) * .25;
     float vis = .12 + Tf * .88;
-    L += (gold * (g1 + k1 * .3) * uClashGV.x + violet * (g2 + k2 * .3) * 1.9 * uClashGV.y) * uClash * vis;
-    L += (gold * g1 * uClashGV.x + violet * g2 * uClashGV.y) * .5 * uClash * vis * .6;
+    // (a light seen from far off; close to one, it is a person, drawn in the world with the light about them, war.js,
+    // and its glow here would only be a haze over everything)
+    float n1 = smoothstep(25., 140., length(uC1 - ro)), n2 = smoothstep(25., 140., length(uC2 - ro));
+    L += (gold * (g1 + k1 * .3) * uClashGV.x * n1 + violet * (g2 + k2 * .3) * 1.9 * uClashGV.y * n2) * uClash * vis;
+    L += (gold * g1 * uClashGV.x * n1 + violet * g2 * uClashGV.y * n2) * .5 * uClash * vis * .6;
     float ia = uImpact.w;
     if (ia >= 0. && ia < .25) {
       vec3 di = normalize(uImpact.xyz - ro);
@@ -913,8 +950,9 @@ export function createSky(renderer, quality) {
     uStarK: { value: 0 }, uStarPos: { value: V3(0, -9999, 0) }, uStarTail: { value: V3(0, -9999, 0) },
     uT1: { value: [V3(), V3(), V3(), V3()] }, uT2: { value: [V3(), V3(), V3(), V3()] }, uImpact: { value: new THREE.Vector4(0, 0, 0, -1) },
     uEye: { value: new THREE.Vector4(0, 0, 0, 0) }, uHit: { value: new THREE.Vector4(0, 0, 0, -1) }, uHitCol: { value: new THREE.Color(1, 0.86, 0.74) }, uDark: { value: new THREE.Vector4(0, 0, 0, 0) }, uClashGV: { value: new THREE.Vector2(1, 1) },
-    uCrater: { value: [new THREE.Vector4(0, 0, 0, -1), new THREE.Vector4(0, 0, 0, -1), new THREE.Vector4(0, 0, 0, -1)] }, uFocus: { value: 0 }, uGroundK: { value: 0 }, uSeaK: { value: 0 }, uDive: { value: 0 }, uBands: { value: new THREE.Vector4(0, 1300, 1650, 2000) }, uBandT: { value: new THREE.Vector4(150, 170, 210, 0) }, uWell: { value: new THREE.Vector4(1, 0, 0, 0) },
-    uCharge: { value: new THREE.Vector4(0, 0, 0, 0) }, uHole: { value: new THREE.Vector4(-250, -40, 1, 0) }, uChanA: { value: new THREE.Vector4(0, 0, 0, 0) }, uChanB: { value: new THREE.Vector4(0, 0, 0, 0) },
+    uCrater: { value: [new THREE.Vector4(0, 0, 0, -1), new THREE.Vector4(0, 0, 0, -1), new THREE.Vector4(0, 0, 0, -1)] }, uCraterS: { value: [1, 1, 1] },
+    uTrench: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uTrenchK: { value: [new THREE.Vector2(), new THREE.Vector2()] }, uFocus: { value: 0 }, uGroundK: { value: 0 }, uSeaK: { value: 0 }, uDive: { value: 0 }, uBands: { value: new THREE.Vector4(0, 1300, 1650, 2000) }, uBandT: { value: new THREE.Vector4(150, 170, 210, 0) }, uWell: { value: new THREE.Vector4(1, 0, 0, 0) },
+    uCharge: { value: new THREE.Vector4(0, 0, 0, 0) }, uHole: { value: new THREE.Vector4(-250, -40, 1, 0) }, uArena: { value: new THREE.Vector4(0, 0, 1, 0) }, uChanA: { value: new THREE.Vector4(0, 0, 0, 0) }, uChanB: { value: new THREE.Vector4(0, 0, 0, 0) },
     uVort: { value: new THREE.Vector4(0, 0, 0, 1) }, uBeam: { value: new THREE.Vector4(0, 0, 0, 0) }, uClashFar: { value: 1 },
     uMoonDir: { value: V3(-0.4, 0.5, -0.75).normalize() }, uMoonCol: { value: new THREE.Color(0, 0, 0) },
     uTime: U.uTime, uWind: { value: new THREE.Vector2(0.0009, 0.0003) }, uDensity: { value: 1 }, uDebug: { value: 0 }, uSharp: { value: 0 },

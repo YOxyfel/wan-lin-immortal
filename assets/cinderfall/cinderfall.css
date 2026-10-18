@@ -23,7 +23,13 @@
 .cf-title h1 { font: 500 clamp(40px, 6.4vw, 92px)/1 "Cormorant Garamond", Georgia, serif; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 14px; -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--reveal, 0) * 140% - 40%), transparent calc(var(--reveal, 0) * 140%)); mask-image: linear-gradient(90deg, #000 calc(var(--reveal, 0) * 140% - 40%), transparent calc(var(--reveal, 0) * 140%)); }
 .cf-title .eyebrow { color: #8a2a1e; letter-spacing: .42em; opacity: var(--eyebrow, 0); }
 .cf-sub { font: italic clamp(18px, 1.8vw, 26px) "Cormorant Garamond", Georgia, serif; margin-top: 18px; opacity: var(--sub, 0); }
-.cf-hint { font: 500 9px "Manrope", Arial, sans-serif; letter-spacing: .3em; margin-top: 26px; color: #6d6150; opacity: var(--hint, 0); }
+.cf-hint { font: 500 9px "Manrope", Arial, sans-serif; letter-spacing: .3em; margin-top: 16px; color: #6d6150; opacity: var(--hint, 0); }
+/* the way in: Watch the film (sound on, the whole screen on a desktop) */
+.cf-play { pointer-events: auto; margin-top: 26px; padding: 13px 30px 12px; border: 1px solid #a3261b; border-radius: 99px; background: #a3261b; color: #f3e8d4;
+  font: 600 11px "Manrope", Arial, sans-serif; letter-spacing: .26em; text-transform: uppercase; opacity: var(--play, 0); box-shadow: 0 6px 24px #a3261b33;
+  transition: background .25s ease, color .25s ease, box-shadow .25s ease; }
+.cf-play:hover { background: #8e1d10; box-shadow: 0 8px 30px #a3261b55; }
+.cf-play.queued { background: transparent; color: #a3261b; box-shadow: none; }
 .cf-title.waiting .cf-hint { opacity: calc(var(--hint, 0) * .55); }
 /* while the story is prepared: a line of progress under the words (no transition: it moves in steps, between the
    opening's beats, while the screen is still) */
@@ -77,6 +83,14 @@
 .cf-end .cf-stamp { position: absolute; left: calc(50% + min(15vw, 19vh)); top: calc(42% + min(8vw, 10vh)); right: auto; transform: rotate(4deg) scale(calc(.6 + var(--reveal, 0) * .4)); opacity: var(--reveal, 0); }
 .cf-next { position: absolute; left: 50%; bottom: 7vh; transform: translateX(-50%); font: 500 10px "Manrope", Arial, sans-serif; letter-spacing: .32em; color: #6d6150; text-decoration: none; pointer-events: auto; opacity: var(--reveal, 0); }
 
+/* ------------------------------------------------------------ cinema (Watch): the furniture draws back while it plays by itself */
+body.cf-cinema .nav, body.cf-cinema .hud { transition: opacity .9s ease, color .3s; }
+body.cf-cinema:not(.cf-peek) .nav, body.cf-cinema:not(.cf-peek) .hud .hud-actions { opacity: 0; pointer-events: none; }
+body.cf-cinema:not(.cf-peek):not(.cf-chapter) .hud #chapter { opacity: 0; }
+body.cf-cinema .hud #chapter { transition: opacity 1.2s ease; }
+body.cf-cinema .hud .hud-actions { transition: opacity .9s ease; }
+body.cf-cinema:not(.cf-peek) .stage { cursor: none; }
+
 /* ------------------------------------------------------------ hud */
 .hud { z-index: 13; }
 /* (the silence over the sea of clouds: the page's own furniture draws back from the picture) */
@@ -105,4 +119,24 @@
   .cf-cap.words { bottom: 16vh; }
   .hud-actions { gap: 14px; }
   .hud #sound { display: none; }
+}
+/* ------------------------------------------------------------ the title on a short screen
+   (a laptop's browser, a phone held on its side: the sign, the title, its lines and the way in to the film all on the
+   first screen, above the HUD, never under it; the ink follows the sign's box, the waiting dot its centre) */
+@media (max-height: 820px) {
+  .cf-seal, .cf-end .cf-seal { top: 34%; width: min(25vw, 25.5vh); height: min(26.5vw, 27vh); }
+  #loading.loading::before { top: 34%; }
+  .cf-title-text { top: calc(34% + min(18vw, 19.5vh)); }
+  .cf-title h1 { font-size: clamp(30px, min(6.4vw, 8.6vh), 92px); margin-bottom: 1.4vh; }
+  .cf-sub { margin-top: 1.8vh; font-size: clamp(15px, min(1.8vw, 3.8vh), 26px); }
+  .cf-play { margin-top: 2.6vh; padding: 1.5vh 26px 1.4vh; }
+  .cf-hint { margin-top: 1.6vh; }
+  .cf-cap.end { top: calc(34% + min(17vw, 19vh)); }
+  .cf-end .cf-stamp { left: calc(50% + min(15vw, 15.5vh)); top: calc(34% + min(8vw, 8vh)); }
+}
+@media (max-width: 700px) and (max-height: 520px) {
+  .cf-seal, .cf-end .cf-seal { top: 31%; width: min(44vw, 25.5vh); height: min(46.5vw, 27vh); }
+  #loading.loading::before { top: 31%; }
+  .cf-title-text { top: calc(31% + min(37vw, 19vh)); }
+  .cf-cap.end { top: calc(31% + min(34vw, 18vh)); }
 }

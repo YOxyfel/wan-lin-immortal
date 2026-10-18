@@ -632,3 +632,61 @@ phone check.
   film never shows it. For that held moment the ink fills the figures in black (him in the door, the old man's arm in
   front); as he comes in the lens tips down with him to the old man, so the colour coming back finds his legs, not his
   face.
+
+## Round 12: the war, the cloud sea, the walk, Watch as the way in (18 October 2026)
+
+The reviewer: the knife in his hand all through; movement that glides; Watch to be the proper way to see it, and better;
+the clouds distorted the moment the lens is just above them; the figures clashing "a joke, not fitting the story at
+all, underplaying its value"; the clashes sounding like a weaponsmith; the music happy or neutral over the burning.
+
+- **The knife** (`forest.js`): the forest's knife was mounted on the hero the valley shares, and never hidden out of
+  the forest, so it was in his fist through the village, the years and the dell. It is there only while he cuts a mark
+  with it. The bow is on his back on the walk out, not in his hand, and set down before the dell.
+- **The war is redesigned** (`war.js`, new; `engine.js`, `fighters.js`). It was two balls of light
+  orbiting each other with a stick figure drawn inside each, for twelve seconds under one slow orbiting lens; before
+  it, a shadow-puppet play on the sheet of cloud. Now, in 13 shots cut on its beats (18 s of Watch):
+  the two hang facing each other over the sea, the far peaks between them, as a sword of light two hundred metres
+  long forms over the gold one (out of a burst of gold light, a seam of white running up it); behind the masked one of
+  Fen Tian Zong at his shoulder (hood, mantle, iron mask, glaive; violet motes of his qi), the gold one far off under the
+  great sword; far below the gold one, small under it as it forms; side on, they streak at each other and meet (the
+  frame struck into two tones, the shock bending the light); high and far, the shock thrown out from it, a shell of light
+  racing out over the sea and tearing a ring out of it; the
+  great sword swung down past us, throwing a crescent of light down the line; behind the masked one, the crescent
+  coming at him, at us; he splits it on his glaive and its halves go past him either side and down into the sea behind,
+  cutting two trenches through it; he rises with the glaive up and the storm answers it, three bolts down onto its head;
+  the lightning comes down on the bell of light about the gold one, ringing over it, cracking it; over the gold one's
+  shoulder, the lock, the mask lit by the light of it; from the far side, the light pressed out of the lock (gold one
+  side, violet the other, veins of lightning over it, a white heart) swelling between them, the sea blown down under
+  it; it bursts; the masked one thrown up over him, and coming down on him: the smash, and the dive the film had.
+  Far off they are lights, as the film's cultivators always were; close to they are people (the villagers' bodies in
+  their robes and the sect's garb, weapons in their fists, streamers in the wind of their flight). Never the gold one's
+  face: from behind, below, at his shoulder.
+- **Its sound** (`score.js`): every beat of it scored on Watch's clock with drums, the shock of the air (a sub boom
+  falling away, the body of the blast, the crack of its front, the sky's rumble after) and swells drawn in toward each
+  impact; never metal. The recorded clashes, the smash and thunder go in where they will be (`audio.js` bank).
+- **The cloud sea from just above** (`sky.js`): each head of the baked sea had a step at its rim (an offset added to
+  the cap), and the caps met in creases the texture's grid showed; from just above the sea the steps smeared into
+  curtains hanging down the heads, and from higher up it was a lilac mountain range. The heads are continuous now,
+  meeting in soft folds; a cloud sea's relief (rolling, not alpine); the towers' flanks no steeper than a heightfield
+  holds, and shaded down their sides by their own billows in three dimensions; the sun's way into the cloud is soft
+  (thin cloud lets light through), the shade pale. No tower rises inside the war's arena.
+- **A cultivator seen close to is not a star** (`sky.js`, `fighters.js`): a fighter's glow in the sky fades as the lens
+  comes near (it filled the frame with haze); far blows' rings no wider than 240 m. What the two wear and hold is
+  marked as figure for the painted look (flattened with the world, the glaive's thin shaft turned green in the glare).
+- **The walk, the run** (`timeline.js` `mcZ`, `engine.js`, `forest.js`): measured at Watch's 30 Hz. The walk keeps a
+  walker's pace in every shot and cuts ahead between them (instant changes of scenery around him, his framing kept);
+  the porch, the stall and the mushrooms reached at a walk. The run home was 5.6 m/s along z on a road that bends, 7-8
+  m/s along the road, and one curve through each cut's key pair ran him at 10-15 m/s either side of it: each shot is
+  its own curve now, the run measured along the road. In the forest the gait is driven by how far he actually moves;
+  into the dell he waits at the rim while the story holds, then runs down the bank (it was a crouched slide, legs still,
+  at 6 m/s).
+- **The burning is not cheerful** (`score.js`): the burning, "Uncle." and the run home were in the village's festival
+  tune; now a falling cry on the xiao, then a lament over a doom march.
+- **Watch the film** (`index.html`, `boot.js`, `cinderfall.css`): the title's way in, a vermilion button: sound on, the
+  whole screen on a desktop, the film from the top (queued if the story is still being prepared). While it plays the
+  page is cinema: the header, the HUD and the cursor hide (a move of the mouse shows them a moment), each chapter's name
+  shown as it begins. The war's caption is written in quicker so Watch never slows for it. On a short screen (a
+  laptop's browser, a phone on its side) the sign, the lines and the button all fit the first screen, above the HUD.
+- **Recorded music and sound** (`audio.js`, `assets/cinderfall/audio/manifest.json`): a player for the ten cues (each
+  started and crossfaded on Watch's clock, the score's melody stepping back under it) and a bank of effects in place
+  of the synthesised ones, both empty until the files are in.

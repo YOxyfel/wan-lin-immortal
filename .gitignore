@@ -3,3 +3,6 @@ dist/
 .vite/
 *.log
 .DS_Store
+
+# raw uploads for the prologue sound (processed copies go in assets/cinderfall/audio)
+sound-uploads/

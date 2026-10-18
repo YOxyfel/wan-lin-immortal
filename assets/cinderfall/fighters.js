@@ -2,7 +2,7 @@
 //
 // Each fighter is a white-hot head drawn out along its motion (a streak while it dashes, a star while it hangs), with
 // a corona in its colour and a trail along the path it has just flown: the gold one's smooth and burning, the violet
-// one's crackling. Where they meet: a blink of white, a shock ring racing out, anime impact lines flicked out at odd
+// one's crackling (close to, the war's own figures are drawn instead, war.js, and the heads fade). Where they meet: a blink of white, a shock ring racing out, anime impact lines flicked out at odd
 // angles and lengths (gold on the gold one's side, violet on the other), and a shower of sparks thrown out and falling.
 // Hidden by the mountains (depth-tested), dimmed where the cloud is thick in front of them (the cloud target's
 // transmittance to the fight).
@@ -14,7 +14,8 @@ const SPAN = 0.62;           // seconds of flight a trail shows
 const BURSTS = 3;            // the last few meetings
 const SPARKS = 56;           // sparks thrown out of each
 // by the kind of blow (see duel.js): a blow, a flurry's, the smash down, the crater, a pulse out of the lock, its burst
-const KSIZE = [0.42, 0.3, 0.5, 0.5, 0.2, 0.62], KSPARK = [1, 0.6, 1.2, 1.3, 0.35, 1.5], KAMT = [1, 0.85, 1.15, 1.2, 0.6, 1.4];
+// (and the war's own, war.js: the crescent thrown, the crescent split on the glaive, lightning breaking on the bell)
+const KSIZE = [0.42, 0.3, 0.5, 0.5, 0.2, 0.62, 0.34, 0.56, 0.26], KSPARK = [1, 0.6, 1.2, 1.3, 0.35, 1.5, 0.5, 1.35, 0.55], KAMT = [1, 0.85, 1.15, 1.2, 0.6, 1.4, 0.9, 1.3, 0.75];
 
 const TRAIL_VS = `attribute float aK, aSide; varying float vK, vSide;
 void main(){ vK = aK; vSide = aSide; gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.); }`;
@@ -37,7 +38,6 @@ void main(){
   gl_Position = projectionMatrix * c;
 }`;
 const HEAD_FS = `uniform vec3 uCol; uniform float uAmt, uTime, uKind, uStretch; uniform sampler2D tSky; uniform vec2 uRes; varying vec2 vUv;
-float sdSeg(vec2 p, vec2 a, vec2 b){ vec2 pa = p - a, ba = b - a; return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0., 1.)); }
 void main(){
   vec2 q = vUv * 2. - 1.;
   // (distance from the line the head has just drawn: a capsule, in units of the head's size)
@@ -50,23 +50,7 @@ void main(){
   vec2 qr = mat2(cos(a), -sin(a), sin(a), cos(a)) * q;
   g += (exp(-abs(qr.x) * 70.) * exp(-abs(qr.y) * 3.2) + exp(-abs(qr.y) * 70.) * exp(-abs(qr.x) * 3.2)) * 1.5 / (1. + uStretch * 3.);
   vec3 c = mix(uCol, vec3(1., .98, .95), smoothstep(.28, .02, r));
-  // someone in the light: a cultivator flying head first along its way, the robe and a sleeve streaming back, the
-  // blade out ahead, dark against the white heart of their own light (so the lights read as people)
-  vec2 f = vec2(X, q.y) / 1.55;
-  float fw = sin(uTime * 9. + uKind * 2.) * .018;
-  float d = length(f - vec2(.17, 0.)) - .046;
-  d = min(d, sdSeg(f, vec2(.12, 0.), vec2(-.06, 0.)) - .04);
-  d = min(d, sdSeg(f, vec2(-.03, .01), vec2(-.27, .06 + fw)) - .032);
-  d = min(d, sdSeg(f, vec2(-.03, -.01), vec2(-.25, -.06 - fw)) - .029);
-  d = min(d, sdSeg(f, vec2(.09, .025), vec2(-.06, .12 + fw)) - .02);
-  d = min(d, sdSeg(f, vec2(.1, -.015), vec2(.24, -.05)) - .016);
-  d = min(d, sdSeg(f, vec2(.24, -.05), vec2(.42, -.085)) - .006);
-  float fig = smoothstep(.01, -.003, d) * smoothstep(.9, .55, r);
-  // (its light a little wider about it, so the figure stands dark against white, not against the sky)
-  g = max(g, (1. - smoothstep(.2, .62, length(f) * 1.55)) * 3.2);
-  c = mix(c, vec3(1., .97, .93), (1. - smoothstep(.2, .55, length(f) * 1.55)) * .8);
-  g = mix(g, min(g, .3), fig);
-  c = mix(c, uCol * .5, fig);
+  // (far off, a cultivator is a light: the people in it are seen only close to, war.js)
   float T = texture2D(tSky, gl_FragCoord.xy / uRes).g;
   float edge = smoothstep(1., .72, max(abs(q.x), abs(q.y)));
   gl_FragColor = vec4(c * g * fl * uAmt * (.4 + .6 * T) * edge, 1.);
@@ -202,7 +186,7 @@ export function createFighters() {
     group,
     // flight(t, outGold, outViolet): where the two are at time t; amts: [gold, violet] 0..1; blows: the last meetings,
     // newest first [{ pos (world), t, kind, amt }]; pull: [point, weight] drawing the gold one's last stretch to a point
-    update({ time, flight, amts, blows = [], camera, skyTex, res, pull = null }) {
+    update({ time, flight, amts, blows = [], camera, skyTex, res, pull = null, headK = [1, 1] }) {
       const anyBurst = blows.some(bl => bl && time - bl.t >= 0 && time - bl.t < 1.3);
       group.visible = amts[0] > 0.003 || amts[1] > 0.003 || anyBurst;
       if (!group.visible) return;
@@ -242,9 +226,9 @@ export function createFighters() {
         const dx = v0.x - v1.x, dy = v0.y - v1.y, dl = Math.hypot(dx, dy);
         U.uDir.value.set(dl > 1e-4 ? dx / dl : 1, dl > 1e-4 ? dy / dl : 0);
         U.uStretch.value = Math.min(9, dl / (U.uSize.value * 0.9));
-        U.uAmt.value = amts[f];
+        U.uAmt.value = amts[f] * headK[f];
         U.uTime.value = time;
-        h.visible = amts[f] > 0.003;
+        h.visible = amts[f] * headK[f] > 0.003;
       }
       // the meetings: a burst each (newest first), and their sparks
       const SU = sparkMesh.material.uniforms;
@@ -261,7 +245,8 @@ export function createFighters() {
         if (!m.visible) continue;
         m.position.copy(bl.pos);
         const dist = bl.pos.distanceTo(camera.position);
-        U.uSize.value = dist * (KSIZE[bl.kind] ?? 0.42);
+        // (the size of the blow's light on the screen, but never a ring a kilometre across: far off it is a flash)
+        U.uSize.value = Math.min(dist * (KSIZE[bl.kind] ?? 0.42), 240);
         U.uStretch.value = 0;
         U.uDir.value.set(1, 0);
         U.uAge.value = age;
