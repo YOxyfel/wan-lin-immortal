@@ -305,7 +305,7 @@ export async function createEngine(canvas) {
   scene.add(chimney.mesh);
   const incense = createSmoke([{ p: A.shrine, s: 0.02 }], { count: 16, color: [0.85, 0.85, 0.85], glow: [0, 0, 0], height: 3, spread: 0.3, size: [0.08, 0.6], speed: [0.08, 0.14], alpha: 0.35, wind: [0.4, 0.1] });
   scene.add(incense.mesh);
-  const vapor = createPoints({ count: 6 * 24, mode: 'vapor', emitters: world.wolves.map(() => ({ p: V3(), s: 0 })), color: [0.85, 0.08, 0.06], size: 1.6, speed: 0.4 });
+  const vapor = createPoints({ count: 6 * 24, mode: 'vapor', emitters: world.wolves.map(() => ({ p: V3(), s: 0 })), color: [0.85, 0.08, 0.06], size: 1.0, speed: 0.4 });
   scene.add(vapor.points);
   const birds = createBirds(quality.low ? 18 : 34);
   scene.add(birds.mesh);
@@ -336,7 +336,8 @@ export async function createEngine(canvas) {
   // (lights live in the scene itself, never in a group that is hidden and shown: see sect.light)
   if (auras) { world.root.add(auras.group); scene.add(auras.light); }
   // (the one that is not like the others, and where he stops to look at it: a step off the road toward the stall)
-  const legend = A.auras ? (() => { const a = A.auras.find(x => x.tier === 4) || A.auras[0]; return a.base.clone().addScaledVector(a.dir, a.len * 0.45); })() : null;
+  const legendAura = A.auras ? (A.auras.find(x => x.tier === 4) || A.auras[0]) : null;
+  const legend = legendAura ? legendAura.base.clone().addScaledVector(legendAura.dir, legendAura.len * 0.45) : null;
   const stallK = u => band(25.3, 26.05, 27.45, 28.25, u);
   scene.add(charge.group);
   // the shreds of cloud rushing past the eye as it dives through the sea's top and the storm
@@ -434,16 +435,32 @@ export async function createEngine(canvas) {
   const db = new THREE.Mesh(basketGeo, basketMat);
   db.castShadow = true;
   dropped.add(db);
+  // (its handle, so on the ground it is still a basket)
+  { const dh = new THREE.Mesh(handle.geometry, basketMat); dh.position.y = 0.2; dh.castShadow = true; db.add(dh); }
   const capGeo = new THREE.SphereGeometry(0.05, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), capMat = new THREE.MeshStandardMaterial({ color: 0xa65a26, roughness: 0.6 });
+  // (each spilled one a mushroom, not a ball: a cap and its pale stem, rolled onto its side)
+  const stemGeo = new THREE.CylinderGeometry(0.011, 0.016, 0.07, 6); stemGeo.translate(0, -0.03, 0);
+  const stemMat = new THREE.MeshStandardMaterial({ color: 0xe2d4b6, roughness: 0.8 });
   const caps = [[0.36, -0.05, 0.0], [0.5, 0.08, 0.6], [0.62, -0.12, 1.1], [0.44, 0.17, 1.9], [0.78, 0.02, 2.6], [0.3, 0.1, 3.0]].map(([x, z, r]) => {
     const m = new THREE.Mesh(capGeo, capMat);
-    m.userData.to = V3(x, 0.03, z);
+    m.add(new THREE.Mesh(stemGeo, stemMat));
+    m.rotation.order = 'YXZ';
+    m.userData.to = V3(x, 0.045, z);
     m.userData.r = r;
     dropped.add(m);
     return m;
   });
   dropped.visible = false;
   world.root.add(dropped);
+  // the mushrooms he picked, in the basket in his hand from when he has picked them (the same caps that spill from it)
+  const heldCaps = new THREE.Group();
+  [[0.05, 0.19, 0.03, 0.3, 1.05], [-0.06, 0.185, 0.04, 1.4, 0.95], [0.0, 0.2, -0.06, 2.2, 1.1], [-0.03, 0.205, -0.01, 0.9, 0.9], [0.07, 0.185, -0.05, 2.9, 0.85]].forEach(([x, y, z, r, s]) => {
+    const m = new THREE.Mesh(capGeo, capMat);
+    m.position.set(x, y, z); m.rotation.set(0.25 * Math.sin(r * 3), r, 0.2 * Math.cos(r * 2)); m.scale.setScalar(s);
+    heldCaps.add(m);
+  });
+  heldCaps.visible = false;
+  held.add(heldCaps);
   const dropStart = V3();
   let dropStartOK = false, dropSpot = null;
   // the small figure seen from far above: kneeling as the camera rises, then fleeing for the trees (a second hero)
@@ -456,6 +473,12 @@ export async function createEngine(canvas) {
   // The old figure lay along +x with the head at +x and +z toward the kneeling boy: mirrored on x he matches it,
   // and shifted so his head lies where the old head was (UH.uncleSpot), under the beam, the heap over his legs.
   let elder = null, spirit = null;
+  // where their hands are, his and his uncle's (the tear lands there; the insert looks there)
+  const _hm = V3(), _hm2 = V3();
+  const handsMeet = out => {
+    if (!elder || !wuhen) return out.copy(UH.handSpot);
+    return out.copy(elder.anchors.handR()).lerp(wuhen.anchors.handR(), 0.5);
+  };
   const getElder = () => {
     if (!elder) {
       elder = createElder();
@@ -558,7 +581,7 @@ export async function createEngine(canvas) {
   };
   const shake = (t, amt) => V3(Math.sin(t * 13.1) * 0.6 + Math.sin(t * 29.7) * 0.4, Math.sin(t * 17.3) * 0.5 + Math.sin(t * 41.1) * 0.3, Math.sin(t * 11.7) * 0.5).multiplyScalar(amt * 0.06);
 
-  const metrics = { frames: 0, u: 0, wind: 0.4, crossUV: [0.4, 0.58] };
+  const metrics = { frames: 0, u: 0, wind: 0.4, crossUV: [0.4, 0.58], bellToll: 0, ripples: [] };
   const debug = { noInk: false, noPost: false, hero: null };
   debug.where = () => ({ sect: sect.center.toArray(), top: sect.top, uncle: UH.uncleSpot.toArray(), kneel: UH.kneelSpot.toArray(), door: UH.door.toArray(), mush: A.mushrooms.toArray(), cam: camera.position.toArray(), dir: camera.getWorldDirection(V3()).toArray(), soul: soulP.toArray(), orbVis: soulOrb.mesh.visible, orbI: soulOrb.uniforms.uI.value, scr: soulP.clone().project(camera).toArray(), far: far ? far.group.position.toArray() : null, farVis: far ? far.group.visible : null, fov: camera.fov, P: metrics.P ? metrics.P.toArray() : null, gate: A.gate ? A.gate.center.toArray() : null });
   debug.uncleFire = () => A.fire.filter(f => f.house === 'uncle').map(f => [+f.p.x.toFixed(2), +f.p.y.toFixed(2), +f.p.z.toFixed(2), f.s]);
@@ -648,6 +671,14 @@ export async function createEngine(canvas) {
   // the gold one's fall, from the smash in front of the lens down through the storm into the knot of the charge, which
   // it becomes: the eye tips over and chases its light down (the dive)
   const SMASH = 52.47;
+  // the cut in on the wolf at the gate as he comes through it
+  // the cut in on the burning blade at the smith's (see the camera)
+  const SMITH_IN = [26.3, 26.76];
+  const WOLF_IN = [72.86, 73.06];
+  // the cut to the room from inside it, from the prints at the door until he kneels (see the camera)
+  const REVERSE = [80.98, 83.5];
+  // the cut in on their hands as the old man's falls, the tear (see the camera)
+  const HANDS_IN = [91.3, 92.32];
   const GOLD_FALL = (() => {
     const K = [[SMASH, V3(-1310, 3262, 684)], [52.6, V3(-1262, 3070, 652)], [52.75, V3(-1120, 2800, 610)], [53.0, V3(-850, 2380, 500)], [53.25, V3(-690, 1930, 300)],
       [53.5, V3(-490, 1440, 90)], [53.75, V3(-262, 900, -80)], [53.97, C_F.clone()]];
@@ -824,6 +855,26 @@ export async function createEngine(canvas) {
     world.root.add(m);
     return m;
   })();
+  // the alarm bell hung under the gate's beam: still in the morning as he goes out under it; the night the village
+  // burns it swings by itself, nobody at its rope, and tolls at one end of each swing (the sound's toll and the ink's
+  // ripple: metrics.bellToll, metrics.ripples); one mesh, a plain lit material
+  const gateBell = (() => {
+    const bronze = new THREE.MeshStandardMaterial({ color: 0x3a2f20, roughness: 0.45, metalness: 0.3 });
+    const prof = [[0, -0.52], [0.2, -0.52], [0.205, -0.5], [0.172, -0.43], [0.152, -0.27], [0.146, -0.14], [0.122, -0.075], [0.065, -0.045], [0, -0.04]];
+    const body = new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y)), 20);
+    const loop = new THREE.TorusGeometry(0.034, 0.011, 6, 12); loop.translate(0, -0.035, 0);
+    const rope = new THREE.CylinderGeometry(0.011, 0.011, 0.18, 6); rope.translate(0, 0.07, 0);
+    const g = new THREE.Group(); g.name = 'gateBell';
+    const m = new THREE.Mesh(mergeGeometries([body.toNonIndexed(), loop.toNonIndexed(), rope.toNonIndexed()]), bronze);
+    m.position.y = -0.18; m.castShadow = true;
+    g.add(m);
+    // (hung from the underside of the lower beam, over the middle of the way)
+    g.position.copy(A.gate.center).add(V3(0, -0.4, 0));
+    world.root.add(g);
+    return g;
+  })();
+  let bellN = null;
+  const ripples = [];
   function valleyP(u) {
     let P = roadPoint(mcZ(u));
     // (on the porch in the morning; down the steps into the street)
@@ -911,8 +962,8 @@ export async function createEngine(canvas) {
       const r0 = V3().crossVectors(h0, UP).normalize();
       const land = P0.clone().addScaledVector(r0, -0.36).addScaledVector(h0, 0.3);
       land.y = heightAt(land.x, land.z);
-      // (its mouth toward his left and ahead, where the eye is)
-      const sp = r0.clone().multiplyScalar(-0.55).addScaledVector(h0, 0.85).normalize();
+      // (its mouth toward the lens, low at his left side behind him: the caps spill toward it, so it reads as a basket)
+      const sp = r0.clone().multiplyScalar(-0.64).addScaledVector(h0, -1.9).normalize();
       dropSpot = { land, yaw: Math.atan2(-sp.z, sp.x), from: land.clone().add(V3(0, 0.42, 0)), P0, h0, r0 };
     }
     return dropSpot;
@@ -931,7 +982,7 @@ export async function createEngine(canvas) {
       m.visible = k > 0;
       const to = m.userData.to;
       m.position.set(lerp(0.2, to.x, k), lerp(0.12, to.y, k) + Math.sin(k * Math.PI) * 0.03, lerp(0, to.z, k));
-      m.rotation.set(0, m.userData.r * k, 0);
+      m.rotation.set(1.3 * k, m.userData.r * k, 0);
     });
   }
   // a ghost's pose from what he was doing that year
@@ -950,7 +1001,7 @@ export async function createEngine(canvas) {
 
   // the soul's path: up out of him (the spirit), a breath above the burning roofs, then west after the light that fell
   const _run0 = V3(), _run1 = V3(), _fRes = new THREE.Vector2();
-  const soulP = V3(), _sp0 = V3(), _sp1 = V3(), _ss = V3(), _dbs = new THREE.Vector2(), _wc = new THREE.Color(), _wc2 = new THREE.Color(), _rvGate = V3(), _rvBasket = V3();
+  const soulP = V3(), _sp0 = V3(), _sp1 = V3(), _ss = V3(), _dbs = new THREE.Vector2(), _wc = new THREE.Color(), _wc2 = new THREE.Color(), _rvGate = V3(), _rvBasket = V3(), _wh = V3();
   const _rvGlow = new THREE.Color();
   // the room, in colour, from the moment he sees his uncle under the beam until the words begin
   const roomReveal = u => band(81.95, 83.1, 84.3, 85.6, u);
@@ -1369,7 +1420,7 @@ export async function createEngine(canvas) {
     // breach the white of the page covers the eye's adjusting to the sun)
     // (darker up the well of the launch; and dark inside the storm in the dive, so the falling light and the lightning
     // reaching for it are what is seen)
-    renderer.toneMappingExposure = sample('exposure') * (inB ? 1 : lerp(1, 0.56, band(47.85, 48.0, 48.44, SILENCE, u)) * lerp(1, 0.42, band(52.95, 53.15, 53.84, 53.98, u)));
+    renderer.toneMappingExposure = sample('exposure') * (inB ? 1 : lerp(1, 0.56, band(47.85, 48.0, 48.44, SILENCE, u)) * lerp(1, 0.3, band(52.95, 53.15, 53.84, 53.98, u)));
     sun.color.setRGB(...sunCol);
     sun.intensity = sample('sunI') * sunVis;
     hemi.intensity = sample('hemiI') * (inB ? 1 : env.fillK(u));
@@ -1640,7 +1691,7 @@ export async function createEngine(canvas) {
     lastZ = mcZ(u);
     metrics.P = P;
     // (where the boy's and his uncle's hands met, on the screen: the tear lands there)
-    if (!inB && u > 91.3 && u < 92.7) { const hp = UH.handSpot.clone().project(camera); metrics.tearUV = [hp.x * 0.5 + 0.5, hp.y * 0.5 + 0.5]; } else metrics.tearUV = null;
+    if (!inB && u > 91.3 && u < 92.7) { const hp = handsMeet(_hm).project(camera); metrics.tearUV = [hp.x * 0.5 + 0.5, hp.y * 0.5 + 0.5]; } else metrics.tearUV = null;
     const right = V3().crossVectors(heading, UP).normalize();
     wPrev = P.clone();
     // a warm rim from the fires behind him (real lights do most of the work)
@@ -1650,7 +1701,31 @@ export async function createEngine(canvas) {
     // (by firelight the silver hair's highlights are held down: a hot white highlight would be drawn as flame in ink)
     const kk = 1 - 0.75 * smooth(56, 60, u) * (inB ? 0 : 1);
     held.visible = !inB && u >= 16.16 && u < 65.6;
+    heldCaps.visible = u > 48.4;
+    // (the last colour in the world, the basket and what is in it: lit a little from within while it is, so it reads as
+    // colour, not as the shadow of a basket against the fire)
+    const lastK = inB ? 0 : band(62.9, 63.5, 65.5, 65.64, u);
+    basketMat.emissive.setRGB(0.3, 0.19, 0.08).multiplyScalar(lastK);
+    capMat.emissive.setRGB(0.42, 0.16, 0.05).multiplyScalar(lastK);
     pawPrints.visible = !inB && u > 61.6 && u < 108.3;
+    // the bell: a slow swing by itself while the village burns, a toll at one end of each (every 4.2 s of the story's
+    // clock); where it is seen, each toll an ink ripple out across the page from it
+    {
+      const bk = inB ? 0 : smooth(61.0, 62.5, u) * (1 - smooth(76.5, 78, u));
+      const ph = time * (2 * Math.PI / 4.2);
+      gateBell.rotation.z = 0.34 * bk * Math.sin(ph);
+      const n = Math.floor((ph - Math.PI / 2) / (2 * Math.PI));
+      if (n !== bellN) {
+        if (bellN !== null && bk > 0.5) {
+          metrics.bellToll = (metrics.bellToll || 0) + 1;
+          const sp = gateBell.localToWorld(V3(0, -0.5, 0)).project(camera);
+          if (sp.z < 1 && Math.abs(sp.x) < 1.15 && Math.abs(sp.y) < 1.15) ripples.push({ x: sp.x * 0.5 + 0.5, y: sp.y * 0.5 + 0.5, t: time });
+        }
+        bellN = n;
+      }
+      while (ripples.length && (time - ripples[0].t > 2.4 || time < ripples[0].t)) ripples.shift();
+      metrics.ripples = ripples.map(r => [r.x, r.y, (time - r.t) / 2.4]);
+    }
     // (the one he picked: in his fist from the moment his fingers close on it, turned in them as he looks at it, into
     // the basket once the eye has left him)
     heldMush.visible = !inB && u > 44.82 && u < 48.4;
@@ -1668,7 +1743,9 @@ export async function createEngine(canvas) {
     if (inB) { dist *= scale; height *= scale; }
     // (down the street to the gate in the morning: one long-lens take from farther back, the street stacking up beyond
     // him, him a third of the frame: earth is long-lens; the lens opens only at the launch)
-    const lng = inB ? 0 : band(19.45, 20.7, 34.8, 35.75, u) * (1 - 0.6 * band(25.35, 26.15, 27.35, 28.05, u));
+    // (and the run home down the same street, the morning rewound: on the same long lens from the gate, the burning
+    // street stacking up beyond him, until the house)
+    const lng = inB ? 0 : Math.max(band(19.45, 20.7, 34.8, 35.75, u) * (1 - 0.6 * band(25.35, 26.15, 27.35, 28.05, u)), band(72.5, 72.505, 76.6, 77.6, u));
     if (lng > 0) { dist = lerp(dist, 5.2 + portrait * 1.2, lng); side = lerp(side, 0.62 * (1 - 0.6 * portrait), lng); height = lerp(height, 1.6, lng); }
     let pos = P.clone().addScaledVector(heading, -dist).addScaledVector(right, side).add(V3(0, height, 0));
     let look = P.clone().addScaledVector(heading, lerp(9, 16, lng)).add(V3(0, lerp(lerp(1.42, 1.25, run), 1.32, lng), 0)).addScaledVector(right, -0.4 * (1 - portrait) * (1 - lng));
@@ -1688,9 +1765,8 @@ export async function createEngine(canvas) {
         look.lerp(lk, sk);
       }
       greet(world.cast.cartMan.root.position, 28.8, 29.6, 30.8, 31.6, 0.3);
-      // at the door his eyes go down first, to the prints over the sill and in; then up into the room, to the man
-      // under the beam
-      const thr = band(80.3, 80.85, 81.2, 81.75, u);
+      // at the door his eyes go down first, to the prints over the sill and in (then the cut to the room, REVERSE)
+      const thr = band(80.3, 80.75, 80.9, 81.0, u);
       if (thr > 0) look.lerp(L(0.5, 0.05, 3.7), thr * 0.85);
       look.lerp(UH.uncleSpot.clone().add(V3(0, 0.15, 0)), smooth(81.6, 83.4, u) * indoor);
       // kneeling beside him: three-quarters from behind his right shoulder, drifting closer as he speaks
@@ -1779,6 +1855,44 @@ export async function createEngine(canvas) {
       const k = smooth(72.5, 73.28, u);
       const cp = V3(0.3, 1.59, -30.1).lerp(V3(0.28, 1.52, -28.8), k);
       pos.lerp(cp, grw); look.lerp(cp.clone().add(V3(0.02, -0.01 - 0.035 * k, -1)), grw);
+    }
+    // (cut in on the wolf waiting inside the gate, from where he is running at it: its head, snarling, the violet eyes,
+    // the crimson breath at its fangs; cut back as he reaches it)
+    const wolfIn = !inB && u > WOLF_IN[0] && u < WOLF_IN[1] && world.wolves[2] && world.wolves[2].root.visible;
+    if (wolfIn) {
+      const w2 = world.wolves[2];
+      w2.root.updateMatrixWorld(true);
+      const hp = w2.head.localToWorld(_wh.set(0, 0.06, 0.1));
+      const toHim = P.clone().sub(hp).setY(0).normalize(), l = V3(toHim.z, 0, -toHim.x);
+      const t = smooth(WOLF_IN[0], WOLF_IN[1], u);
+      pos.copy(hp).addScaledVector(toHim, 1.2 - 0.12 * t).addScaledVector(l, 0.32).add(V3(0, 0.06, 0));
+      look.copy(hp).addScaledVector(toHim, 0.06).add(V3(0, -0.02, 0));
+    }
+    // the smith's stall: cut in close on the one blade that burns brightest, while the world is ink and only the blades'
+    // light is gold (his eyes on it; the line on it)
+    if (!inB && legend && u > SMITH_IN[0] && u < SMITH_IN[1]) {
+      const t = smooth(SMITH_IN[0], SMITH_IN[1], u), toS = legend.clone().sub(P).setY(0).normalize(), sd = V3(-toS.z, 0, toS.x);
+      const along = legendAura.dir.clone().normalize();
+      pos.copy(legend).addScaledVector(along, 0.05 - 0.08 * t).addScaledVector(toS, -1.05 + 0.1 * t).addScaledVector(sd, 0.2).add(V3(0, 0.1, 0));
+      look.copy(legend).addScaledVector(along, 0.02 - 0.06 * t);
+    }
+    // the room, cut to from the prints: low beside his uncle's head, looking out at the door: the old man pinned under
+    // the beam in front, the boy black in the doorway against the burning street (the held moment on it); he comes in,
+    // sees him, the colour comes back into the room, and he runs to him and drops to his knees beside him; cut back
+    // behind him as he kneels
+    if (!inB && u > REVERSE[0] && u < REVERSE[1]) {
+      const t = smooth(REVERSE[0], REVERSE[1], u), rk = smooth(82.65, 83.45, u);
+      // (on the line from the door through his head, a little beyond it: his head at the foot of the frame, the door
+      // above it; easing in toward him)
+      pos.copy(L(0.58, 0.81, 0.06)).lerp(L(0.56, 0.77, 0.36), t);
+      look.copy(L(0.0, 0.2, 4.55)).lerp(L(0.3, 0.42, 2.3), rk);
+    }
+    // the hand falls: cut in on the same line, close on their hands as the old man's slips out of the boy's, and the
+    // tear falls onto them in the frozen moment; then the rise
+    if (!inB && u > HANDS_IN[0] && u < HANDS_IN[1]) {
+      const t = smooth(HANDS_IN[0], HANDS_IN[1], u), hs = handsMeet(_hm2);
+      pos.copy(hs).add(V3(0.04, 0.3 - 0.03 * t, 0.46 - 0.05 * t));
+      look.copy(hs).add(V3(0.0, -0.03, 0.0));
     }
     // the soul: where the light that left him is (a pure function of u)
     soulAt(u, soulP);
@@ -1869,7 +1983,7 @@ export async function createEngine(canvas) {
     if (stormRoll && !debug.cam) camera.rotateZ(stormRoll);
     // (on a phone the rise keeps a little of its width while it is still in the room, so the light fits the frame)
     // (the forest's shots may keep their own focal lengths)
-    const fov0 = bShot && bShot.fovW > 0 ? lerp(cam.fov(u), bShot.fov, bShot.fovW) : mShot ? lerp(cam.fov(u), mShot.fov, mnw) : grw > 0 ? lerp(cam.fov(u), 29, grw) : cam.fov(u);
+    const fov0 = bShot && bShot.fovW > 0 ? lerp(cam.fov(u), bShot.fov, bShot.fovW) : mShot ? lerp(cam.fov(u), mShot.fov, mnw) : grw > 0 ? lerp(cam.fov(u), wolfIn ? 44 : 29, grw) : cam.fov(u);
     camera.fov = lerp(fov0, stormFov, stw) + portrait * 12 * (1 - zoomK) * (1 - rw * (1 - 0.7 * band(92.0, 92.6, 94.8, 95.6, u))) * (1 - gw) + portrait * 14 * fcw;
     // (at the stall the lens narrows on the weapons)
     if (!inB) camera.fov = lerp(camera.fov, 33 + portrait * 10, band(25.45, 26.25, 27.3, 28.0, u) * 0.85);
@@ -2305,9 +2419,13 @@ export async function createEngine(canvas) {
       if (gateK * 0.8 > rvR) { rvP = _rvGate.copy(A.gate.center).add(V3(0, -1.2, 0)); rvR = 0.8 * gateK; rvW = 0.42; }
       const roomK = roomReveal(u);
       if (roomK > 0.01 && roomK * 1.5 > rvR) { rvP = UH.uncleSpot; rvR = 1.5 * roomK; rvW = 0.5; }
-      // (the last colour in the world: the mushrooms in the basket in his hand, until his fingers open)
+      // (the last colour in the world: the mushrooms in the basket in his hand, until his fingers open; the whole basket,
+      // however near or far it is: its size on the screen)
       const bk = band(62.9, 63.5, 65.5, 65.64, u);
-      if (bk > 0.01 && held.visible && bk * 0.11 > rvR) { rvP = held.getWorldPosition(_rvBasket); rvR = 0.11 * bk; rvW = 0.07; }
+      if (bk > 0.01 && held.visible) {
+        const bc = held.localToWorld(_rvBasket.set(0, 0.12, 0)), sr = 0.26 / (2 * Math.max(0.2, camera.position.distanceTo(bc)) * Math.tan(camera.fov * Math.PI / 360));
+        if (sr * bk > rvR) { rvP = bc; rvR = sr * bk; rvW = Math.max(0.025, sr * 0.3); }
+      }
     }
     if (rvP && rvR > 0.01) {
       _ss.copy(rvP).project(camera);

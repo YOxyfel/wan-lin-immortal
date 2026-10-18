@@ -374,7 +374,8 @@ async function boot() {
       const cf = catchUp ? (catchUp.phase === 0 ? smooth(0, 0.24, catchUp.t) : 1) : 0;
       const flood = cf > cut.flood ? cf : cut.flood, floodC = cf > cut.flood ? [0.5, 0.5] : [0.5, u < 9 ? so.y : cut.y];
       const floodLift = cf > cut.flood ? (catchUp.phase === 1 ? smooth(0, 0.5, catchUp.t) : 0) : cut.lift;
-      ink.render(time, { blots, flood, floodC, floodLift, drop, dropCol, splat: u > 61.5 && u < 67 ? inkfx.splat(u) : 0, splatSeed: 3, stroke, land });
+      const ripples = (engine && engine.metrics.ripples) || [];
+      ink.render(time, { blots, flood, floodC, floodLift, drop, dropCol, ripples, splat: u > 61.5 && u < 67 ? inkfx.splat(u) : 0, splatSeed: 3, stroke, land });
     }
     // ---------------------------------------------------------------- title and the last page
     const titleShow = u < 5.2 ? 1 - smooth(3.6, 4.9, u) : 0;
@@ -409,7 +410,8 @@ async function boot() {
     const endShow = smooth(141.4, 141.8, u);
     op(end, endShow);
     if (endShow > 0) {
-      endSeal.set(smooth(141.7, 143.6, u));
+      // (written once the bloom is wide enough to hold it)
+      endSeal.set(smooth(142.3, 143.9, u));
       end.style.setProperty('--reveal', String(smooth(143.4, 144.4, u)));
     }
     // ---------------------------------------------------------------- captions: the strongest one only
@@ -504,6 +506,26 @@ async function boot() {
     }
   }
   const debug = params.has('debug');
+  // frame times by story position, on this machine: window.__cf.perf() (with ?perf, shown in a corner as it plays)
+  const perfB = new Map();
+  const perfBox = params.has('perf') ? el('div', 'cf-perf') : null;
+  if (perfBox) { Object.assign(perfBox.style, { position: 'fixed', left: '8px', bottom: '8px', zIndex: 99, font: '11px/1.4 ui-monospace, Menlo, monospace', color: '#fff', background: 'rgba(0,0,0,.62)', padding: '6px 8px', borderRadius: '4px', pointerEvents: 'none', whiteSpace: 'pre' }); document.body.appendChild(perfBox); }
+  let perfShown = 0, perfEma = 16.7;
+  const perfReport = () => [...perfB].sort((a, c) => a[0] - c[0]).map(([u, p]) => ({ u, frames: p.n, ms: +(p.sum / p.n).toFixed(1), over33: +(p.o33 / p.n).toFixed(2), worst: Math.round(p.max) }));
+  window.__cf.perf = () => ({ byStory: perfReport(), gpuMs: +gov.gpu.toFixed(1), pixelRatio: gov.pr, size: [innerWidth, innerHeight, devicePixelRatio] });
+  function perfRec(iv) {
+    if (!rendered || iv > 250) return;
+    const k = Math.floor(storyU);
+    let p = perfB.get(k);
+    if (!p) perfB.set(k, p = { n: 0, sum: 0, o33: 0, max: 0 });
+    p.n++; p.sum += iv; if (iv > 33.4) p.o33++; if (iv > p.max) p.max = iv;
+    perfEma += (iv - perfEma) * 0.1;
+    if (perfBox && performance.now() - perfShown > 500) {
+      perfShown = performance.now();
+      const worst = perfReport().filter(r => r.frames > 20).sort((a, c) => c.ms - a.ms).slice(0, 4).map(r => `u${r.u} ${r.ms} ms`).join(' · ');
+      perfBox.textContent = `u ${storyU.toFixed(1)} · ${perfEma.toFixed(1)} ms (${Math.round(1000 / perfEma)} fps) · gpu ${gov.gpu.toFixed(1)} ms · res ${(gov.pr || devicePixelRatio).toFixed(2)}\nslowest so far: ${worst || '–'}`;
+    }
+  }
   let lastLoop = performance.now();
   const loop = now => {
     requestAnimationFrame(loop);
@@ -515,6 +537,7 @@ async function boot() {
     frame(now);
     if (tq) readTimed();
     govern(iv, performance.now() - t0);
+    perfRec(iv);
   };
   requestAnimationFrame(loop);
   addEventListener('pageshow', () => { su = target = uFromScroll(); last = performance.now(); });

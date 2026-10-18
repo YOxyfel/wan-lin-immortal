@@ -504,3 +504,56 @@ what can be read at scroll speed). This round builds its foundations and the fir
   below the page before they fall.)
 - **The last line answers the title**: "Every life begins somewhere." … "His began here." (it was "His story has only
   begun.")
+
+## Round 10: a fresh-eyes review, and what came of it (18 October 2026)
+
+A reviewer who had not seen the work watched it as contact sheets (a frame every 6 seconds of Watch) and was asked for
+the weakest moments. Its findings, and what was done about each:
+
+- **"No wolf can be made out in any frame", so "Those were monsters" points at nothing.** Cut in on the wolf waiting
+  inside the gate, from where he is running at it: its head, snarling, its breath at its fangs (`engine.js`
+  `WOLF_IN`).
+- **Entering the house had no establishing shot** (a dark void, then his back in colour with the head cut off). Now,
+  from the prints at the sill, the cut is to the room from inside it, low beside his uncle's head: the old man's hand
+  in front, the boy in the doorway beyond, the held moment on him; he comes in, the colour comes back into the room
+  with him, and he runs to him; cut back behind him as he kneels (`REVERSE`).
+- **The last words were one still for twenty-four seconds; the hand falling and the tear were tiny.** The locked
+  setup stays (the plan's choice), but as the hand falls the film cuts in on the same line, close on their hands: the
+  old man's slips out of the boy's and the tear falls onto them in the frozen moment (`HANDS_IN`; the tear lands where
+  the hands are).
+- **The dropped basket read as a blood splash, then as a ball with two figure-eights.** It is the last colour now
+  (see below), it falls with its handle and its mouth toward the lens, and the caps that spill are mushrooms (a cap and
+  a stem each).
+- **"He followed the light west" was over an empty frame.** The line now sits on him running after the light, the
+  fires behind him.
+- **Captions white on white, grey on grey.** Every line has its own soft wash behind it (dark under light words, paper
+  under ink words).
+- **The smith's gift was a smear.** Cut in on the one blade that burns, while the world is ink and only its light is
+  gold, the line on it (`SMITH_IN`).
+- **The war: the lights never read as people.** A figure is drawn dark inside each light (flying head first, robe and
+  sleeve streaming, the blade ahead); small, but there on a large screen. The inside of the storm in the dive is
+  darker, so the falling light is what is seen.
+- **The crag: dark lumps, no masks.** The sect's light now stands in front of them, toward the village, so the iron
+  masks catch it.
+- **"Floating red discs".** The cinnabar flung across the page is fewer, smaller drops drawn out along their throw.
+- **The end: the gold strokes began outside the drop.** The sign is written once the bloom is wide enough to hold it.
+- **The run home was a game camera.** Down the street it is the morning's long lens again, the burning street
+  stacking up beyond him.
+
+Not done from the review: more coverage of the last words, people (not lights) in the war, a reframed crag with the
+village below, the crystal's establishing shot.
+
+### Also in round 10
+
+- **The untended bell** (`engine.js` `gateBell`, `ink.js` ripples, `audio.js`): an alarm bell now hangs under the gate's
+  beam, still in the morning as he goes out under it. The night the village burns it swings by itself, nobody at its
+  rope, and tolls at one end of each swing; the toll you hear is that bell's (it was a timer with nothing to see), and
+  where the bell is in the frame each toll sends a ripple of ink out across the page.
+- **The last colour** (the ink climbing the world): the colour that shows through the ink at the basket in his hand is
+  now the size of the basket on the screen, however near or far (it was a small fixed spot), the mushrooms he picked
+  are in it, and it is lit a little from within while it is the only colour left, so it reads as colour rather than
+  as a dark stain.
+- **Where it is slow, on your machine** (`boot.js`): `window.__cf.perf()` reports the frame time by story position;
+  with `?perf` in the address the current frame time, GPU time and resolution show in a corner as it plays, with the
+  slowest moments so far.
+

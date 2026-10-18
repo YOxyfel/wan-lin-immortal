@@ -37,6 +37,7 @@ void main(){
   gl_Position = projectionMatrix * c;
 }`;
 const HEAD_FS = `uniform vec3 uCol; uniform float uAmt, uTime, uKind, uStretch; uniform sampler2D tSky; uniform vec2 uRes; varying vec2 vUv;
+float sdSeg(vec2 p, vec2 a, vec2 b){ vec2 pa = p - a, ba = b - a; return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0., 1.)); }
 void main(){
   vec2 q = vUv * 2. - 1.;
   // (distance from the line the head has just drawn: a capsule, in units of the head's size)
@@ -49,6 +50,23 @@ void main(){
   vec2 qr = mat2(cos(a), -sin(a), sin(a), cos(a)) * q;
   g += (exp(-abs(qr.x) * 70.) * exp(-abs(qr.y) * 3.2) + exp(-abs(qr.y) * 70.) * exp(-abs(qr.x) * 3.2)) * 1.5 / (1. + uStretch * 3.);
   vec3 c = mix(uCol, vec3(1., .98, .95), smoothstep(.28, .02, r));
+  // someone in the light: a cultivator flying head first along its way, the robe and a sleeve streaming back, the
+  // blade out ahead, dark against the white heart of their own light (so the lights read as people)
+  vec2 f = vec2(X, q.y) / 1.55;
+  float fw = sin(uTime * 9. + uKind * 2.) * .018;
+  float d = length(f - vec2(.17, 0.)) - .046;
+  d = min(d, sdSeg(f, vec2(.12, 0.), vec2(-.06, 0.)) - .04);
+  d = min(d, sdSeg(f, vec2(-.03, .01), vec2(-.27, .06 + fw)) - .032);
+  d = min(d, sdSeg(f, vec2(-.03, -.01), vec2(-.25, -.06 - fw)) - .029);
+  d = min(d, sdSeg(f, vec2(.09, .025), vec2(-.06, .12 + fw)) - .02);
+  d = min(d, sdSeg(f, vec2(.1, -.015), vec2(.24, -.05)) - .016);
+  d = min(d, sdSeg(f, vec2(.24, -.05), vec2(.42, -.085)) - .006);
+  float fig = smoothstep(.01, -.003, d) * smoothstep(.9, .55, r);
+  // (its light a little wider about it, so the figure stands dark against white, not against the sky)
+  g = max(g, (1. - smoothstep(.2, .62, length(f) * 1.55)) * 3.2);
+  c = mix(c, vec3(1., .97, .93), (1. - smoothstep(.2, .55, length(f) * 1.55)) * .8);
+  g = mix(g, min(g, .3), fig);
+  c = mix(c, uCol * .5, fig);
   float T = texture2D(tSky, gl_FragCoord.xy / uRes).g;
   float edge = smoothstep(1., .72, max(abs(q.x), abs(q.y)));
   gl_FragColor = vec4(c * g * fl * uAmt * (.4 + .6 * T) * edge, 1.);

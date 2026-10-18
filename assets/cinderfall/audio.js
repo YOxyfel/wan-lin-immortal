@@ -9,7 +9,7 @@ import { createScore } from './score.js';
 
 export function createAudio({ context = null } = {}) {
   let ctx = null, master, limiter, windGain, windFilter, fireGain, waterGain, riseGain, riseFilter, humGain, roarGain, roarFilter, score = null, on = false;
-  let lastChirp = 0, lastBell = 0, lastBeat = 0, lastHowl = 0, lastU = 0, lastPhase = null;
+  let lastChirp = 0, lastBell = 0, lastBeat = 0, lastHowl = 0, lastU = 0, lastPhase = null, lastToll = null;
   const noiseBuffer = () => {
     const b = ctx.createBuffer(1, ctx.sampleRate * 4, ctx.sampleRate), d = b.getChannelData(0);
     let last = 0;
@@ -126,7 +126,10 @@ export function createAudio({ context = null } = {}) {
         lastPhase = st.phase;
       } else lastPhase = null;
       for (const [at, s] of STRIKES) if (pass(at)) { burst(0.45 * s, 2.6, 160, 0.7); tone(48, 'sine', 0.3 * s, 0.02, 2.2, 0.6); }
-      if (u > 61 && u < 76 && now - lastBell > 4200) { lastBell = now; bell(); }
+      // the bell under the gate tolls by itself while the village burns: on the toll of the one that is seen swinging
+      // (engine.js), or, with no picture to follow (the soundtrack's own render), every 4.2 s
+      if (m && m.bellToll != null) { if (m.bellToll !== lastToll) { if (lastToll != null && u > 61 && u < 78) bell(); lastToll = m.bellToll; } }
+      else if (u > 61 && u < 76 && now - lastBell > 4200) { lastBell = now; bell(); }
       if (((u > 62 && u < 66) || (u > 97.5 && u < 103)) && now - lastHowl > 7000) { lastHowl = now; howl(u > 97 ? 0.03 : 0.05); }
       // the heartbeat: in the dark under the glow; at his uncle's side, stopping as the hand falls
       const beat = band(57, 58.5, 61.5, 62.5, u) + band(83, 84, 91.36, 91.42, u);
@@ -146,7 +149,7 @@ export function createAudio({ context = null } = {}) {
       // the pillar strikes: a crack, the ground's boom under it, and the bell after
       if (pass(139.44)) { burst(0.3, 0.3, 3200, 0.7, 'highpass'); burst(0.55, 2.8, 110, 0.7); tone(40, 'sine', 0.5, 0.004, 3.2, 0.55); tone(80, 'triangle', 0.12, 0.004, 1.4, 0.5); }
       if (pass(139.52)) bell(1.5);
-      if (pass(143.5)) bell(1);
+      if (pass(143.9)) bell(1);
       if (score) score.update(u, t, m);
       lastU = u;
     },

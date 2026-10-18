@@ -306,8 +306,9 @@ void main(){
   night.add(wisps.points);
   // (the light stays in the scene while the night group comes and goes: a light coming and going recompiles every lit
   // material)
+  // (in front of them, toward the village they face, a little above their heads: so their iron masks catch it)
   const light = new THREE.PointLight(0x9a4bff, 0, 26, 1.6);
-  light.position.set(CRAG.x - 1.5, top + 1.2, CRAG.z);
+  light.position.set(CRAG.x - 4.8, top + 2.0, CRAG.z + 1.3);
   group.add(light);
 
   const center = V3(CRAG.x - 1, top + 1.2, CRAG.z);

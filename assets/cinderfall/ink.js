@@ -165,6 +165,7 @@ uniform vec4 uBlot[8]; uniform vec3 uBlotCol[8];
 uniform float uFlood; uniform vec2 uFloodC; uniform vec3 uFloodCol; uniform float uFloodLift;
 uniform vec4 uDrop;      // x, y (uv), size, splash progress
 uniform vec3 uDropCol;   // what it is (ink, or blood)
+uniform vec4 uRip[4];    // a bell's tolls: ripples out across the page (x, y uv; age 0..1; strength)
 uniform float uSplat; uniform float uSplatSeed;
 uniform vec4 uStroke;    // x: written to (0..1), y: width, z: alpha, w: tail (0..1, where the stroke has dried away)
 uniform vec2 uStrokeA, uStrokeB, uStrokeC, uStrokeD;   // a cubic across the page (uv)
@@ -223,6 +224,18 @@ void main(){
     float T=uFloodLift*1.45; float lift=uFloodLift>0.?1.-smoothstep(T-.22,T,fbm(p*.7+.3)*.75+length(p-uFloodC*asp)*.32):0.;
     float k=r.x*(1.-lift);
     col=col*(1.-k)+uFloodCol*k; a=a+k*(1.-a);
+  }
+  // ripples of ink out across the page from where the bell tolls: a ring and a fainter one inside it, wavering
+  for(int i=0;i<4;i++){
+    vec4 r=uRip[i]; if(r.w<=0.) continue;
+    vec2 q=p-r.xy*asp; float d=length(q), g=r.z;
+    float R=.03+g*.8;
+    float wob=(fbm(vec2(atan(q.y,q.x)*.8+float(i)*2.3,g*1.7+.3))-.5)*.05*(.3+g);
+    float fade=r.w*(1.-g)*(1.-g);
+    float k=smoothstep(.007+.02*g,0.,abs(d-R-wob))*fade*.9;
+    col=col*(1.-k)+ink*k; a=a+k*(1.-a);
+    float k2=smoothstep(.004+.013*g,0.,abs(d-R*.7-wob*.7))*fade*.45;
+    col=col*(1.-k2)+ink*k2; a=a+k2*(1.-a);
   }
   // the falling droplet and its crown splash
   if(uDrop.z>0.){
@@ -312,19 +325,20 @@ void main(){
   // cinnabar splatter thrown across the frame
   if(uSplat>0.){
     vec3 red=vec3(.52,.035,.025);
-    for(int k=0;k<11;k++){
+    // (a few flung drops at the edges of the page, drawn out along the way they were thrown, not round discs)
+    for(int k=0;k<7;k++){
       float fk=float(k)+uSplatSeed*13.;
       vec2 e=vec2(h1(fk),h1(fk+1.7));
       // keep the centre of the frame clear: throw drops toward the edges
       e.x=e.x<.5?e.x*.34:1.-(1.-e.x)*.34;
       if(h1(fk+3.3)<.35) e=vec2(h1(fk+5.1),h1(fk+1.7)<.5?h1(fk+1.7)*.3:1.-(1.-h1(fk+1.7))*.3);
       vec2 c=e*asp;
-      float size=.012+pow(h1(fk+2.3),4.)*.07;
+      float size=.008+pow(h1(fk+2.3),4.)*.05;
       float appear=smoothstep(h1(fk+4.1)*.35,h1(fk+4.1)*.35+.12,uSplat);
       vec2 dir=normalize(vec2(h1(fk+6.)-.5,h1(fk+7.)-.5)+.001);
       vec2 q=p-c;
       float along=dot(q,dir), across=dot(q,vec2(-dir.y,dir.x));
-      float streak=smoothstep(size*.35,0.,abs(across))*smoothstep(size*3.,0.,along)*step(0.,along);
+      float streak=smoothstep(size*.4*(1.-clamp(along/(size*5.),0.,1.)),0.,abs(across))*smoothstep(size*5.,0.,along)*step(0.,along);
       vec2 r=blot(p,c,size*appear,fk);
       float drip=smoothstep(size*.18,0.,abs(q.x))*step(q.y,0.)*smoothstep(-size*(1.+uSplat*5.*h1(fk+8.)),0.,q.y)*step(.55,h1(fk+9.));
       float k2=max(r.x,max(streak*.8,drip))*appear;
@@ -375,7 +389,7 @@ export function createInkOverlay(canvas, noiseURL) {
   gl.enableVertexAttribArray(0);
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
   const L = name => gl.getUniformLocation(prog, name);
-  const u = { res: L('uRes'), time: L('uTime'), noise: L('uNoise'), blot: L('uBlot'), blotCol: L('uBlotCol'), flood: L('uFlood'), floodC: L('uFloodC'), floodCol: L('uFloodCol'), floodLift: L('uFloodLift'), drop: L('uDrop'), dropCol: L('uDropCol'), splat: L('uSplat'), splatSeed: L('uSplatSeed'), stroke: L('uStroke'), sA: L('uStrokeA'), sB: L('uStrokeB'), sC: L('uStrokeC'), sD: L('uStrokeD'), land: L('uLand'), landC: L('uLandC'), sun: L('uSun'), paint: L('uPaint') };
+  const u = { res: L('uRes'), time: L('uTime'), noise: L('uNoise'), blot: L('uBlot'), blotCol: L('uBlotCol'), flood: L('uFlood'), floodC: L('uFloodC'), floodCol: L('uFloodCol'), floodLift: L('uFloodLift'), drop: L('uDrop'), dropCol: L('uDropCol'), rip: L('uRip'), splat: L('uSplat'), splatSeed: L('uSplatSeed'), stroke: L('uStroke'), sA: L('uStrokeA'), sB: L('uStrokeB'), sC: L('uStrokeC'), sD: L('uStrokeD'), land: L('uLand'), landC: L('uLandC'), sun: L('uSun'), paint: L('uPaint') };
   const tex = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([128, 128, 128, 255]));
@@ -394,7 +408,7 @@ export function createInkOverlay(canvas, noiseURL) {
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   let w = 0, h = 0, clearedW = 0, clearedH = 0;
-  const blots = new Float32Array(32), cols = new Float32Array(24);
+  const blots = new Float32Array(32), cols = new Float32Array(24), ripA = new Float32Array(16);
   // the painting, drawn once into a texture at a little more than the overlay's size (the eye pushes into it)
   const ptex = gl.createTexture(), fbo = gl.createFramebuffer();
   let pKey = '', pw = 1, ph = 1;
@@ -436,14 +450,15 @@ export function createInkOverlay(canvas, noiseURL) {
     gl.useProgram(prog);
   }
   return {
-    // state: {blots:[{x,y,r,a,col:[r,g,b]}], flood, floodC:[x,y], floodCol, floodLift, drop:[x,y,size,splash], dropCol, splat, splatSeed}
+    // state: {blots:[{x,y,r,a,col:[r,g,b]}], flood, floodC:[x,y], floodCol, floodLift, drop:[x,y,size,splash], dropCol, ripples:[[x,y,age]], splat, splatSeed}
     render(time, s) {
       const dpr = Math.min(devicePixelRatio || 1, 1.5);
       const W = Math.round(innerWidth * dpr), H = Math.round(innerHeight * dpr);
       if (W !== w || H !== h) { w = canvas.width = W; h = canvas.height = H; }
       const st = s.stroke || null;
       const ld = s.land || null;
-      const any = s.blots.some(b => b.a > 0.001) || s.flood > 0.001 || s.drop[2] > 0 || s.splat > 0.001 || (st && st.alpha > 0.001) || (ld && ld.alpha > 0.001);
+      const rips = s.ripples || [];
+      const any = s.blots.some(b => b.a > 0.001) || s.flood > 0.001 || s.drop[2] > 0 || s.splat > 0.001 || (st && st.alpha > 0.001) || (ld && ld.alpha > 0.001) || rips.length > 0;
       // (the canvas stays in the page: hiding and showing it made the browser rebuild its surface each time; with
       // nothing to draw it is cleared once and left)
       if (!any) {
@@ -470,6 +485,8 @@ export function createInkOverlay(canvas, noiseURL) {
       gl.uniform1f(u.floodLift, s.floodLift || 0);
       gl.uniform4fv(u.drop, s.drop);
       gl.uniform3fv(u.dropCol, s.dropCol || [0.035, 0.032, 0.03]);
+      ripA.fill(0); rips.slice(0, 4).forEach((r, i) => ripA.set([r[0], r[1], r[2], 1], i * 4));
+      gl.uniform4fv(u.rip, ripA);
       gl.uniform1f(u.splat, s.splat);
       gl.uniform1f(u.splatSeed, s.splatSeed || 0);
       if (st) {

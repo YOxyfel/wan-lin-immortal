@@ -30,7 +30,7 @@ export const CAPTIONS = [
   { a: 89.2, b: 91.6, pos: 'words', eyebrow: 'HIS UNCLE’S LAST WORDS', text: '“Live a good life.<br><em>A long one.</em>”' },
   { a: 95.2, b: 98.2, pos: 'left', eyebrow: 'AN UNANSWERED QUESTION', text: 'Avenge…?<br>Those were monsters.' },
   { a: 99.3, b: 102.6, pos: 'right', eyebrow: 'ON THE CRAG ABOVE CINDERFALL', text: 'Unless someone<br><em>sent them.</em>' },
-  { a: 103.8, b: 105.5, pos: 'right', eyebrow: 'THAT NIGHT', text: 'He followed the light west,<br>until the fires were only a glow behind him.', small: true },
+  { a: 104.95, b: 106.75, pos: 'right', eyebrow: 'THAT NIGHT', text: 'He followed the light west,<br>until the fires were only a glow behind him.', small: true },
   { a: 108.95, b: 110.75, pos: 'center', eyebrow: 'BEYOND THE RIDGES, WHERE NO ONE WENT', text: 'The Forbidden Forest.', big: true },
   { a: 112.6, b: 113.45, pos: 'left', eyebrow: 'THE FIRST WINTER', text: 'It nearly killed him.' },
   { a: 113.5, b: 114.35, pos: 'right', text: 'As his uncle knew herbs,<br>he learned the forest.', small: true },

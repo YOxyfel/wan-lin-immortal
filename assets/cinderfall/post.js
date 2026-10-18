@@ -526,6 +526,10 @@ void main(){
       float hv = rgb2hsv(bn).x;
       float violet = smoothstep(.09, .03, abs(hv - .77)) * smoothstep(.25, .5, rgb2hsv(bn).y) * smoothstep(.08, .6, lum(Bq.rgb) * ex);
       float vcore = smoothstep(.09, .03, abs(rgb2hsv(hn).x - .77)) * smoothstep(.3, .6, rgb2hsv(hn).y) * smoothstep(.3, 1.4, Lf);
+      // (and what glows violet of itself, by its own colour before the grade takes the colour out of the burning night:
+      // the wolves' eyes, the sect's fires)
+      vec3 rawC = max(texture2D(tColor, uv).rgb, 0.), rn = rawC / max(max(rawC.r, max(rawC.g, rawC.b)), 1e-4);
+      vcore = max(vcore, smoothstep(.09, .03, abs(rgb2hsv(rn).x - .76)) * smoothstep(.45, .7, rgb2hsv(rn).y) * smoothstep(.5, 1.6, lum(rawC) * ex));
       inkImg = mix(inkImg, inkImg * vec3(.75, .45, 1.1), violet * .8 * uAccent.z);
       inkImg = mix(inkImg, mix(vec3(.46, .17, .8), vec3(.88, .74, 1.), smoothstep(1.4, 4., Lf)), vcore * uAccent.z);
       // gold: the star, the scroll
