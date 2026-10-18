@@ -61,8 +61,9 @@ export const SLOWMO = [
 // (the launch: in through the held breath, gone in one frame at the breach, with the silence; the dive and the strike:
 // in as the lens tips over, gone as the light thrown out of the fire gets away west; the crag: in as the masks are
 // seen, the violet bolts breaking over them, gone as he runs after the light; the call: in as the air begins to rise
-// toward the light, the pillar breaking over them, gone as the page comes)
-export const BARS = [[46.95, 47.22, 48.467, 48.468], [52.5, 52.76, 55.3, 55.302], [98.35, 98.8, 103.3, 103.55], [139.0, 139.2, 140.85, 141.0]];
+// toward the light, the pillar breaking over them, gone as the page comes; Cinderfall burning: snapped in with the cut to
+// the village below, its flames and embers going up over them, gone with the cut back to him)
+export const BARS = [[46.95, 47.22, 48.467, 48.468], [52.5, 52.76, 55.3, 55.302], [61.6, 61.601, 63.699, 63.7], [98.35, 98.8, 103.3, 103.55], [139.0, 139.2, 140.85, 141.0]];
 // Protected passages: [from, to, k, screens]. A flick of the wheel cannot carry the story through them faster than k
 // times the Watch pace (it plays on after the wheel stops, until it is where the reader is); a reader who gets more than
 // that many screens ahead in one is caught up through a flood of ink instead of a blur (boot.js). The held moments are
@@ -254,7 +255,8 @@ export const cam = {
   // the storm over the valley: over his shoulder, rising and drawing back as the sky fills
   vista: T([[47.8, 0], [49.5, 1], [56.6, 1], [58.8, 0]]),
   // before he runs: low at his side, his hand, the basket it lets fall (never his face)
-  face: T([[63.7, 0], [64.6, 1], [66.45, 1], [66.95, 0]]),
+  // (cut to, from what he sees: see engine.js BURN_IN)
+  face: T([[63.69, 0], [63.7, 1], [66.45, 1], [66.95, 0]]),
   // the soul: the camera's eye stays on it as it leaves him, rises and goes west
   soul: T([[92.2, 0], [93.0, 1], [108.4, 1], [108.5, 0]]),
   mushroom: T([[42.8, 0], [44, 1], [47.25, 1], [48.3, 0]]),
@@ -268,10 +270,11 @@ export const cam = {
   boar: T([[127.6, 0], [128.0, 1], [128.4, 1], [128.7, 0]]),
   draw: T([[128.3, 0], [128.6, 1], [129.3, 1], [129.7, 0]]),
   tumble: T([[130.9, 0], [131.2, 1], [132.9, 1], [133.5, 0]]),
-  reveal: T([[133.3, 0], [134.1, 1], [135.9, 1], [136.5, 0]]),
-  scroll: T([[135.9, 0], [137.0, 1], [145, 1]]),
+  // (the crystal's cut in, forest.js CRYSTAL_IN, ends on a cut to behind him as he kneels)
+  reveal: T([[133.3, 0], [134.1, 1], [135.94, 1], [135.95, 0]]),
+  scroll: T([[135.94, 0], [135.95, 1], [145, 1]]),
   shake: T([[0, 0], [47, 0], [47.6, 0.05], [52.6, 0.05], [53.4, 0.14], [54.0, 0.2], [54.36, 0.14], [54.43, 0.5], [54.55, 0.32], [54.62, 0.8], [54.8, 0.35], [55.3, 0.12], [56.6, 0.08], [57.2, 0.05], [58, 0.05], [62, 0.2], [66, 0.35], [67, 0.9], [77, 0.9], [78, 0.4], [82.5, 0.25], [84.4, 0.06], [92.4, 0.04], [93, 0], [129.5, 0], [129.9, 0.6], [131.0, 0.9], [131.3, 2.0], [132.3, 1.2], [132.8, 0], [139.22, 0], [139.38, 0.22], [139.437, 0.3], [139.443, 2.8], [139.5, 1.1], [139.62, 0.4], [139.9, 0.1], [140.3, 0], [145, 0]]),
-  fov: T([[0, 46], [10, 46], [14, 50], [19.45, 50], [20.7, 29], [25.35, 29], [26.15, 38], [27.35, 38], [28.05, 29], [34.8, 29], [35.75, 32], [41.2, 32], [42.6, 50], [45.9, 50], [46.7, 59], [47.4, 62], [49.4, 60], [56.6, 60], [58.8, 50], [60.8, 30], [63.5, 30], [64.6, 36], [65.6, 38], [66.45, 44], [67.0, 54], [72.45, 54.8], [72.5, 30], [76.6, 30], [77.6, 56], [80, 50], [82.6, 50], [84.4, 42], [92.2, 38], [94, 50], [96.4, 50], [98.6, 46], [101.4, 30], [102.8, 31], [104.0, 48], [104.6, 52], [105.2, 50], [105.7, 45], [106.15, 46], [106.7, 50], [107.4, 52], [108.2, 54], [108.4, 54], [111.4, 52], [112.6, 46], [124.1, 44], [124.45, 48], [124.6, 50], [127.8, 46], [128.6, 36], [129.6, 52], [131.2, 62], [133, 54], [136, 48], [139, 42], [139.219, 42], [139.222, 56], [139.598, 52], [139.602, 52], [139.948, 47], [139.952, 42], [145, 40]]),
+  fov: T([[0, 46], [10, 46], [14, 50], [19.45, 50], [20.7, 29], [25.35, 29], [26.15, 38], [27.35, 38], [28.05, 29], [34.8, 29], [35.75, 32], [41.2, 32], [42.6, 50], [45.9, 50], [46.7, 59], [47.4, 62], [49.4, 60], [56.6, 60], [58.8, 50], [60.8, 30], [63.69, 30], [63.7, 35], [64.6, 36], [65.6, 38], [66.45, 44], [67.0, 54], [72.45, 54.8], [72.5, 30], [76.6, 30], [77.6, 56], [80, 50], [82.6, 50], [84.4, 42], [92.2, 38], [94, 50], [96.4, 50], [98.0, 46], [98.89, 34], [98.9, 38], [101.4, 30], [102.8, 31], [104.0, 48], [104.6, 52], [105.2, 50], [105.7, 45], [106.15, 46], [106.7, 50], [107.4, 52], [108.2, 54], [108.4, 54], [111.4, 52], [112.6, 46], [124.1, 44], [124.45, 48], [124.6, 50], [127.8, 46], [128.6, 36], [129.6, 52], [131.2, 62], [133, 54], [136, 48], [139, 42], [139.219, 42], [139.222, 56], [139.598, 52], [139.602, 52], [139.948, 47], [139.952, 42], [145, 40]]),
 };
 
 // ------------------------------------------------------------------ ink and paper
@@ -284,7 +287,9 @@ export const fx = {
   // the world drains into ink from the burning village outward as it is revealed (radius in screen units)
   inkSpread: T([[61.6, 0.05], [62.1, 0.75], [62.7, 1.6], [63.3, 2.8]]),
   // the ink's own exposure: night scenes are drawn relative to their light (fire-lit = paper)
-  inkKey: T([[0, 1], [145, 1]]),
+  // (lighter on the village burning below, seen from where he stands: its roofs drawn, not drowned; engine.js BURN_IN;
+  // and at the house, its front and the room drawn rather than lost in black, for the door and the last words)
+  inkKey: T([[0, 1], [61.59, 1], [61.6, 0.7], [63.69, 0.7], [63.7, 1], [77.2, 1], [78.4, 0.66], [92.4, 0.66], [93.6, 1], [145, 1]]),
   // where the drawing dissolves into the paper (metres): wide for the valley shots, close in the house
   inkNear: T([[0, 18], [11, 18], [61, 90], [65.6, 90], [66.6, 10], [77, 8], [80.5, 4], [92.4, 4], [94.5, 40], [98, 60], [104, 60], [108.2, 60], [108.4, 40], [110.4, 25], [112, 14], [145, 14]]),
   inkFar: T([[0, 420], [11, 420], [61, 780], [65.6, 780], [66.6, 160], [77, 120], [80.5, 30], [92.4, 30], [94.5, 600], [98, 800], [104, 900], [108.2, 900], [108.4, 420], [110.4, 260], [112, 190], [145, 190]]),

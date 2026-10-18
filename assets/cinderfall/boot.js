@@ -65,7 +65,7 @@ async function boot() {
   stage.appendChild(capWrap);
   // (each line's span on the scroll axis, its fades and Watch's slowing while it is up: watch.js)
   const caps = CAPS.map(c => {
-    const n = el('div', `cf-cap ${c.pos}${c.big ? ' big' : ''}${c.small ? ' small' : ''}${c.red ? ' red' : ''}`,
+    const n = el('div', `cf-cap ${c.pos}${c.big ? ' big' : ''}${c.small ? ' small' : ''}${c.red ? ' red' : ''}${c.high ? ' high' : ''}${c.low ? ' low' : ''}`,
       `${c.eyebrow ? `<span class="eyebrow">${c.eyebrow}</span>` : ''}<p>${c.text}</p>`);
     capWrap.appendChild(n);
     return { ...c, n };
@@ -424,7 +424,9 @@ async function boot() {
       op(c.n, v);
       if (v > 0) {
         c.n.style.setProperty('--reveal', String(smooth(c.as, c.as + c.rv, sNow)));
-        c.n.classList.toggle('ink', light);
+        // (a line keeps the hand it was written in: ink on paper or light on the dark, as the page is where it begins,
+        // never changing while it is up)
+        c.n.classList.toggle('ink', c.ink ?? lightAt(c.a));
       }
     }
     // ---------------------------------------------------------------- HUD
@@ -432,7 +434,9 @@ async function boot() {
     for (const [a, name] of CHAPTERS) if (u >= a) ch = name;
     if (chapter.textContent !== ch) chapter.textContent = ch;
     meter.style.transform = `scaleX(${(su / TOTAL_U).toFixed(4)})`;
-    const dark = !light;
+    // (over the cinema bars the page's own furniture is light on their black, whatever the picture between them is)
+    const barsOn = !!(engine && inView && (engine.metrics.bars || 0) > 0.01);
+    const dark = !light || barsOn;
     document.body.classList.toggle('cf-dark', dark && inView);
     hud.classList.toggle('dark', dark);
     $('.nav').classList.toggle('dark', dark && inView);

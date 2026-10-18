@@ -69,6 +69,9 @@ const UP_CUT = 139.22, WIDE_CUT = 139.6, BACK_CUT = 139.95;
 // under it, falling, landing (the crystal cracks from there, timeline.js forest.crack); the insert, close on his hand
 // and the crystal, his blood running into the seams (in as the drop gathers, out as it breaks)
 const PALM_OVER = 0.14, DROP = [136.74, 136.86, 136.95], TOUCH_IN = [136.78, 137.3];
+// what fell, waiting for him: the cut in low among the roots behind the crystal as he comes across the dell to it (in
+// on the line's second half, out as he kneels)
+const CRYSTAL_IN = [134.7, 135.95];
 
 export async function buildForest(mats, quality, ctx) {
   const set = await buildForestSet(mats, quality, { renderer: ctx.renderer, gate: ctx.gate || null });
@@ -525,15 +528,28 @@ void main(){
     return { cp, lk };
   }
   // the stride-cut's lens: locked at his hip behind his right shoulder; at the missed beat it leaves him, up the giant
+  const tune = { strideSide: -1, strideAngle: 55, strideLead: 2.2, strideD: 4.6, strideUp: 1.02, pillarR: 6.5, pillarA: 0.04, pillarLook: 2.4, pillarFov: 60, crystalBack: 0.8, crystalSide: 0, crystalUp: 0.34, crystalLook: -1.5, crystalLook2: -1.4, crystalFov: 46, crystalFov2: 52, touchR: -0.5, touchFront: 0.1, touchUp: 0.5, touchFov: 34 };
   function strideShot(u) {
     const st = strideAt(u), w = jAt(st.s), P = w.pos, d = w.dir, r = rightOf(d);
-    const cp = P.clone().addScaledVector(d, -3.6).addScaledVector(r, 1.2).add(V3(0, 1.05, 0));
-    const lk = P.clone().addScaledVector(d, 7).addScaledVector(r, 0.9).add(V3(0, 0.95, 0));
+    let cp, lk;
+    if (tune.strideSide) {
+      // (behind him and well round to his side, level with his hip, on a long lens: he walks across the frame and stays
+      // where he is in it while the world beside and ahead of him cuts from one stretch of the way to the next; never his
+      // face, his hair between it and the lens)
+      const th = THREE.MathUtils.degToRad(tune.strideAngle);
+      cp = P.clone().addScaledVector(d, -Math.cos(th) * tune.strideD).addScaledVector(r, tune.strideSide * Math.sin(th) * tune.strideD).add(V3(0, tune.strideUp, 0));
+      lk = P.clone().addScaledVector(d, tune.strideLead).add(V3(0, 0.98, 0));
+      cp.y = Math.max(cp.y, hB(cp.x, cp.z) + 0.55);
+    } else {
+      cp = P.clone().addScaledVector(d, -3.6).addScaledVector(r, 1.2).add(V3(0, 1.05, 0));
+      lk = P.clone().addScaledVector(d, 7).addScaledVector(r, 0.9).add(V3(0, 0.95, 0));
+    }
     const cr = smooth(CRANE[0], CRANE[1], u);
     if (cr > 0) {
       // (rising beside him and turning to the giant's trunk, its crown, as the motes begin)
       const e = cr * cr * (3 - 2 * cr);
-      cp.lerp(P.clone().addScaledVector(d, -2.2).addScaledVector(r, 2.4).add(V3(0, 5.5, 0)), e);
+      // (from the profile on his left the lens rises on that side, the giant beyond him all the while)
+      cp.lerp(P.clone().addScaledVector(d, tune.strideSide < 0 ? -1.0 : -2.2).addScaledVector(r, tune.strideSide < 0 ? -3.4 : 2.4).add(V3(0, 5.5, 0)), e);
       lk.lerp(GIANT.clone().lerp(P, 0.25).add(V3(0, lerp(4, 16, e), 0)), e);
     }
     return { cp, lk };
@@ -612,11 +628,11 @@ void main(){
       look.lerp(LAND.clone().add(V3(0, 1.4, 0)).lerp(TA.hero.target.clone(), k), rw);
     }
     // the crystal and the scroll: behind him as he kneels, close as it breaks, over his shoulder onto the page; as it
-    // opens all the way he looks up, and the lens draws back and lifts with his eyes. Cut: high on the dell's side, the
-    // great tree across it, the light gathering in its crown, a thread of it down to him, then the pillar down out of
-    // the sky onto him and its ring of light running out over the whole floor. Cut: low across the dell, the pillar
-    // standing on him, the leaves coming down through it. Cut: over his shoulder in its light again, down into the page
-    // and the sign.
+    // opens all the way he looks up, and the lens draws back and lifts with his eyes. Cut: low behind him, framed as the
+    // great bolt was that night, the great tree up the middle of the frame, the light gathering in its crown, then the
+    // pillar down out of the sky onto him and its ring of light running out over the whole floor. Cut: low across the
+    // dell, the pillar standing on him, the leaves coming down through it. Cut: over his shoulder in its light again,
+    // down into the page and the sign.
     const sw = cam.scroll(u);
     if (sw > 0) {
       const sp = scroll.group.position;
@@ -630,10 +646,12 @@ void main(){
       if (u > TOUCH_IN[0] && u < TOUCH_IN[1]) {
         // (the insert, a cut in and a cut out: level with his hand held out over the crystal, from his right: the palm,
         // the drop gathering under it and falling, the seams opening from where it lands, his blood running into them)
+        // (from over his left side, looking down onto the crystal's face where it lands and the hand held out over it from
+        // the far side: from its end the lens was among its points, which crossed the frame as glass sheets)
         const t = smooth(TOUCH_IN[0], TOUCH_IN[1], u);
-        cp = TOUCH.clone().addScaledVector(rk, 0.54 - 0.06 * t).addScaledVector(hk, -0.02).add(V3(0, 0.16 - 0.02 * t, 0));
-        lk = TOUCH.clone().addScaledVector(hk, 0.02).add(V3(0, 0.085 - 0.02 * t, 0));
-        shotOut.fov = 34; shotOut.fovW = 1; shotOut.shot = 'touch';
+        cp = TOUCH.clone().addScaledVector(rk, tune.touchR - 0.06 * t).addScaledVector(hk, -tune.touchFront).add(V3(0, tune.touchUp - 0.02 * t, 0));
+        lk = TOUCH.clone().addScaledVector(hk, 0.02).add(V3(0, 0.075 - 0.02 * t, 0));
+        shotOut.fov = tune.touchFov; shotOut.fovW = 1; shotOut.shot = 'touch';
       } else if (u < UP_CUT) {
         cp = s0.lerp(s1, k1).lerp(s2, k2);
         lk = SCROLL.clone().add(V3(0, 0.1, 0)).lerp(sp, smooth(138.0, 138.6, u)).lerp(xuanAt, k2 * 0.55);
@@ -645,12 +663,15 @@ void main(){
           lk.copy(cp).addScaledVector(slerpDir(d, light.canopy.clone().sub(cp).normalize(), lu * 0.1), 3);
         }
       } else if (u < WIDE_CUT) {
-        // (from high on the dell's side, across it: the great tree, the light gathering in its crown, him kneeling at
-        // its foot; the pillar coming down onto him and its ring of light running out over the whole floor; pushing in)
+        // (behind him, low, as the great bolt was framed behind him that night: him small and kneeling at the foot of the
+        // frame, the great tree going up the middle of it, the light gathering in its crown; the pillar coming down onto
+        // him, a column of light down the middle of the frame where the bolt was, and its ring of light running out over
+        // the whole floor; pushing in)
         const t = smooth(UP_CUT, WIDE_CUT, u);
-        const a = Math.atan2(hk.z, hk.x) + Math.PI - 0.32, R = lerp(22, 21.1, t);
+        const a = Math.atan2(hk.z, hk.x) + Math.PI - tune.pillarA, R = lerp(tune.pillarR, tune.pillarR * 0.96, t);
         cp = onG(SCROLL.clone().add(V3(Math.cos(a) * R, 0, Math.sin(a) * R))).add(V3(0, lerp(1.7, 1.5, t), 0));
-        lk = SCROLL.clone().add(V3(0, lerp(9, 8.2, t), 0));
+        lk = SCROLL.clone().add(V3(0, lerp(tune.pillarLook, tune.pillarLook * 0.91, t), 0));
+        if (tune.pillarFov) { shotOut.fov = tune.pillarFov; shotOut.fovW = 1; }
       } else if (u < BACK_CUT) {
         // (across the dell from in front of him and to his right, low, between the bamboo: the great tree and the pillar
         // on him, kneeling small in its light at its foot, the leaves coming down through it; pushing in slowly)
@@ -668,6 +689,17 @@ void main(){
       const w = shotOut.shot === 'touch' ? 1 : sw;
       pos.lerp(cp, w);
       look.lerp(lk, w);
+    }
+    // what fell, waiting for him: low among the roots behind the crystal, its gold heart and the shadow of the scroll in
+    // it in front of the lens, his feet coming across the leaves toward it (never his face), pushing in a little; cut to
+    // behind him as he kneels
+    if (u > CRYSTAL_IN[0] && u < CRYSTAL_IN[1]) {
+      const t = smooth(CRYSTAL_IN[0], CRYSTAL_IN[1], u), c = A.scrollSpot || SCROLL;
+      const f = flatDir(c, LAND), sd = rightOf(f);
+      pos.copy(c).addScaledVector(f, -(tune.crystalBack - 0.1 * t)).addScaledVector(sd, tune.crystalSide).add(V3(0, tune.crystalUp, 0));
+      // (looking down at it: his feet coming to it across the leaves at the top of the frame, never his face)
+      look.copy(c).addScaledVector(f, 5).addScaledVector(sd, -tune.crystalSide * 1.6).add(V3(0, lerp(tune.crystalLook, tune.crystalLook2, smooth(0.35, 1, t)), 0));
+      shotOut.fov = lerp(tune.crystalFov, tune.crystalFov2, smooth(0.35, 1, t)); shotOut.fovW = 1; shotOut.shot = 'crystal';
     }
     return shotOut;
   }
@@ -761,7 +793,8 @@ void main(){
     const bQ = Math.max(FT.beam(u), FT.gather(u));
     if (bQ > 0.01) qiFar.set({ time, amt: Math.max(qk, bQ), center: here, radius: 10, target: target.clone().add(V3(0, 18, 0)), org: 1, spiral: 1.4, burst: 0, px });
     else qiFar.set({ time, amt: qk, center: here, radius: inDell ? 10 : 15, target, org: FT.org(u), spiral: 1, burst: FT.shatter(u), px });
-    qiNear.set({ time, amt: qk * 0.9 * (1 - smooth(138.6, 139.6, u)), center: (hero ? hero.group.position.clone() : here).add(V3(0, 1.4, 0)), radius: 3.2, target, org: FT.org(u) * 0.35, px });
+    // (thinned round him while the crystal is close in front of the lens, so it is seen, not snowed over)
+    qiNear.set({ time, amt: qk * 0.9 * (1 - smooth(138.6, 139.6, u)) * (1 - 0.72 * band(134.6, 134.7, 137.4, 137.8, u)), center: (hero ? hero.group.position.clone() : here).add(V3(0, 1.4, 0)), radius: 3.2, target, org: FT.org(u) * 0.35, px });
     // the crystal: waking, cracking with light from where his blood falls on it, breaking into motes
     const glow = FT.glow(u);
     // the drop of his blood: gathering under his palm, falling, gone into the crystal (drawn out a little as it falls)
@@ -837,5 +870,5 @@ void main(){
   const allowNear = u => years.closeNow(u);
   // (for staging: a fresh copy of years.js swapped in without loading the page again)
   const restageYears = mod => { years.dispose(); years = mod.createYears(yearsArgs); return years; };
-  return { root, set, anchors: A, fogFloor: 0, sunDir, wuhen, ghosts, shots, update, scroll, trail: trailB, allowNear, get years() { return years; }, restageYears, tally: { notch, STAND, tn, tRight, knife }, dell: { KNEEL, SCROLL, LAND }, light };
+  return { root, set, anchors: A, fogFloor: 0, sunDir, wuhen, ghosts, shots, update, scroll, trail: trailB, allowNear, get years() { return years; }, restageYears, tally: { notch, STAND, tn, tRight, knife }, dell: { KNEEL, SCROLL, LAND }, light, tune };
 }

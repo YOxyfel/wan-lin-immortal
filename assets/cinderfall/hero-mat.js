@@ -386,6 +386,7 @@ ${FADE_PARS}
 uniform vec4 uKK;
 uniform vec3 uKKShift;
 uniform vec3 uKKTint;
+uniform float uHairAmb;
 void RE_Direct_Hair( const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {
   vec3 L = directLight.direction, V = geometryViewDir, N = geometryNormal;
   float nl = dot( N, L );
@@ -415,7 +416,7 @@ void RE_IndirectDiffuse_Hair( const in vec3 irradiance, const in vec3 geometryPo
   // multiple scattering inside the hair volume lifts the indirect term
   // (partly desaturated so strands in shadow do not turn sky-blue)
   vec3 irr = mix( vec3( dot( irradiance, vec3( 0.3, 0.59, 0.11 ) ) ), irradiance, 0.15 );
-  reflectedLight.indirectDiffuse += irr * BRDF_Lambert( material.diffuseColor ) * 1.5;
+  reflectedLight.indirectDiffuse += irr * BRDF_Lambert( material.diffuseColor ) * 1.5 * uHairAmb;
 }
 #undef RE_IndirectDiffuse
 #define RE_IndirectDiffuse RE_IndirectDiffuse_Hair
@@ -423,7 +424,7 @@ void RE_IndirectDiffuse_Hair( const in vec3 irradiance, const in vec3 geometryPo
 // hair gets its own: a mostly grey fill (no blue hair in shade) and only a faint sheen of reflection
 void RE_IndirectSpecular_Hair( const in vec3 radiance, const in vec3 irradiance, const in vec3 clearcoatRadiance, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {
   vec3 irr = mix( vec3( dot( irradiance, vec3( 0.3, 0.59, 0.11 ) ) ), irradiance, 0.2 );
-  reflectedLight.indirectDiffuse += irr * RECIPROCAL_PI * material.diffuseColor * 1.25;
+  reflectedLight.indirectDiffuse += irr * RECIPROCAL_PI * material.diffuseColor * 1.25 * uHairAmb;
   vec3 rad = mix( vec3( dot( radiance, vec3( 0.3, 0.59, 0.11 ) ) ), radiance, 0.3 );
   reflectedLight.indirectSpecular += rad * 0.025;
 }
@@ -438,7 +439,7 @@ export function hairMaterial(tex, U) {
   });
   m.name = 'hero-hair';
   m.onBeforeCompile = sh => {
-    sh.uniforms.uKK = U.uKK; sh.uniforms.uKKShift = U.uKKShift; sh.uniforms.uKKTint = U.uKKTint; sh.uniforms.uFade = U.uFade; sh.uniforms.uRim = U.uRim;
+    sh.uniforms.uKK = U.uKK; sh.uniforms.uKKShift = U.uKKShift; sh.uniforms.uKKTint = U.uKKTint; sh.uniforms.uFade = U.uFade; sh.uniforms.uRim = U.uRim; sh.uniforms.uHairAmb = U.uHairAmb;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\n' + HAIR_VERT_PARS)
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvHairT = normalize( normalMatrix * aHairT ); vHair = aHair; vFadeP = position;');

@@ -557,3 +557,78 @@ village below, the crystal's establishing shot.
   with `?perf` in the address the current frame time, GPU time and resolution show in a corner as it plays, with the
   slowest moments so far.
 
+
+## Round 11: the burning seen, the crystal established, the walk in profile (18 October 2026)
+
+The reviewer's frames in round 10 were 640×360, which is the phone layout (`max-width: 700px`): some of what it saw
+was the phone layout on a short screen. Every check this round is at 800×450 (the desktop layout) unless it is a
+phone check.
+
+- **"Cinderfall was burning." is seen** (`engine.js` `BURN_IN`; `timeline.js` `BARS`, `inkKey`): it was over the back of
+  his head and a murk of ink washes, the village a few sparks behind a black slab. Now, as the ink falls, the film cuts
+  to what he sees: the village below on a long lens from the edge of the pines (17° closing to 16°), its roofs and its
+  gate drawn in ink, its flames vermilion on them, letterboxed (the bars snap in with the cut, and the flames and
+  embers go up over them); the ink climbs out of the village over the whole picture, a little lighter than elsewhere
+  so the roofs are drawn, not drowned. The line is written in red on the paper below the village. Then a cut back to
+  him, low at his side: the basket in his hand the last colour, the village burning beyond.
+- **The black slab was the old pines' signpost** (`roadside.js`, `world.js`): its dark board, a hard-edged black block
+  beside the line in the ink. It is not there the night he stands beside it.
+- **A line keeps the hand it was written in** (`boot.js`): a caption no longer changes from light-on-dark to ink while
+  it is up ("Cinderfall was burning." began white and turned red halfway; "Six years." the other way).
+- **Over the cinema bars the header and the HUD are light on their black** whatever the picture between them.
+- **Flames are never cut off by their cards** (`fx.js`): a flame's shape could run past the side of the card it is
+  drawn on, which cut it off in a straight edge (the burning roofs read as glowing rectangles). It now fades out before
+  the card's sides and top, however it wobbles.
+- **Silver hair at night** (`hero-mat.js` `uHairAmb`, `engine.js`): his hair took so little of the night's light that
+  it read as a dark blue mop. While the night is in colour (before the ink, and in the fields after the light) it takes
+  three times the sky's light, and reads silver.
+- **The crag** (`engine.js` `getChoreo`, `sect.js`): from the light over the roofs the eye stays on the crag (a dark
+  pillar, the violet of the array on its crown) and narrows on it; then a cut to the crag itself, near enough for the
+  masked ones to be people on the crown, and in on the leader (it was a minute-long flight in from a murk of smoke and
+  embers). Their banners stand at the back corners of the crown now: over their shoulders, the village burning below,
+  no pole splits the frame.
+- **The last words** (`engine.js` `WORDS_WIDE`, `timeline.js` `inkKey`): one locked setup for twenty-four seconds read
+  as a still. On "Forget this place. Forget me." the film cuts to the place: high over the two of them, the beam
+  across him, the boy on his knees, their hands joined, the room fallen in round them; then back in on his face for
+  the last line, and the hands as it falls. The house and the room are drawn a little lighter in the ink, so the
+  porch, the door and the room are drawn, not lost in black.
+- **The night in the fields is night** (`palettes.js` `soulnight`): it was lit like a blue day (vivid green grass).
+  Darker sky light and exposure, less colour: the light he runs after is the warm thing in the dark.
+- **The crystal, waiting** (`forest.js` `CRYSTAL_IN`, `TOUCH_IN`, `forest-set-wood.js`): under "What fell from the sky
+  that night had waited for him." the film was on the tree, the crystal a glow at its foot. Now, on the line's second
+  half, it cuts in low among the roots behind the crystal: the crystal in front of the lens, the rolled scroll inside it,
+  his feet coming to it across the leaves (never his face: "hands are his face"); cut to behind him as he kneels. The
+  blood insert's lens was among the crystal's points, which crossed the frame as glass sheets; it now looks down onto the
+  crystal's face from over his left side, his hand held out over it. No leaves lie on it or close round it, where his
+  blood falls (red on red would be lost), and the gold motes round him thin while it is close.
+- **The walk out** (`forest.js` `strideShot`): the stride-cut was from behind his shoulder (the back of his head,
+  centred: "a game walkthrough"). It is now well round to his side and behind him on a long lens, he in the right third
+  walking across the frame, the way ahead open on the left, the world cutting behind him at each stride. (A full profile
+  read best as a picture but showed his face, which in profile reads as an old man's: the film never shows it. 55° round
+  from behind him: at 40° he walked away from the lens, at 72° his cheek began to show.)
+- **A phone held on its side** (`cinderfall.css`): the phone layout sized the sign by the screen's width only, so on a
+  short, wide screen the sign ran off the top of the page, the title under it off the bottom, and at the end "THE DEMO"
+  printed over the sign and its line. Sized by the height too now: at 640×360 the sign, the title and the hint fit, and
+  the last page's line sits clear above "THE DEMO".
+- **The pillar is the bolt inverted** (`forest.js`, the plan's unfinished item): the pillar of light came down in a
+  wide from high on the dell's side, where he could not be seen. It is framed now as the great bolt was framed the night
+  it fell: low behind him, him small and kneeling at the foot of the frame, the great tree up the middle, a column of
+  light down the middle of the frame onto him where the bolt was (silent, warm, everything rising).
+- **The wolves' eyes are violet** (`wolf.js`): the village's wolves had orange eyes, the colour of the embers all round
+  them, so in the ink, close on the wolf at the gate, they were two more sparks. Violet is the sect's colour and only
+  theirs (the array on the crag, what is left in the ink): the beasts are theirs.
+- **The 福 is not on his head** (`engine.js`, the morning's third setup): over his shoulder as the old man points at the
+  sun, the red diamond on the door leaf sat on the crown of his head. The lens is a little to the right of him now, so
+  it hangs on the door between them.
+- **The forest's first morning is cold** (`palettes.js` `arrive`): it came in gold-pink, a postcard of a winter dawn.
+  The sun is low, pale and cold through more mist; the shadows blue, less colour: the place is forbidding.
+- **The bell's ripples are brushed rings** (`ink.js`): they were drawn circles, an even line all round. Each ring is
+  broken now where the brush runs dry, heavier where it presses, and grows in from nothing instead of starting full.
+- **The cinnabar drops are flecks** (`ink.js`): the biggest of them were red discs floating on the picture. No drop is
+  big enough for that now: flecks and short throws.
+- **The boy is black in the doorway** (`post.js` `uFigSil`, `engine.js` `REVERSE`): the cut to the room from inside it
+  was meant to hold on him black in the doorway against the burning street, but the ink draws every figure on paper
+  with its features, so his face was drawn there, and in colour, as he ran in, it was lit at the top of the frame. The
+  film never shows it. For that held moment the ink fills the figures in black (him in the door, the old man's arm in
+  front); as he comes in the lens tips down with him to the old man, so the colour coming back finds his legs, not his
+  face.

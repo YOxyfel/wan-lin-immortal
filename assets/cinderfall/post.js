@@ -205,7 +205,7 @@ uniform sampler2D tColor, tDepth, tBloom, tAO, tShafts, tPaper, tNoise, tBlur, t
 uniform vec2 uRes; uniform float uNear, uFar, uDpr, uTime;
 uniform float uExposure, uBloom, uShafts, uAOAmt;
 uniform float uSat, uContrast, uVignette, uGrain, uGrainT, uGreenWarm; uniform vec3 uTint, uShadowTint, uHighTint;
-uniform float uInk, uInkLine, uInkNear, uInkFar, uInkWash, uInkKey, uSepia; uniform vec4 uInkSpread, uSeep, uAccent;
+uniform float uInk, uInkLine, uInkNear, uInkFar, uInkWash, uInkKey, uSepia, uFigSil; uniform vec4 uInkSpread, uSeep, uAccent;
 uniform float uBleed, uDebugView; uniform vec2 uBleedC;
 uniform float uToon, uToonR, uToonLine, uToonBand, uToonSat, uToonW;
 uniform float uPaper, uRedWash, uFlash, uShock, uBlack, uWhite, uDesat; uniform vec3 uFlashTint; uniform vec2 uBoltK; uniform vec3 uWhiteCol; uniform vec4 uWhiteR;
@@ -328,6 +328,8 @@ vec3 inkOf(vec3 hdrC, vec2 uv, vec2 px, float aspect, float sceneA, out float fa
     float smoke = clamp(sceneA, 0., 1.) * (1. - smoothstep(.42, .8, toneOf(lum(hdrC))));
     d = max(hz, smoke * (.9 + nM * .2));
   }
+  // (for one held moment a figure is black against the light, not drawn: the boy in the doorway)
+  d = mix(d, .97, fig * uFigSil);
   dens = clamp(max(d, line), 0., 1.);
   vec3 paper = texture2D(tPaper, nuv * .9).rgb * vec3(1., .965, .9) * (.97 + gr * .06);
   vec3 inkc = vec3(.028, .025, .024);
@@ -531,7 +533,9 @@ void main(){
       vec3 rawC = max(texture2D(tColor, uv).rgb, 0.), rn = rawC / max(max(rawC.r, max(rawC.g, rawC.b)), 1e-4);
       vcore = max(vcore, smoothstep(.09, .03, abs(rgb2hsv(rn).x - .76)) * smoothstep(.45, .7, rgb2hsv(rn).y) * smoothstep(.5, 1.6, lum(rawC) * ex));
       inkImg = mix(inkImg, inkImg * vec3(.75, .45, 1.1), violet * .8 * uAccent.z);
-      inkImg = mix(inkImg, mix(vec3(.46, .17, .8), vec3(.88, .74, 1.), smoothstep(1.4, 4., Lf)), vcore * uAccent.z);
+      // (violet however bright: a small hot light, a wolf's eye, the slit of a mask, stays violet; only the very heart of
+      // a great one pales)
+      inkImg = mix(inkImg, mix(vec3(.5, .15, .88), vec3(.86, .72, 1.), smoothstep(4., 14., Lf) * .75), vcore * uAccent.z);
       // gold: the star, the scroll
       float gold = smoothstep(.06, .02, abs(rgb2hsv(hn).x - .12)) * smoothstep(.3, .6, rgb2hsv(hn).y) * smoothstep(.8, 1.8, Lf);
       inkImg = mix(inkImg, mix(vec3(.96, .7, .24), vec3(1., .94, .78), smoothstep(2., 6., Lf)), gold * uAccent.y);
@@ -628,7 +632,7 @@ export function createPost(renderer, scene, camera, mats, quality, sun) {
     uExposure: { value: 1 }, uBloom: { value: 0.12 }, uShafts: { value: 1 }, uAOAmt: { value: quality.low ? 0 : 0.85 },
     uSat: { value: 1 }, uContrast: { value: 1 }, uVignette: { value: 0.35 }, uGrain: { value: 0.035 }, uGrainT: { value: 0 }, uGreenWarm: { value: 0.2 }, uBars: { value: new THREE.Vector4(0, 0.12, 0.0005, 0.5) }, uBarCol: { value: new THREE.Color(0.009, 0.008, 0.007) },
     uTint: { value: new THREE.Color(1, 1, 1) }, uShadowTint: { value: new THREE.Color(1, 1, 1) }, uHighTint: { value: new THREE.Color(1, 1, 1) },
-    uInk: { value: 0 }, uInkLine: { value: 1.1 }, uInkNear: { value: 25 }, uInkFar: { value: 260 }, uInkWash: { value: 1 }, uInkKey: { value: 0.5 }, uSepia: { value: 0 },
+    uInk: { value: 0 }, uInkLine: { value: 1.1 }, uInkNear: { value: 25 }, uInkFar: { value: 260 }, uInkWash: { value: 1 }, uInkKey: { value: 0.5 }, uSepia: { value: 0 }, uFigSil: { value: 0 },
     uInkSpread: { value: new THREE.Vector4(0.5, 0.5, 3, 0.3) }, uSeep: { value: new THREE.Vector4(0.5, 0.5, -1, 0.3) }, uAccent: { value: new THREE.Vector4(1, 1, 1, 0) },
     uBleed: { value: -1 }, uBleedC: { value: new THREE.Vector2(0.5, 0.5) }, uDebugView: { value: 0 },
     uToon: { value: 0 }, uToonR: { value: 1 }, uToonLine: { value: 0.95 }, uToonBand: { value: 0.45 }, uToonSat: { value: 0.28 }, uToonW: { value: 1.6 },

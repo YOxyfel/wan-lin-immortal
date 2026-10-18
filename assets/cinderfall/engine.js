@@ -623,7 +623,9 @@ export async function createEngine(canvas) {
     choreo.ride = curve;
     choreo.rideK = monoKeys(ride.map((r, j) => [r[0], lens[j * 60] / lens[segs * 60]]));
     Object.assign(choreo, {
-      pushPath: [hoverCam, hoverCam.clone().lerp(sectFront, 0.3).add(V3(0, 1.6, 0)), hoverCam.clone().lerp(sectFront, 0.68).add(V3(0, 1.2, 0)), sectFront],
+      // (cut to from where the light looks: already near enough for them to be seen as people on the crown, the array
+      // glowing under them; then in on the leader)
+      pushPath: [hoverCam.clone().lerp(sectFront, 0.6).add(V3(0, 1.5, 0)), hoverCam.clone().lerp(sectFront, 0.82).add(V3(0, 1.0, 0)), sectFront],
       // the light goes: round them through the south (wide of the brazier) to their backs, the leader held in the
       // frame, until the eye is over their shoulders on the burning village and the light going west above it
       orbit: new THREE.CatmullRomCurve3([leave0, V3(58.4, sect.top + 1.6, 14.6), V3(64.2, sect.top + 2.3, 15.4), V3(68.7, sect.top + 2.9, 10.6), V3(69.8, sect.top + 3.4, 5.2)], false, 'centripetal'),
@@ -679,6 +681,12 @@ export async function createEngine(canvas) {
   const REVERSE = [80.98, 83.5];
   // the cut in on their hands as the old man's falls, the tear (see the camera)
   const HANDS_IN = [91.3, 92.32];
+  // "Forget this place.": the cut to the place, high over the two of them (see the camera)
+  const WORDS_WIDE = [87.0, 89.1];
+  // "Cinderfall was burning.": the cut to what he sees as the ink falls (see the camera); its lens, a little above and
+  // beside where he stands at the edge of the pines, and where it looks (the village below, its gate in front)
+  const BURN_IN = [61.6, 63.7];
+  const BURN = { pos: V3(7.5, 14.0, -153), pos2: V3(7.4, 13.9, -151), look: V3(0, 4.6, -8), fov: [17.5, 15.8] };
   const GOLD_FALL = (() => {
     const K = [[SMASH, V3(-1310, 3262, 684)], [52.6, V3(-1262, 3070, 652)], [52.75, V3(-1120, 2800, 610)], [53.0, V3(-850, 2380, 500)], [53.25, V3(-690, 1930, 300)],
       [53.5, V3(-490, 1440, 90)], [53.75, V3(-262, 900, -80)], [53.97, C_F.clone()]];
@@ -799,11 +807,12 @@ export async function createEngine(canvas) {
   // (where he points: up at the morning sun, on his left as he faces the street)
   const SUN_UP = V3(-0.25, 0.62, 0.74).normalize();
   // (the shots: over the boy's shoulder on his uncle's face, slowly in; close on the hands at the handle; wider over his
-  // shoulder as the old man points at the sun; back as the boy turns and goes) [u, lens, look, fov]
+  // shoulder as the old man points at the sun (a little to the right of him, so the 福 on the door leaf is not on his
+  // head); back as the boy turns and goes) [u, lens, look, fov]
   const MORNING_SHOTS = [
     [[9.6, V3(1.8, 3.4, 40.2), V3(6.0, 2.3, 44.2), 44], [12.6, V3(2.4, 3.05, 40.9), V3(6.0, 2.35, 44.15), 42], [13.3, V3(4.58, 2.8, 44.52), V3(6.52, 2.64, 44.0), 30], [15.45, V3(4.8, 2.76, 44.42), V3(6.52, 2.63, 44.0), 26]],
     [[15.45, V3(5.96, 2.3, 42.9), BASKET_TOP.clone().add(V3(0, 0.07, 0)), 35], [16.6, V3(5.96, 2.26, 43.0), BASKET_TOP.clone().add(V3(-0.12, -0.02, 0)), 36]],
-    [[16.6, V3(4.15, 2.92, 44.95), V3(6.35, 2.65, 44.0), 36], [18.15, V3(4.25, 2.9, 44.9), V3(6.3, 2.68, 44.0), 35], [18.8, V3(3.4, 2.8, 46.3), V3(4.6, 1.8, 43.2), 42], [19.6, V3(2.4, 2.75, 45.6), V3(1.2, 1.5, 38.0), 46]],
+    [[16.6, V3(4.15, 2.92, 45.15), V3(6.35, 2.65, 44.0), 36], [18.15, V3(4.25, 2.9, 45.1), V3(6.3, 2.68, 44.0), 35], [18.8, V3(3.4, 2.8, 46.3), V3(4.6, 1.8, 43.2), 42], [19.6, V3(2.4, 2.75, 45.6), V3(1.2, 1.5, 38.0), 46]],
   ];
   const morningShot = (() => {
     const shots = MORNING_SHOTS.map(keys => ({ u0: keys[0][0], u1: keys[keys.length - 1][0], pos: new THREE.CatmullRomCurve3(keys.map(k => k[1]), false, 'centripetal'), look: new THREE.CatmullRomCurve3(keys.map(k => k[2]), false, 'centripetal'), t: monoKeys(keys.map((k, i) => [k[0], i / (keys.length - 1)])), fov: monoKeys(keys.map(k => [k[0], k[3]])) }));
@@ -1847,6 +1856,16 @@ export async function createEngine(canvas) {
       pos.lerp(cp, fcw);
       look.copy(pos).addScaledVector(slerpDir(d0.normalize(), d1.normalize(), fcw), lerp(L0, L1, fcw));
     }
+    // "Cinderfall was burning.": cut from behind him to what he sees, the moment the ink falls on the world: the village
+    // below on a long lens, its roofs and its gate black against the fire, the smoke going up into the paper of the sky,
+    // as the ink climbs out of it over everything; held, pushing in a little; then cut back to him (the face shot), the
+    // basket in his hand the last colour left
+    const burnIn = !inB && u > BURN_IN[0] && u < BURN_IN[1];
+    if (burnIn) {
+      const t = smooth(BURN_IN[0], BURN_IN[1], u);
+      pos.copy(debug.burn ? V3(...debug.burn.pos) : BURN.pos).lerp(debug.burn ? V3(...debug.burn.pos2) : BURN.pos2, t);
+      look.copy(debug.burn ? V3(...debug.burn.look) : BURN.look);
+    }
     // the run home is the morning rewound: at the gate the lens is just inside it, where it stood that morning as he
     // went out under it, looking out the same way; now he comes at it out of the dark through the burning gate, the wolf
     // at the gate snarling as he goes by (cut in; cut to behind him as he reaches the lens)
@@ -1877,15 +1896,16 @@ export async function createEngine(canvas) {
       look.copy(legend).addScaledVector(along, 0.02 - 0.06 * t);
     }
     // the room, cut to from the prints: low beside his uncle's head, looking out at the door: the old man pinned under
-    // the beam in front, the boy black in the doorway against the burning street (the held moment on it); he comes in,
-    // sees him, the colour comes back into the room, and he runs to him and drops to his knees beside him; cut back
-    // behind him as he kneels
+    // the beam in front, the boy black in the doorway against the burning street (the held moment on it; the ink draws
+    // him black, not drawn: uFigSil); he comes in, sees him, the colour comes back into the room, and he runs to him and
+    // drops to his knees beside him; cut back behind him as he kneels
     if (!inB && u > REVERSE[0] && u < REVERSE[1]) {
-      const t = smooth(REVERSE[0], REVERSE[1], u), rk = smooth(82.65, 83.45, u);
-      // (on the line from the door through his head, a little beyond it: his head at the foot of the frame, the door
-      // above it; easing in toward him)
+      const t = smooth(REVERSE[0], REVERSE[1], u), rk = smooth(82.65, 83.45, u), dn = smooth(82.3, 82.95, u);
+      // (on the line from the door through the old man's head, a little beyond it: his head at the foot of the frame,
+      // the door above it; easing in toward him. As the boy comes in the lens tips down with him to the old man: his
+      // legs come to him, never his face, which the colour coming back would show)
       pos.copy(L(0.58, 0.81, 0.06)).lerp(L(0.56, 0.77, 0.36), t);
-      look.copy(L(0.0, 0.2, 4.55)).lerp(L(0.3, 0.42, 2.3), rk);
+      look.copy(L(0.0, lerp(0.2, -0.75, dn), 4.55)).lerp(L(0.3, -0.25, 2.3), rk);
     }
     // the hand falls: cut in on the same line, close on their hands as the old man's slips out of the boy's, and the
     // tear falls onto them in the frozen moment; then the rise
@@ -1893,6 +1913,14 @@ export async function createEngine(canvas) {
       const t = smooth(HANDS_IN[0], HANDS_IN[1], u), hs = handsMeet(_hm2);
       pos.copy(hs).add(V3(0.04, 0.3 - 0.03 * t, 0.46 - 0.05 * t));
       look.copy(hs).add(V3(0.0, -0.03, 0.0));
+    }
+    // "Forget this place. Forget me.": cut to the place, high over them: the beam across him, the boy on his knees beside
+    // him, their hands, the room fallen in round them; cut back in on his face for the last line
+    const wordsWide = !inB && u > WORDS_WIDE[0] && u < WORDS_WIDE[1];
+    if (wordsWide) {
+      const t = smooth(WORDS_WIDE[0], WORDS_WIDE[1], u);
+      pos.set(lerp(8.4, 8.52, t), lerp(3.6, 3.48, t), lerp(41.6, 41.78, t));
+      look.set(10.1, 1.4, 44.0);
     }
     // the soul: where the light that left him is (a pure function of u)
     soulAt(u, soulP);
@@ -1906,7 +1934,7 @@ export async function createEngine(canvas) {
       // (on the soul's heart while it sits up and stands, then a little above it as it goes, so it leads the eye up
       // through the hole; once over the roofs, where it looks: the crag)
       // (a little below its heart while it stands over him, so he stays in the frame; a little above it as it goes up)
-      const lkA = UH.uncleSpot.clone().add(V3(0, 0.1, 0)).lerp(soulP.clone().add(V3(0, -0.22 * band(92.6, 93.4, 95.0, 95.5, u) + 0.6 * smooth(95.4, 96.2, u), 0)), smooth(92.5, 93.6, u)).lerp(soulP.clone().lerp(C.cragFocus, 0.38), smooth(97.8, 98.9, u));
+      const lkA = UH.uncleSpot.clone().add(V3(0, 0.1, 0)).lerp(soulP.clone().add(V3(0, -0.22 * band(92.6, 93.4, 95.0, 95.5, u) + 0.6 * smooth(95.4, 96.2, u), 0)), smooth(92.5, 93.6, u)).lerp(soulP.clone().lerp(C.cragFocus, debug.cragLook ?? 0.82), smooth(97.8, 98.9, u));
       // (while the porch roof hides it, the eye goes up the roof to the hole it will come out of)
       lkA.lerp(C.emerge, band(95.2, 95.5, 95.85, 96.2, u));
       const sectFocus = sect.center.clone().add(V3(-0.6, 0.55, 0)).lerp(sect.center.clone().add(V3(-1, 1.4, 0.2)), smooth(100.4, 102.6, u));
@@ -1916,7 +1944,7 @@ export async function createEngine(canvas) {
         cp = C.ride.getPointAt(clamp(C.rideK(u))); lk = lkA;
       } else if (u < 102.1) {
         cp = spline(C.pushPath, smooth(98.9, 101.6, u)).addScaledVector(C.drift, smooth(101.6, 102.1, u));
-        lk = lkA.lerp(sectFocus, smooth(99.0, 100.4, u));
+        lk = sectFocus.clone();
       } else if (u < 103.75) {
         // the light goes and their masks turn after it: round them to their backs with the leader held in the frame,
         // then (an even turn, never a whip) past him to the burning village and the light going west above it
@@ -1983,7 +2011,7 @@ export async function createEngine(canvas) {
     if (stormRoll && !debug.cam) camera.rotateZ(stormRoll);
     // (on a phone the rise keeps a little of its width while it is still in the room, so the light fits the frame)
     // (the forest's shots may keep their own focal lengths)
-    const fov0 = bShot && bShot.fovW > 0 ? lerp(cam.fov(u), bShot.fov, bShot.fovW) : mShot ? lerp(cam.fov(u), mShot.fov, mnw) : grw > 0 ? lerp(cam.fov(u), wolfIn ? 44 : 29, grw) : cam.fov(u);
+    const fov0 = wordsWide ? 48 : burnIn ? lerp(...(debug.burn ? debug.burn.fov : BURN.fov), smooth(BURN_IN[0], BURN_IN[1], u)) : bShot && bShot.fovW > 0 ? lerp(cam.fov(u), bShot.fov, bShot.fovW) : mShot ? lerp(cam.fov(u), mShot.fov, mnw) : grw > 0 ? lerp(cam.fov(u), wolfIn ? 44 : 29, grw) : cam.fov(u);
     camera.fov = lerp(fov0, stormFov, stw) + portrait * 12 * (1 - zoomK) * (1 - rw * (1 - 0.7 * band(92.0, 92.6, 94.8, 95.6, u))) * (1 - gw) + portrait * 14 * fcw;
     // (at the stall the lens narrows on the weapons)
     if (!inB) camera.fov = lerp(camera.fov, 33 + portrait * 10, band(25.45, 26.25, 27.3, 28.0, u) * 0.85);
@@ -2062,6 +2090,9 @@ export async function createEngine(canvas) {
       h.group.position.copy(P);
       h.group.rotation.y = Math.atan2(heading.x, heading.z);
       if (inB) h.uniforms.uRim.value.set(1, 0.62, 0.3, rimAmt * (debug.rim ?? 1)); else h.uniforms.uRim.value.set(1, 0.4, 0.15, rimAmt * (debug.rim ?? 1));
+      // (at night, in colour, his hair takes more of the sky's light, so it stays silver: before the ink takes the world,
+      // and in the fields after the light)
+      h.uniforms.uHairAmb.value = debug.hairAmb ?? (inB ? 1 : 1 + 2.1 * Math.max(band(55.4, 56.6, 61.5, 61.6, u), band(104.4, 105.2, 107.6, 108.0, u)));
       h.uniforms.uKK.value.x = 0.34 * kk; h.uniforms.uKK.value.z = 0.32 * kk;
       if (!inB) h.setAge(0);
       driveHero(h, wShow, dt, time, { speed, wave, run, kneel, reach, draw, lie, ...hs }, jumped);
@@ -2407,6 +2438,8 @@ export async function createEngine(canvas) {
     const spreading = u > 61.5 && u < 108;
     I.uInkSpread.value.set(0.5, 0.5, spreading ? fx.inkSpread(u) : 3, 0.4);
     I.uInkKey.value = fx.inkKey(u);
+    // (the boy black in the doorway, seen from the room: see the camera, REVERSE)
+    I.uFigSil.value = !inB && u > REVERSE[0] && u < REVERSE[1] ? 1 : 0;
     I.uSepia.value = inB ? fx.sepia(u) : 0;
     // (in the valley: colour seeps back out from the uncle's soul as it rises; in the forest, from the camp)
     const sSeep = inB ? 0 : fx.soulSeep(u);

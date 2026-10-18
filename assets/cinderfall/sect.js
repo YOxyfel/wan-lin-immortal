@@ -256,7 +256,9 @@ transformed.x += sin(uTime * 1.6 + position.y * 2.3) * .06 * hang;`);
   bannerMat.customProgramCacheKey = () => 'cf-banner';
   const poleMat = dissolving(new THREE.MeshStandardMaterial({ color: 0x1a1414, roughness: 0.6, metalness: 0.3 }), dis, { base: top });
   const banners = [];
-  for (const [dx, dz] of [[1.2, -1.4], [1.2, 1.6], [0.2, -6.6]]) {
+  // (at the two back corners of the crown, outside the line of them, so that seen over their shoulders, the village
+  // below, no pole stands between the lens and the leader)
+  for (const [dx, dz] of [[2.4, -4.4], [2.4, 4.4], [0.2, -6.6]]) {
     const b = new THREE.Group();
     b.position.set(CRAG.x + dx, top, CRAG.z + dz);
     b.rotation.y = Math.atan2(2 - b.position.x, 30 - b.position.z);

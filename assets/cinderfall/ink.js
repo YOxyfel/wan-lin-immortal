@@ -231,10 +231,13 @@ void main(){
     vec2 q=p-r.xy*asp; float d=length(q), g=r.z;
     float R=.03+g*.8;
     float wob=(fbm(vec2(atan(q.y,q.x)*.8+float(i)*2.3,g*1.7+.3))-.5)*.05*(.3+g);
-    float fade=r.w*(1.-g)*(1.-g);
-    float k=smoothstep(.007+.02*g,0.,abs(d-R-wob))*fade*.9;
+    float fade=r.w*(1.-g)*(1.-g)*smoothstep(0.,.1,g);
+    // (a brush's ring, not a drawn circle: broken where the bristles run dry, heavier where it presses)
+    float ang=atan(q.y,q.x);
+    float br=smoothstep(.3,.62,fbm(vec2(ang*1.6+float(i)*4.1,g*2.2+float(i)*1.3)));
+    float k=smoothstep(.007+.02*g,0.,abs(d-R-wob))*fade*.9*br;
     col=col*(1.-k)+ink*k; a=a+k*(1.-a);
-    float k2=smoothstep(.004+.013*g,0.,abs(d-R*.7-wob*.7))*fade*.45;
+    float k2=smoothstep(.004+.013*g,0.,abs(d-R*.7-wob*.7))*fade*.45*smoothstep(.35,.65,fbm(vec2(ang*2.3+float(i)*2.9+5.,g*3.1)));
     col=col*(1.-k2)+ink*k2; a=a+k2*(1.-a);
   }
   // the falling droplet and its crown splash
@@ -333,7 +336,8 @@ void main(){
       e.x=e.x<.5?e.x*.34:1.-(1.-e.x)*.34;
       if(h1(fk+3.3)<.35) e=vec2(h1(fk+5.1),h1(fk+1.7)<.5?h1(fk+1.7)*.3:1.-(1.-h1(fk+1.7))*.3);
       vec2 c=e*asp;
-      float size=.008+pow(h1(fk+2.3),4.)*.05;
+      // (flecks and short throws: no drop big enough to read as a red disc floating on the picture)
+      float size=.007+pow(h1(fk+2.3),4.)*.022;
       float appear=smoothstep(h1(fk+4.1)*.35,h1(fk+4.1)*.35+.12,uSplat);
       vec2 dir=normalize(vec2(h1(fk+6.)-.5,h1(fk+7.)-.5)+.001);
       vec2 q=p-c;

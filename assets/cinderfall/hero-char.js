@@ -22,6 +22,8 @@ export function makeUniforms() {
     uBrow: { value: srgbColor(0.3, 0.27, 0.26) }, uLip: { value: srgbColor(0.74, 0.5, 0.46) }, uWrinkle: { value: 0 }, uMouth: { value: 0 }, uBrowW: { value: 1 },
     uEyeH: { value: 1 }, uSmile: { value: 0 }, uFade: { value: 1 }, uRim: { value: new THREE.Vector4(1, 0.45, 0.18, 0) },
     uKK: { value: new THREE.Vector4(0.34, 230, 0.32, 40) }, uKKShift: { value: V(0.1, -0.12, 0.38) }, uKKTint: { value: new THREE.Color(1, 0.97, 0.94) },
+    // (how much the hair takes from the sky's light: raised at night so silver hair stays silver, not a dark blue mop)
+    uHairAmb: { value: 1 },
   };
 }
 

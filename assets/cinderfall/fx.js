@@ -78,6 +78,8 @@ void main(){
   float w=pow(max(1.-y,0.),.75)*.5*(.75+n*.5);
   float shape=1.-smoothstep(w*.35,w,abs(x+wob));
   shape*=smoothstep(0.,.1,y)*(1.-smoothstep(.45,1.,y+(n2-.5)*.5));
+  // (never cut off by the card it is drawn on: gone before its sides and its top, however it wobbles)
+  shape*=(1.-smoothstep(.33,.5,abs(x)))*(1.-smoothstep(.8,1.,y));
   float heat=clamp(shape*(1.25-y*1.2),0.,1.);
   vec3 col=mix(uC0,uC1,smoothstep(.15,.55,heat));
   col=mix(col,uC2,smoothstep(.65,.98,heat));

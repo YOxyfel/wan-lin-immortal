@@ -217,7 +217,9 @@ export function buildWorld(mats, quality) {
   // the roadside: a pavilion to rest in on the climb to the pines; where the road goes in under them, the signpost
   // (古松, the old pines); across the old way west, the boundary rope and its board (禁); the woodcutters' place
   RS.pavilion(kit, PAV.x, PAV.z, Math.PI / 2, rand);
-  RS.signpost(kit, GUSH.x, GUSH.z, 0.25, SIGN_CELLS['古松']);
+  // (the signpost is gone by the night he stands beside it and looks down at the village burning: in the ink its board
+  // was a black slab beside the line, in the middle of the picture)
+  RS.signpost(kit, GUSH.x, GUSH.z, 0.25, SIGN_CELLS['古松'], { vis: 1 });
   RS.boundary(kit, ROPE[0], ROPE[1], rand);
   RS.woodcut(kit, WOOD.x, WOOD.z, 0.4, rand);
   for (const [dz, off, r0, axe] of [[-151, -9.5, 0.34, false], [-163, 7.2, 0.4, false], [-170, -5.2, 0.3, true], [-160, 11.2, 0.36, false], [-176, 9.5, 0.45, false]]) RS.stump(kit, roadX(dz) + off, dz, r0, rand, axe);

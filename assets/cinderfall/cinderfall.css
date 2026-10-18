@@ -53,6 +53,9 @@
 .cf-cap.big p { font-size: clamp(44px, 6.4vw, 104px); line-height: .98; }
 .cf-cap.right { left: auto; right: 7vw; text-align: right; }
 .cf-cap.center { left: 50%; bottom: auto; top: 50%; transform: translate(-50%, -50%); text-align: center; width: max-content; max-width: 90vw; }
+/* (above what it names, over the picture's sky; or under it, on the paper below it) */
+.cf-cap.center.high { top: 31%; }
+.cf-cap.center.low { top: 70%; }
 .cf-cap.red .eyebrow { color: #f08a63; }
 .cf-cap.red p { color: #fff1e3; text-shadow: 0 0 40px #ff3a0a66, 0 2px 30px #000c; }
 .cf-cap.ink { color: #1f1c18; }
@@ -91,13 +94,14 @@
   .cf-cap { left: 6vw; right: 6vw; bottom: 17vh; max-width: none; }
   .cf-cap.right { right: 6vw; left: 6vw; }
   .cf-cap.center { left: 50%; right: auto; }
-  /* (the sign higher and a little smaller; the ink under it follows its box, and the dot where the drop lands) */
-  .cf-seal { width: 44vw; height: 46.5vw; top: 36%; }
+  /* (the sign higher and a little smaller; the ink under it follows its box, and the dot where the drop lands; never
+     taller than the screen allows, for a phone held on its side: the sign and the lines under it stay on the page) */
+  .cf-seal { width: min(44vw, 31vh); height: min(46.5vw, 33vh); top: 36%; }
   #loading.loading::before { top: 36%; }
-  .cf-title-text { top: calc(36% + 37vw); }
+  .cf-title-text { top: calc(36% + min(37vw, 24vh)); }
   .cf-stamp { display: none; }
-  .cf-end .cf-seal { width: 44vw; height: 46.5vw; top: 36%; }
-  .cf-cap.end { top: calc(36% + 34vw); }
+  .cf-end .cf-seal { width: min(44vw, 31vh); height: min(46.5vw, 33vh); top: 36%; }
+  .cf-cap.end { top: calc(36% + min(34vw, 22vh)); }
   .cf-cap.words { bottom: 16vh; }
   .hud-actions { gap: 14px; }
   .hud #sound { display: none; }

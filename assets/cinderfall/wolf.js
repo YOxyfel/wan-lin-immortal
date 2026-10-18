@@ -1,4 +1,4 @@
-// The Ashen Wolves: big, lean, ash-dark wolves with ember-lit hackles and red eyes. Built from lofted parts (a deep
+// The Ashen Wolves: big, lean, ash-dark wolves with ember-lit hackles and violet eyes. Built from lofted parts (a deep
 // chest, a tucked waist, heavy haunches, a long skull and snout, thick-topped legs with real joints: shoulder, elbow,
 // wrist; hip, stifle, hock), shaggy with swept spikes of fur along the spine, the ruff and the tail.
 // API (as beasts.js had): makeWolf(seed, scale) -> { root, body, neck, head, jaw, tail, legs:[{hip, knee, ankle, front, side}], mouth(), seed }
@@ -42,7 +42,8 @@ totalEmissiveRadiance+=uRimCol*(rim*.45+emb*.4)*uRimAmt;`);
   fur.customProgramCacheKey = () => 'cf-wolf-fur';
   mats = {
     fur,
-    eye: new THREE.MeshBasicMaterial({ color: new THREE.Color(4.0, 0.55, 0.12) }),
+    // (violet: the sect's colour, and only theirs; it stays violet in the ink)
+    eye: new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 0.9, 4.2) }),
     bone: new THREE.MeshStandardMaterial({ color: 0xd9ccb5, roughness: 0.45 }),
     dark: new THREE.MeshStandardMaterial({ color: 0x0d0b0a, roughness: 0.85 }),
     rimU,
@@ -167,7 +168,7 @@ export function makeWolf(seed = 1, scale = 1) {
   }
   mesh(merge([neckG, ...ruff]), M.fur, neck);
 
-  // head: broad skull, a stop, the long snout; ears up; red eyes
+  // head: broad skull, a stop, the long snout; ears up; violet eyes
   const head = new THREE.Group(); head.position.set(0, ny(1.21), nz(0.8)); neck.add(head);
   const skull = loft([
     { p: [0, 0.0, -0.05], rx: 0.09, ry: 0.09 },

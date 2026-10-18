@@ -25,7 +25,8 @@ export const P = {
     toneS: [0.86, 0.95, 1.2], toneH: [1.12, 0.96, 0.86], mistG: 0.026, mistH: 2.8, wisp: 0.8, airAmb: 0.225 },
   // that night, out in the fields after the light: the storm breaking up westward, the moon out over the ridges, the
   // land in deep blue and silver, the fires only a red glow low behind him; the light he runs after is the warm thing
-  soulnight: { sunI: 0, sunCol: hex(0x3a4a7a), hemiI: 1.05, hemiSky: hex(0x34477e), hemiGround: hex(0x1c1414), envI: 0.75, fog: hex(0x0d1730), fogD: 0.0011, zenith: hex(0x050b22), horizon: hex(0x1b2c55), cloudLit: hex(0x4c5c8a), cloudShade: hex(0x0a0d1c), cloudCover: 0.55, exposure: 1.4, sat: 1.3, contrast: 1.16, tint: [0.97, 1.0, 1.07], moon: 0.9, wind: 1.0, fogH: 0.0026, fogFall: 0.035, sunGlow: 0, shafts: 0,
+  // (night, not a blue day: the grass silvered by the moon, not green, and lit only round the light and the fireflies)
+  soulnight: { sunI: 0, sunCol: hex(0x3a4a7a), hemiI: 0.62, hemiSky: hex(0x34477e), hemiGround: hex(0x1c1414), envI: 0.5, fog: hex(0x0d1730), fogD: 0.0011, zenith: hex(0x050b22), horizon: hex(0x1b2c55), cloudLit: hex(0x4c5c8a), cloudShade: hex(0x0a0d1c), cloudCover: 0.55, exposure: 1.12, sat: 0.92, contrast: 1.16, tint: [0.97, 1.0, 1.07], moon: 0.9, wind: 1.0, fogH: 0.0026, fogFall: 0.035, sunGlow: 0, shafts: 0,
     toneS: [0.82, 0.94, 1.28], toneH: [1.12, 1.0, 0.86], mistG: 0.03, mistH: 2.2, wisp: 0.85, airAmb: 0.24 },
   ashfall: { sunI: 0, sunCol: hex(0x404858), hemiI: 0.55, hemiSky: hex(0x2c2e38), hemiGround: hex(0x141418), envI: 0.5, fog: hex(0x3a3c44), fogD: 0.0026, zenith: hex(0x0c0d12), horizon: hex(0x2c2f38), cloudLit: hex(0x4a4c56), cloudShade: hex(0x15161c), cloudCover: 0.85, exposure: 0.95, sat: 0.6, contrast: 1.05, tint: [0.96, 0.98, 1.04], moon: 0.35, wind: 0.8, fogH: 0.005, fogFall: 0.03, sunGlow: 0, shafts: 0 , mistG: 0.04, mistH: 4, wisp: 0.7, airAmb: 0.25 },
   // the Forbidden Forest
@@ -40,11 +41,11 @@ export const P = {
 // the dell of the ancient tree: deep shade under the great crown, warm light falling through it in shafts
 P.dell = { ...P.golden, mistG: 0.022, mistH: 1.6, sunI: 4.2, sunCol: hex(0xffc27a), hemiI: 0.34, hemiSky: hex(0x8f9fb8), hemiGround: hex(0x4a3420), envI: 0.42, fog: hex(0xc9a374), fogD: 0.0049, fogH: 0.0095, fogFall: 0.09, sunGlow: 1.1, shafts: 0.034, exposure: 1.06, contrast: 1.1, sat: 1.12 };
 P.dawnB = { ...P.winter, sunI: 1.4, sunCol: hex(0xffc8a0), sat: 0.62, fog: hex(0xbcc4d0) };
-// the morning he comes to it: over the basin at dawn in the snow, the low sun gold-pink through the mist, blue shadows,
-// the karst towers standing out of the forest in layers of cold air
-P.arrive = { ...P.winter, sunI: 2.4, sunCol: hex(0xffc690), hemiI: 0.36, hemiSky: hex(0x8ea6d6), hemiGround: hex(0xb8b4c4), envI: 0.62,
-  fog: hex(0x9aabc8), fogD: 0.0005, fogH: 0.0018, fogFall: 0.045, zenith: hex(0x4a66a8), horizon: hex(0xeec8aa), cloudLit: hex(0xffeedd), cloudShade: hex(0x7c88aa),
-  cloudCover: 0.42, exposure: 0.72, sat: 1.06, contrast: 1.16, tint: [1.0, 1.0, 1.02], sunGlow: 0.25, shafts: 0.012, toneS: [0.86, 0.95, 1.18], toneH: [1.1, 1.0, 0.88],
+// the morning he comes to it: over the basin at dawn in the snow, the low sun cold and pale through the mist, blue
+// shadows, the karst towers standing out of the forest in layers of cold air (forbidding, not a postcard: no gold-pink)
+P.arrive = { ...P.winter, sunI: 1.5, sunCol: hex(0xe6dcd6), hemiI: 0.34, hemiSky: hex(0x7c90bc), hemiGround: hex(0x9a98a8), envI: 0.55,
+  fog: hex(0x7d8ca8), fogD: 0.0009, fogH: 0.0022, fogFall: 0.045, zenith: hex(0x34477a), horizon: hex(0xc8c4cc), cloudLit: hex(0xe8e6ec), cloudShade: hex(0x5c6680),
+  cloudCover: 0.62, exposure: 0.66, sat: 0.82, contrast: 1.18, tint: [1.0, 1.0, 1.02], sunGlow: 0.25, shafts: 0.012, toneS: [0.86, 0.95, 1.18], toneH: [1.1, 1.0, 0.88],
   mistG: 0.02, mistH: 2.4, wisp: 0.85, airAmb: 0.22 };
 // the pillar of light down onto him in the dell: everything else goes dim round it, so it is the light
 P.pillar = { ...P.dell, sunI: 0.8, hemiI: 0.14, envI: 0.16, exposure: 0.9, fog: hex(0x2e2214), fogD: 0.0045, fogH: 0.008, sunGlow: 0.15, shafts: 0.03, contrast: 1.22, sat: 1.12, mistG: 0.018 };

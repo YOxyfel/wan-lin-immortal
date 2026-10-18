@@ -342,11 +342,12 @@ export function buildDell(q = {}, sunDir = V3(-0.7, 0.3, -0.65)) {
   const crystal = createScrollCrystal({ position: cPos, axis: sdN.clone().negate(), seed: 31, rootMaterial: M.ancientLimb, mossMaterial: M.mossCushion, groundAt: heightAt });
   crystal.update(0, { glow: 0, crack: 0, shatter: 0 });
   group.add(crystal.group);
-  // a few leaves fallen on the moss cushion and around the crystal
+  // a few leaves fallen on the moss cushion and around the crystal (none on it or close round it, where his blood falls:
+  // red on red would be lost)
   {
     const cy = nook.y - 0.06, cr = 0.5;
     const onCushion = (x, z) => { const d = Math.hypot(x - nook.x, z - nook.z); return d < cr ? cy - 0.12 * (d / cr) * (d / cr) : heightAt(x, z); };
-    group.add(createLeafLitter({ center: [nook.x, nook.z], radius: 1.15, avoid: [[nook.x, nook.z, 0.1], [cPos.x, cPos.z, 0.5], [cPos.x + sdN.x * 0.3, cPos.z + sdN.z * 0.3, 0.3], [cPos.x - sdN.x * 0.3, cPos.z - sdN.z * 0.3, 0.3]] }, 70, { groundAt: onCushion, seed: 361, sizes: [0.13, 0.19] }).group);
+    group.add(createLeafLitter({ center: [nook.x, nook.z], radius: 1.15, avoid: [[nook.x, nook.z, 0.1], [cPos.x, cPos.z, 0.78], [cPos.x + sdN.x * 0.3, cPos.z + sdN.z * 0.3, 0.45], [cPos.x - sdN.x * 0.3, cPos.z - sdN.z * 0.3, 0.45]] }, 56, { groundAt: onCushion, seed: 361, sizes: [0.13, 0.19] }).group);
   }
   // the dell's waterfall: a thin fall from the north-west wall into a pool
   const [wx, wz] = P.DELL_FALL;

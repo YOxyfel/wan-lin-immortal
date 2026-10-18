@@ -61,16 +61,16 @@ export function pavilion(kit, x, z, rotY, rand) {
 }
 
 // a signpost: a post, a crossbar, the board (from the sign atlas) facing +z, a little plank roof over it
-export function signpost(kit, x, z, rotY, cell, { h = 2.25, w = 1.05, bh = 0.52 } = {}) {
+export function signpost(kit, x, z, rotY, cell, { h = 2.25, w = 1.05, bh = 0.52, vis = 0 } = {}) {
   const y = heightAt(x, z);
   const W = M(x, y, z, rotY);
-  kit.add('timber', mcyl(0.07, 0.09, h + 0.45, 7), mul(W, M(0, (h + 0.45) / 2 - 0.4, 0)), { vis: 0, color: WOOD });
-  kit.add('timber', mbox(w + 0.24, 0.08, 0.08), mul(W, M(0, h - 0.05, 0.08)), { vis: 0, color: 0.5 });
-  kit.add('sign', atlasQuad(cell, w, bh, false, 0.035), mul(W, M(0, h - bh / 2 - 0.13, 0.1)), { vis: 0 });
-  kit.add('plank', mbox(w + 0.4, 0.05, 0.34), mul(W, M(0, h + 0.1, 0.07, 0, 0.12)), { vis: 0, color: 0.42 });
+  kit.add('timber', mcyl(0.07, 0.09, h + 0.45, 7), mul(W, M(0, (h + 0.45) / 2 - 0.4, 0)), { vis, color: WOOD });
+  kit.add('timber', mbox(w + 0.24, 0.08, 0.08), mul(W, M(0, h - 0.05, 0.08)), { vis, color: 0.5 });
+  kit.add('sign', atlasQuad(cell, w, bh, false, 0.035), mul(W, M(0, h - bh / 2 - 0.13, 0.1)), { vis });
+  kit.add('plank', mbox(w + 0.4, 0.05, 0.34), mul(W, M(0, h + 0.1, 0.07, 0, 0.12)), { vis, color: 0.42 });
   // (a straw rope and a strip of red cloth tied round the post)
-  kit.add('straw', mcyl(0.1, 0.1, 0.07, 8), mul(W, M(0, 1.15, 0)), { vis: 0 });
-  kit.add('cloth', mbox(0.07, 0.42, 0.01), mul(W, M(0.08, 0.92, 0.08)), { vis: 0, color: [0.75, 0.12, 0.08], sway: 0.8 });
+  kit.add('straw', mcyl(0.1, 0.1, 0.07, 8), mul(W, M(0, 1.15, 0)), { vis });
+  kit.add('cloth', mbox(0.07, 0.42, 0.01), mul(W, M(0.08, 0.92, 0.08)), { vis, color: [0.75, 0.12, 0.08], sway: 0.8 });
 }
 
 // a boundary rope between two posts (a, b: [x, z]), sagging, hung with zigzag paper streamers, and in its middle the
