@@ -15,7 +15,7 @@ export const PACE = [[0, 0.55], [4, 0.75], [10, 0.9], [15, 0.6], [19, 0.85], [31
 // Held moments: at each [story position, scroll length] the story slows to a fifth of its pace for that much scroll,
 // so the reader waits on it — the forest falls silent, the storm stands over the valley, the glow below, the boy who
 // cannot move, the open door, the hand that falls, the morning he goes farther, the rim of the dell, the crystal.
-export const PAUSES = [[26.45, 1.4], [46.95, 1.6], [49.35, 1.1], [58.7, 1.6], [65.45, 2.0], [80.95, 1.3], [92.15, 2.2], [124.5, 1.0], [132.15, 1.5], [136.85, 1.1], [139.18, 2.6]];
+export const PAUSES = [[26.45, 1.4], [46.95, 2.1], [49.35, 1.1], [54.62, 2.6], [58.7, 1.6], [65.45, 2.0], [80.95, 1.3], [92.15, 2.2], [124.5, 1.0], [132.15, 1.5], [136.85, 1.1], [139.18, 2.6]];
 const SLOW = 0.2;
 // Stretches: [story position, story length, rate]. The story runs at `rate` of its pace over that much of it, so
 // it takes 1/rate as much scroll; unlike a held moment the camera keeps going, only slower under the same scroll.
@@ -24,8 +24,20 @@ const SLOW = 0.2;
 // fight's shadows play (48.08), bursting through the sheets and out over the sea (48.2), the hang in the sun (48.48);
 // and the dive back down through the storm.
 export const STRETCHES = [[47.42, 0.05, 0.3], [47.47, 0.065, 0.12], [47.535, 0.415, 0.3], [47.95, 0.13, 0.3], [48.08, 0.12, 0.11], [48.2, 0.28, 0.3], [48.48, 0.56, 0.3], [52.7, 1.32, 0.42],
-  // the years: the first at half pace, each after quicker, the sixth slower than the first
-  [112.3, 4.5, 0.5], [116.8, 1.45, 0.75], [118.25, 1.2, 0.85], [119.45, 0.95, 0.95], [121.15, 3.35, 0.45],
+  // the years: the first at half pace (its first winter and spring slower, under their lines), each after quicker
+  // (the second slower while its line is up), the sixth slower than the first
+  [112.3, 0.3, 0.5], [112.6, 1.85, 0.3], [114.45, 2.35, 0.5], [116.8, 0.7, 0.4], [117.5, 0.75, 0.75], [118.25, 1.2, 0.85], [119.45, 0.95, 0.95], [121.15, 3.35, 0.45],
+  // the lines given scroll to be read in (each at full strength for about half a screen or more): the edge of the
+  // pines; over the sea; the quiet after the strike; the burning; the last words; after the light west; the Forbidden
+  // Forest; the dell; the pillar. (A fourth value: how much of the stretch Watch gives back, keeping its own pace
+  // through it, watch.js; Watch has its own way of giving a line time.)
+  [43.3, 2.3, 0.85, 1], [49.9, 2.3, 0.9, 1], [55.4, 2.95, 0.5, 0.5], [62.0, 2.2, 0.8, 1], [84.95, 6.65, 0.64, 1], [103.8, 1.7, 0.6, 1], [108.95, 1.8, 0.6, 1], [133.6, 2.3, 0.75, 1], [139.7, 1.15, 0.5],
+  // the run home: the gate, framed as it was that morning (engine.js)
+  [72.5, 0.78, 0.45],
+  // the street, a fifth quicker (either side of the held moment at the smith's)
+  [19.6, 6.85, 1.25], [26.73, 4.27, 1.25],
+  // the empty snare: out to it, crouched over it, the frost seen from above (forest.js OMEN)
+  [124.7, 1.2, 0.4],
   // the walk out: a stride to a little under a second of Watch (forest.js STRIDE_DU)
   [125.9, 4.55, 0.74]];
 // Slow motion: the story's own clock. A slow camera alone is not slow motion while the fire, the rain, the hair and
@@ -47,8 +59,23 @@ export const SLOWMO = [
 // The cinema bars, at the key moments only: [in from, in by, out from, out by]. They close in as the tension builds
 // and leave on the beat; what is marked as breaking the frame passes over them.
 // (the launch: in through the held breath, gone in one frame at the breach, with the silence; the dive and the strike:
-// in as the lens tips over, gone as the light thrown out of the fire gets away west)
-export const BARS = [[46.95, 47.22, 48.467, 48.468], [52.5, 52.76, 55.3, 55.302]];
+// in as the lens tips over, gone as the light thrown out of the fire gets away west; the crag: in as the masks are
+// seen, the violet bolts breaking over them, gone as he runs after the light; the call: in as the air begins to rise
+// toward the light, the pillar breaking over them, gone as the page comes)
+export const BARS = [[46.95, 47.22, 48.467, 48.468], [52.5, 52.76, 55.3, 55.302], [98.35, 98.8, 103.3, 103.55], [139.0, 139.2, 140.85, 141.0]];
+// Protected passages: [from, to, k, screens]. A flick of the wheel cannot carry the story through them faster than k
+// times the Watch pace (it plays on after the wheel stops, until it is where the reader is); a reader who gets more than
+// that many screens ahead in one is caught up through a flood of ink instead of a blur (boot.js). The held moments are
+// protected too (3 times, two screens).
+export const PROTECT = [
+  [46.85, 49.4, 3, 3],      // the held breath, the launch, the breach, the hang over the sea
+  [52.4, 55.5, 3, 3],       // the dive, the star, the strike
+  [61.5, 62.7, 3, 2],       // Cinderfall burning
+  [84.6, 92.8, 4, 3],       // the last words, the hand, the tear
+  [112.3, 124.6, 4, 3],     // the six winters
+  [125.9, 130.45, 3, 3],    // the walk out
+  [138.9, 141.3, 3, 3],     // the call, the pillar
+];
 export function barsAt(s) { let k = 0; for (const [a, b, c, d] of BARS) if (s > a && s < d) k = Math.max(k, band(a, b, c, d, s)); return k; }
 // the breach: out of the last sheet over the sea, the moment everything stops (rain, shreds, shake, bars, the roar)
 export const SILENCE = 48.468;
@@ -198,7 +225,7 @@ Object.assign(env, {
   // blood-red strands of qi: [high over the village, along the road home, near the lens]
   strands: T([[0, [0, 0, 0]], [61.6, [0, 0, 0]], [62.6, [1, 0, 0]], [65.4, [1, 0, 0]], [66.4, [1, 1, 1]], [77, [1, 1, 1]], [78.6, [1, 0.4, 0]], [93, [1, 0.4, 0]], [94.2, [1, 0.4, 0.7]], [97.4, [1, 0.4, 0.7]], [98.6, [0, 0, 0]], [145, [0, 0, 0]]]),
   // seasons of the Forbidden Forest (0..1 each)
-  snowCover: T([[0, 0], [107.6, 0], [108.2, 0.62], [112.2, 0.66], [112.6, 1], ...yearKeys([], (s, c, e, k, at) => k === 0 ? [[113.55, 1], [113.8, 0.1], [113.9, 0], [115.9, 0], [116.2, 0.95], [e, 1]] : k < 5 ? [[at(0.13), 1], [at(0.23), 0.1], [at(0.29), 0], [at(0.87), 0], [at(0.94), 0.95], [e, 1]] : [[s, 1], [at(0.12), 1], [at(0.22), 0.1], [at(0.28), 0], [at(0.9), 0], [c, 0.28], [e, 0.3]], []), [125, 0.15], [126, 0], [145, 0]]),
+  snowCover: T([[0, 0], [107.6, 0], [108.2, 0.62], [112.2, 0.66], [112.6, 1], ...yearKeys([], (s, c, e, k, at) => k === 0 ? [[113.55, 1], [113.8, 0.1], [113.9, 0], [115.9, 0], [116.2, 0.95], [e, 1]] : k < 5 ? [[at(0.13), 1], [at(0.23), 0.1], [at(0.29), 0], [at(0.87), 0], [at(0.94), 0.95], [e, 1]] : [[s, 1], [at(0.12), 1], [at(0.22), 0.1], [at(0.28), 0], [at(0.9), 0], [c, 0.28], [e, 0.3]], []), [125.1, 0.5], [125.66, 0.52], [126.3, 0], [145, 0]]),
   wet: T([[0, 0], ...yearKeys([], (s, c, e, k, at) => k === 0 ? [[113.68, 0], [113.86, 1], [114.15, 0.3], [114.35, 0]] : [[at(0.16), 0], [at(0.25), 1], [at(0.38), 0.3], [at(0.46), 0]], []), [145, 0]]),
   autumn: T([[0, 0], ...yearKeys([], (s, c, e, k, at) => k === 0 ? [[114.9, 0], [115.15, 1], [115.9, 1], [116.15, 0.3], [e, 0]] : k < 5 ? [[at(0.58), 0], [at(0.7), 1], [at(0.87), 1], [at(0.95), 0.3], [e, 0]] : [[at(0.58), 0], [at(0.7), 1]], []), [145, 1]]),
   blossom: T([[0, 0], ...yearKeys([], (s, c, e, k, at) => k === 0 ? [[113.75, 0], [113.95, 1], [114.3, 0.4], [114.5, 0]] : [[at(0.2), 0], [at(0.28), 1], [at(0.4), 0.4], [at(0.47), 0]], []), [145, 0]]),
@@ -244,13 +271,15 @@ export const cam = {
   reveal: T([[133.3, 0], [134.1, 1], [135.9, 1], [136.5, 0]]),
   scroll: T([[135.9, 0], [137.0, 1], [145, 1]]),
   shake: T([[0, 0], [47, 0], [47.6, 0.05], [52.6, 0.05], [53.4, 0.14], [54.0, 0.2], [54.36, 0.14], [54.43, 0.5], [54.55, 0.32], [54.62, 0.8], [54.8, 0.35], [55.3, 0.12], [56.6, 0.08], [57.2, 0.05], [58, 0.05], [62, 0.2], [66, 0.35], [67, 0.9], [77, 0.9], [78, 0.4], [82.5, 0.25], [84.4, 0.06], [92.4, 0.04], [93, 0], [129.5, 0], [129.9, 0.6], [131.0, 0.9], [131.3, 2.0], [132.3, 1.2], [132.8, 0], [139.22, 0], [139.38, 0.22], [139.437, 0.3], [139.443, 2.8], [139.5, 1.1], [139.62, 0.4], [139.9, 0.1], [140.3, 0], [145, 0]]),
-  fov: T([[0, 46], [10, 46], [14, 50], [45.9, 50], [46.7, 59], [47.4, 62], [49.4, 60], [56.6, 60], [58.8, 50], [60.6, 48], [62.6, 21], [63.7, 22], [64.6, 36], [65.6, 38], [66.45, 44], [67.0, 54], [77, 56], [80, 50], [82.6, 50], [84.4, 42], [92.2, 38], [94, 50], [96.4, 50], [98.6, 46], [101.4, 30], [102.8, 31], [104.0, 48], [104.6, 52], [105.2, 50], [105.7, 45], [106.15, 46], [106.7, 50], [107.4, 52], [108.2, 54], [108.4, 54], [111.4, 52], [112.6, 46], [124.1, 44], [124.45, 48], [124.6, 50], [127.8, 46], [128.6, 36], [129.6, 52], [131.2, 62], [133, 54], [136, 48], [139, 42], [139.219, 42], [139.222, 56], [139.598, 52], [139.602, 52], [139.948, 47], [139.952, 42], [145, 40]]),
+  fov: T([[0, 46], [10, 46], [14, 50], [19.45, 50], [20.7, 29], [25.35, 29], [26.15, 38], [27.35, 38], [28.05, 29], [34.8, 29], [35.75, 32], [41.2, 32], [42.6, 50], [45.9, 50], [46.7, 59], [47.4, 62], [49.4, 60], [56.6, 60], [58.8, 50], [60.8, 30], [63.5, 30], [64.6, 36], [65.6, 38], [66.45, 44], [67.0, 54], [77, 56], [80, 50], [82.6, 50], [84.4, 42], [92.2, 38], [94, 50], [96.4, 50], [98.6, 46], [101.4, 30], [102.8, 31], [104.0, 48], [104.6, 52], [105.2, 50], [105.7, 45], [106.15, 46], [106.7, 50], [107.4, 52], [108.2, 54], [108.4, 54], [111.4, 52], [112.6, 46], [124.1, 44], [124.45, 48], [124.6, 50], [127.8, 46], [128.6, 36], [129.6, 52], [131.2, 62], [133, 54], [136, 48], [139, 42], [139.219, 42], [139.222, 56], [139.598, 52], [139.602, 52], [139.948, 47], [139.952, 42], [145, 40]]),
 };
 
 // ------------------------------------------------------------------ ink and paper
 export const fx = {
   // global ink amount (0 colour .. 1 ink); spread/seep masks shape where it shows
-  ink: T([[0, 1], [6.0, 1], [10.8, 0], [61.5, 0], [61.6, 1], [108.25, 1], [108.3, 0], [112.35, 0], [113.4, 0.95], [123.4, 0.95], [124.6, 0], [139.95, 0], [140.6, 0.9], [145, 0.9]]),
+  // (and for one beat at the smith's stall, while his eyes are on the blades, the world drains to ink and only their
+  // light stays gold: what only he can see; the colour rule taught before it is needed)
+  ink: T([[0, 1], [6.0, 1], [10.8, 0], [26.24, 0], [26.42, 1], [26.7, 1], [26.9, 0], [61.5, 0], [61.6, 1], [108.25, 1], [108.3, 0], [112.35, 0], [113.4, 0.95], [123.4, 0.95], [124.6, 0], [139.95, 0], [140.6, 0.9], [145, 0.9]]),
   bleed: T([[0, -0.3], [6.4, -0.3], [10.6, 1.7], [11, 9]]),
   // the world drains into ink from the burning village outward as it is revealed (radius in screen units)
   inkSpread: T([[61.6, 0.05], [62.1, 0.75], [62.7, 1.6], [63.3, 2.8]]),
@@ -316,7 +345,7 @@ export const forest = {
   // the dell: he stands, goes to it, kneels, touches the crystal; it cracks with light and breaks; the scroll
   getUp: T([[133.2, 0], [133.25, 0]]),
   approach: T([[134.1, 0], [136.2, 1]], t => t),
-  crack: T([[136.85, 0], [137.25, 1]]),
+  crack: T([[136.95, 0], [137.28, 1]]),
   shatter: T([[137.3, 0], [137.85, 1]]),
   glow: T([[129.75, 0], [133.8, 0.35], [136.0, 0.55], [136.9, 1], [137.4, 1.4], [138.6, 0.9], [139.15, 1.8], [139.44, 2.4], [139.8, 2.2]]),
   unroll: T([[138.4, 0], [139.6, 1]]),

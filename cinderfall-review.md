@@ -440,3 +440,67 @@ what can be read at scroll speed). This round builds its foundations and the fir
   limiter at the end of the chain, peaks at about −1 dBFS at the strike and the pillar), quiet passages around −30 dB,
   the breach silent to −64 dB but for the one high A. The site with the sound on stepped through the morning, the
   launch, the duel and the walk out without an error. How it sounds has to be judged by listening.
+
+## Round 9: the director's final cut, the dive's chase, the omen (18 October 2026)
+
+- **Protected passages** (`timeline.js` `PROTECT`, `boot.js`): a flick of the wheel can no longer carry the story
+  through the held breath and the launch, the dive and the strike, the burning, the last words, the six winters, the
+  walk out or the call faster than three (four) times the Watch pace, nor through any held moment; the story plays on
+  after the wheel stops until it is where the reader is. A reader who gets three screens ahead in one (two in a held
+  moment or the burning) is caught up through a flood of ink from the middle of the page (a quarter of a second in,
+  half a second lifting), and for a moment after that nothing is held back. Simulated at 60 fps: a flick of 1.2
+  screens into the launch plays it out over 3.5 s; four flicks of 0.6 screens in a second play the whole launch at the
+  cap; a fling of four screens is carried over it by the ink; a screen a second through the last words reads every line.
+- **Impacts and flashes fired on crossing**: the strike's two-tone frame and the pillar's flash now fire when the
+  story crosses them and run on the clock (a few frames), however fast they are crossed; the duel's blows throw
+  lightning no more often than about three times a second (no strobe in a flurry).
+- **The cinema bars at the crag and the call** (`BARS`): in as the masks are seen (the violet bolts break over them),
+  gone as he runs after the light; in as the air begins to rise toward the light (the pillar's glow bleeds over them),
+  gone as the page comes.
+- **The dive's chase** (`engine.js` `SMASH`, `GOLD_FALL`): the duel stays in front of the lens until the violet one
+  smashes the gold one down (52.47, an impact frame, the flare and its ring; the smash is the score's too); the violet
+  one is torn away and fades; the lens tips over and chases the gold light down through the storm (its head and its
+  trail falling, the cloud lit warm round it), the rain rising past the lens, the lightning reaching for it three times
+  (violet, fired on crossing), until it goes into the knot of the charge, which becomes the bolt's leader. Inside the
+  storm the exposure is held down and the light's glow in the cloud kept low, so the falling light and the lightning
+  are what is seen, not a white haze.
+- **The omen** (`forest.js` `OMEN`; the snare beat lengthened with a stretch, 124.7–125.9): a frost that morning; his
+  prints pressed dark through it as he walks out to the snare, and once, from straight above, the frost, the trail of
+  his prints and the empty loop — not one other track — under "No game near the camp that day. Not one track." The
+  frost goes as he sets out on the walk.
+- **Act 01 on a long lens** (`engine.js` `lng`, `timeline.js` `cam.fov`): down the street to the gate the lens follows
+  from about five metres on 29° instead of 1.6 m on 50°, the lanterns and roofs stacking up beyond him, him a third of
+  the frame; the street plays a fifth quicker (`STRETCHES`, either side of the held moment at the smith's).
+- **The old road and the bridge on a long lens** (`engine.js` `ROAD_SHOT`): 32° from farther off; the mill, the river
+  and the fields beyond him stack up behind him, him small in the corner of the land.
+- **The smith's stall teaches the colour rule** (`fx.ink`): for one beat, while his eyes are on the blades, the world
+  drains to ink and only their light stays gold.
+- **"Something fell."** is big, centred and held (a held moment on its line, `PAUSES` 54.62).
+- **No dolly zoom** (cut in plan v2): as the burning is revealed the lens holds still on a long lens from farther back
+  while the ink climbs the world toward him, until the only colour left is the mushrooms in the basket in his hand
+  (a colour reveal on the basket until his fingers open).
+- **The run home is the morning rewound**: at the gate the lens is where it stood that morning as he went out under
+  it, on the same long lens, looking out the same way; he comes at it out of the dark through the burning gate, the
+  wolf at the gate snarling (a stretch gives it two seconds of Watch). The wolves' eyes are violet now (the sect's colour).
+- **The door**: a wolf's sooty prints up the porch beside his way, over the sill and in toward the room, fainter as
+  they go; at the door his eyes go down to them first (the held moment pushes in on the threshold), then up into the
+  room to the man under the beam. The height marks on the door frame are one mesh now (as are the prints).
+- **The soul's touch**: as his uncle's soul rises out of him its breath lifts the boy's hair, once.
+- **Captions, readable under the scroll as well as in Watch** (`watch.js`, `timeline.js`): a line now fades in and out
+  on the scroll axis (a sixth of a screen at most, a quarter of its span at most), the brush writing it in a little
+  longer, so a short line like "Something fell." reaches full strength however its story is paced (it never did
+  before). The lines that went by in a fifth of a screen are given scroll to be read in (stretches under them, longer
+  holds on "Then the forest held its breath." and "Something fell."): every line but three now stays at full strength
+  for about half a screen of scroll or more (the three: 0.38–0.45). Watch gives that scroll back where it was added only
+  for reading, and slows instead while a line is up for as long as it takes to read it (at least 1.2 s and 60 ms a
+  letter, written and at full strength). The captions and Watch's pace now live in one module that the score reads
+  too, so the music box keeps time with Watch however it slows. The scroll is about 58 screens; Watch about 7 minutes.
+- **Blood recognition** (滴血认主; `forest.js`, `scroll-crystal.js`, `hero.js`, `ink.js`): kneeling closer, he bows
+  over the crystal and holds his right hand out over it, palm down; cut in close beside his hand: a drop of his blood
+  gathers under his palm and falls, in the held moment, onto the crystal, which rings the sign's four notes and cracks
+  from where it landed, his blood seeping into the seams like ink in water, red behind the gold running ahead; cut out
+  as it breaks. The last drop of the film is his blood too: it falls where the first drop fell, blooms red, darkening
+  to ink as it spreads, and the sign is written in gold inside it. (The tear and the last drop no longer fly up from
+  below the page before they fall.)
+- **The last line answers the title**: "Every life begins somewhere." … "His began here." (it was "His story has only
+  begun.")

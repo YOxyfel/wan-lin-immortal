@@ -65,6 +65,10 @@ const MISSED = STRIDE_U0 + STRIDE_END * STRIDE_DU, HALT = 0.254, CRANE = [129.9,
 // the pillar of light: the cut to the lens looking up the tree as he looks up; (the strike, STRIKE_B, cuts across the
 // dell); the cut back over his shoulder, down into the page
 const UP_CUT = 139.22, WIDE_CUT = 139.6, BACK_CUT = 139.95;
+// blood recognition: his palm held out over the crystal (this high over where his blood falls on it); the drop gathering
+// under it, falling, landing (the crystal cracks from there, timeline.js forest.crack); the insert, close on his hand
+// and the crystal, his blood running into the seams (in as the drop gathers, out as it breaks)
+const PALM_OVER = 0.14, DROP = [136.74, 136.86, 136.95], TOUCH_IN = [136.78, 137.3];
 
 export async function buildForest(mats, quality, ctx) {
   const set = await buildForestSet(mats, quality, { renderer: ctx.renderer, gate: ctx.gate || null });
@@ -107,6 +111,38 @@ export async function buildForest(mats, quality, ctx) {
   const SNARE = jAt(6);
   const snareSpot = SNARE.pos.clone().addScaledVector(rightOf(SNARE.dir), -0.75);
   const TO_SNARE = path([TALLYSTAND, TALLY.clone().addScaledVector(tRight, 1.15).addScaledVector(tn, 0.35), TALLY.clone().addScaledVector(tRight, 1.2).addScaledVector(tn, -1.6), SNARE.pos]);
+  // the omen: a frost that morning, unbroken but for his own prints out to the snare, which is empty; seen once from
+  // straight above (OMEN): the white, the prints, the open loop, not one other track
+  const OMEN = [125.32, 125.66];
+  const omen = (() => {
+    const g = new THREE.Group(); g.name = 'omen'; g.visible = false;
+    const dirt = new THREE.MeshStandardMaterial({ color: 0x2a2219, roughness: 1 });
+    dirt.polygonOffset = true; dirt.polygonOffsetFactor = -2; dirt.polygonOffsetUnits = -4;
+    const cord = new THREE.MeshStandardMaterial({ color: 0x9a8a66, roughness: 0.9 });
+    const wood = new THREE.MeshStandardMaterial({ color: 0x5c4630, roughness: 0.9 });
+    // a print: heel and ball pressed through the frost to the dark ground
+    const printG = new THREE.CircleGeometry(0.5, 12); printG.rotateX(-Math.PI / 2); printG.scale(0.11, 1, 0.27);
+    const prints = [];
+    const put = (q, d, t) => { const m = new THREE.Mesh(printG, dirt); m.position.set(q.x, hB(q.x, q.z) + 0.03, q.z); m.rotation.y = Math.atan2(d.x, d.z); g.add(m); prints.push({ m, t }); };
+    const L = TO_SNARE.getLength(), n = Math.floor(L / 0.36);
+    for (let i = 1; i <= n; i++) {
+      const t = i / n, p = TO_SNARE.getPointAt(t);
+      const d = flatDir(TO_SNARE.getPointAt(Math.max(0, t - 0.01)), TO_SNARE.getPointAt(Math.min(1, t + 0.01)));
+      put(p.clone().addScaledVector(rightOf(d), (i % 2 ? 1 : -1) * 0.1), d, t);
+    }
+    // (where he crouched by it: both feet turned toward it)
+    const fd = flatDir(SNARE.pos, snareSpot);
+    for (const s of [-1, 1]) put(SNARE.pos.clone().addScaledVector(rightOf(fd), s * 0.13).addScaledVector(fd, 0.08), fd, 0.999);
+    // the snare: a peg, a bent sapling and the cord's loop open over the way the game would come, empty
+    const sp = onG(snareSpot);
+    const peg = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.018, 0.26, 5), wood); peg.position.copy(sp).add(V3(0, 0.1, 0)); g.add(peg);
+    const bend = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.014, 0.9, 5), wood);
+    bend.position.copy(sp).addScaledVector(SNARE.dir, -0.3).add(V3(0, 0.38, 0)); bend.rotation.set(0.75, Math.atan2(SNARE.dir.x, SNARE.dir.z), 0); g.add(bend);
+    const loop = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.0045, 3, 16), cord);
+    loop.position.copy(sp).addScaledVector(SNARE.dir, 0.12).add(V3(0, 0.12, 0)); loop.rotation.set(-0.9, Math.atan2(SNARE.dir.x, SNARE.dir.z), 0); g.add(loop);
+    root.add(g);
+    return { g, prints };
+  })();
   // the years at the camp (years.js)
   const yearsArgs = { anchors: A, hB, root, tally: { TALLY, tn, tRight, STAND, notch }, ROCKSIT, rockOut, wayOut: TO_SNARE.getPointAt(0.12) };
   let years = createYears(yearsArgs);
@@ -116,10 +152,15 @@ export async function buildForest(mats, quality, ctx) {
   const SCROLL = A.scrollPose.position.clone();
   const TOUCH = (A.crystalTouch || SCROLL).clone();
   const toLand = flatDir(SCROLL, LAND);
-  const KNEEL = onG(SCROLL.clone().addScaledVector(toLand, 1.08));
+  // (near enough that, bowed over it, he can hold his hand out over the crystal)
+  const KNEEL = onG(SCROLL.clone().addScaledVector(toLand, 0.9));
   const APPROACH = path([LAND, LAND.clone().lerp(KNEEL, 0.5).addScaledVector(V3().crossVectors(UP, toLand), 0.6), KNEEL]);
   const TA = A.treeAnchors;
   const crownAt = A.ANCIENT.clone().add(V3(0, 14, 0));
+  // the drop of his blood (a plain lit material, as the props: no program of its own)
+  const bloodDrop = new THREE.Mesh(new THREE.SphereGeometry(0.0075, 12, 8), new THREE.MeshStandardMaterial({ color: 0x4a0505, emissive: 0x7a0a06, emissiveIntensity: 1, roughness: 0.2 }));
+  bloodDrop.visible = false; bloodDrop.name = 'bloodDrop';
+  root.add(bloodDrop);
 
   // ------------------------------------------------------------ the gold thread down into the dell (the descent)
   const trailB = createGoldTrail([V3(-420, 760, -560), V3(-330, 420, -440), V3(-288, 150, -370), V3(-266, 34, -334), SCROLL.clone().add(V3(0, 0.25, 0))], { width: 16, intensity: 8, head: 2.2 });
@@ -426,11 +467,13 @@ void main(){
     o.lookAt = u < 134.4 ? crownAt.clone() : SCROLL.clone();
     o.lookW = u < 134.4 ? band(133.3, 133.6, 134.0, 134.4, u) : 1;
     o.kneel = smooth(136.0, 136.6, u);
-    // his right hand on the crystal while it cracks; then down for the scroll it leaves
+    // he bows over the crystal and holds his right hand out over it, palm down (torn on the way down into the dell): a
+    // drop of his blood falls from it onto the crystal, and it wakes and cracks from there; then down for the scroll
     const touch = band(136.35, 136.7, 137.15, 137.45, u);
     const take = band(137.75, 137.95, 138.2, 138.4, u);
     o.reach = Math.max(touch, take);
-    o.reachTarget = touch > take ? TOUCH.clone() : SCROLL.clone().add(V3(0, 0.03, 0));
+    o.reachTarget = touch > take ? TOUCH.clone().add(V3(0, PALM_OVER, 0)) : SCROLL.clone().add(V3(0, 0.03, 0));
+    o.lean = Math.max(touch, take);
     o.hold = smooth(138.15, 138.45, u);
     o.holdWidth = lerp(0.34, 0.72, smooth(138.45, 139.15, u));
     if (o.hold > 0.5) { o.gripL = 'rod'; o.gripR = 'rod'; o.lookAt = null; }
@@ -543,6 +586,15 @@ void main(){
           lk.lerp(hp.addScaledVector(w, 5).addScaledVector(sw, -0.5).add(V3(0, 1.0, 0)), ap);
         }
         if (sn > 0) lk.lerp(snareSpot, sn);
+        // the omen, once, from straight above: the frost, his prints out to it, the empty loop (his reaching hand at the
+        // edge of the frame); cut in and cut out
+        if (u > OMEN[0] && u < OMEN[1]) {
+          // (over the last of his prints and the loop, high enough for the trail of them to come in across the frame)
+          const push = smooth(OMEN[0], OMEN[1], u), mid = snareSpot.clone().lerp(TO_SNARE.getPointAt(0.78), 0.45);
+          cp = mid.clone().addScaledVector(SNARE.dir, -0.25).add(V3(0, 3.3 - 0.3 * push, 0));
+          lk = mid.clone().addScaledVector(SNARE.dir, 0.05);
+          shotOut.fov = 48; shotOut.fovW = 1; shotOut.shot = 'omen';
+        }
       } else if (kind === 'stride') {
         ({ cp, lk } = strideShot(u));
         // (a long lens on him; wider as it rises up the giant)
@@ -575,7 +627,14 @@ void main(){
       const s2 = KNEEL.clone().addScaledVector(hk, -0.45).addScaledVector(rk, 0.52).add(V3(0, 1.38, 0));
       const s3 = xuanAt.clone().addScaledVector(xuanN, 0.17);
       let cp, lk;
-      if (u < UP_CUT) {
+      if (u > TOUCH_IN[0] && u < TOUCH_IN[1]) {
+        // (the insert, a cut in and a cut out: level with his hand held out over the crystal, from his right: the palm,
+        // the drop gathering under it and falling, the seams opening from where it lands, his blood running into them)
+        const t = smooth(TOUCH_IN[0], TOUCH_IN[1], u);
+        cp = TOUCH.clone().addScaledVector(rk, 0.54 - 0.06 * t).addScaledVector(hk, -0.02).add(V3(0, 0.16 - 0.02 * t, 0));
+        lk = TOUCH.clone().addScaledVector(hk, 0.02).add(V3(0, 0.085 - 0.02 * t, 0));
+        shotOut.fov = 34; shotOut.fovW = 1; shotOut.shot = 'touch';
+      } else if (u < UP_CUT) {
         cp = s0.lerp(s1, k1).lerp(s2, k2);
         lk = SCROLL.clone().add(V3(0, 0.1, 0)).lerp(sp, smooth(138.0, 138.6, u)).lerp(xuanAt, k2 * 0.55);
         // (the lens draws back a little and lifts with his eyes as he looks up)
@@ -605,8 +664,10 @@ void main(){
         const dl = sp.clone().lerp(xuanAt, 0.55).sub(cp).normalize(), dX = xuanAt.clone().sub(cp).normalize();
         lk = cp.clone().addScaledVector(slerpDir(dl, dX, k3), 3);
       }
-      pos.lerp(cp, sw);
-      look.lerp(lk, sw);
+      // (the insert is a cut: all of it, whatever the scroll shot's weight)
+      const w = shotOut.shot === 'touch' ? 1 : sw;
+      pos.lerp(cp, w);
+      look.lerp(lk, w);
     }
     return shotOut;
   }
@@ -648,6 +709,8 @@ void main(){
       nt.uni.uFresh.value = 1 - 0.85 * smooth(b + 0.4, b + 4.2, u);
       nt.mesh.visible = u > a && u < 124.8;
     });
+    omen.g.visible = u > 124.55 && u < 126.3;
+    if (omen.g.visible) { const w = smooth(124.6, 125.15, u); for (const p of omen.prints) p.m.visible = w >= p.t - 0.002; }
     chips.uniforms.uU.value = u;
     chips.uniforms.uPx.value = px;
     chips.uniforms.uLight.value = lerp(0.85, 1.15, sample('snowCover'));
@@ -699,9 +762,18 @@ void main(){
     if (bQ > 0.01) qiFar.set({ time, amt: Math.max(qk, bQ), center: here, radius: 10, target: target.clone().add(V3(0, 18, 0)), org: 1, spiral: 1.4, burst: 0, px });
     else qiFar.set({ time, amt: qk, center: here, radius: inDell ? 10 : 15, target, org: FT.org(u), spiral: 1, burst: FT.shatter(u), px });
     qiNear.set({ time, amt: qk * 0.9 * (1 - smooth(138.6, 139.6, u)), center: (hero ? hero.group.position.clone() : here).add(V3(0, 1.4, 0)), radius: 3.2, target, org: FT.org(u) * 0.35, px });
-    // the crystal: waking, cracking with light under his hand, breaking into motes
+    // the crystal: waking, cracking with light from where his blood falls on it, breaking into motes
     const glow = FT.glow(u);
-    if (set.crystal) set.crystal.update(time, { glow: clamp(glow), crack: FT.crack(u), shatter: FT.shatter(u) });
+    // the drop of his blood: gathering under his palm, falling, gone into the crystal (drawn out a little as it falls)
+    bloodDrop.visible = !!hero && u > DROP[0] && u < DROP[2];
+    if (bloodDrop.visible) {
+      const f = smooth(DROP[1], DROP[2], u), g = smooth(DROP[0], DROP[1], u);
+      const from = hero.anchors.handR().add(V3(0, -0.014, 0));
+      bloodDrop.position.copy(from).lerp(TOUCH, f * f);
+      bloodDrop.scale.set(0.35 + 0.65 * g, (0.35 + 0.65 * g) * (1 + 0.7 * band(DROP[1], DROP[1] + 0.02, DROP[2] - 0.02, DROP[2], u)), 0.35 + 0.65 * g);
+    }
+    // (his blood in it from where the drop lands: it seeps into the seams as they open from there; blood recognition)
+    if (set.crystal) set.crystal.update(time, { glow: clamp(glow), crack: FT.crack(u), shatter: FT.shatter(u), blood: smooth(DROP[2] - 0.01, DROP[2] + 0.03, u) });
     // the scroll: sealed in the crystal, lifted, opened between his hands (the stave in his left, the roller in his right)
     const holdK = smooth(138.05, 138.45, u);
     if (holdK > 0.999 && hero && !hero.group.visible && heldOnce) {

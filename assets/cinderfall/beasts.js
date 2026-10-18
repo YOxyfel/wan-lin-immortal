@@ -27,7 +27,8 @@ totalEmissiveRadiance+=uRimCol*(rim*1.6+emb*.6)*uRimAmt;`);
   furMat.customProgramCacheKey = () => 'cf-fur';
   return furMat;
 }
-const eyeMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(4.0, 0.6, 0.15) });
+// (violet: the sect's colour, and only theirs)
+const eyeMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 0.9, 4.2) });
 const boneMat = new THREE.MeshStandardMaterial({ color: 0xd8cbb4, roughness: 0.5 });
 const darkMat = new THREE.MeshStandardMaterial({ color: 0x120f0e, roughness: 1 });
 

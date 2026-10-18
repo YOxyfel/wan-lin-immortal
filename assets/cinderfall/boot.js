@@ -1,6 +1,7 @@
 // Cinderfall prologue: scroll → scroll position su → story position u (held moments stretch it) → world, ink overlay,
 // captions, title and the last page.
-import { TOTAL, TOTAL_U, uToS, sToU, inkCut, inkfx, fx, INK_CUTS, timeRate, PACE } from './timeline.js';
+import { TOTAL, TOTAL_U, uToS, sToU, inkCut, inkfx, fx, INK_CUTS, timeRate, PROTECT, PAUSES } from './timeline.js';
+import { CAPS, paceAt, watchPace } from './watch.js';
 import { createInkOverlay, writeGlyph } from './ink.js';
 import { GLYPHS } from './glyphs.js';
 import { createAudio } from './audio.js';
@@ -18,49 +19,15 @@ const hasGL = (() => { try { return !!document.createElement('canvas').getContex
 
 function el(tag, cls, html) { const n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
 
-// ---------------------------------------------------------------- one line at a time
-const CAPTIONS = [
-  { a: 7.2, b: 11.4, pos: 'left', eyebrow: 'CINDERFALL HAMLET · THE LAST ORDINARY MORNING', text: 'Nothing ever<br>happened here.' },
-  { a: 15.4, b: 19.0, pos: 'right', eyebrow: 'HIS UNCLE, FROM THE PORCH', text: '“Mushrooms by the old pines.<br><em>Home before dark.</em>”', small: true },
-  { a: 21.4, b: 25.3, pos: 'left', eyebrow: 'JIANG WUHEN · FIFTEEN', text: 'Every face,<br>a name he knew.' },
-  { a: 25.75, b: 27.95, pos: 'right', eyebrow: 'THE SMITH’S STALL', text: 'Iron, to anyone else.<br><em>Only he saw them burn.</em>', small: true },
-  { a: 31.2, b: 35.4, pos: 'right', eyebrow: 'AT THE GATE', text: 'The garrison marched out at dawn.<br><em>No one asked why.</em>', small: true },
-  { a: 37.4, b: 41.4, pos: 'left', eyebrow: 'THE OLD ROAD', text: 'Same road. Same pines.<br>Same quiet.' },
-  { a: 43.2, b: 45.75, pos: 'right', eyebrow: 'THE EDGE OF THE PINES', text: 'Right where<br>they always were.', small: true },
-  { a: 46.1, b: 47.38, pos: 'right', text: 'Then the forest<br>held its breath.', big: true },
-  { a: 49.8, b: 52.4, pos: 'right', eyebrow: 'ABOVE THE CLOUDS', text: 'Something was at war.' },
-  { a: 52.95, b: 54.3, pos: 'right', text: 'The sky gathered<br>its thunder.' },
-  { a: 54.5, b: 55.35, pos: 'right', eyebrow: 'A STONE\'S THROW FROM CINDERFALL', text: 'Something fell.' },
-  { a: 55.45, b: 56.85, pos: 'right', eyebrow: 'WEST, OVER THE RIDGES', text: 'Out of the fire,<br>a light fled west.' },
-  { a: 56.95, b: 58.3, pos: 'right', text: 'Day turned to night<br>in a single breath.', small: true },
-  { a: 58.4, b: 61.3, pos: 'center', text: 'Then, below —' },
-  { a: 61.95, b: 64.25, pos: 'center', eyebrow: 'THE MOMENT EVERYTHING CHANGED', text: 'Cinderfall<br>was burning.', big: true, red: true },
-  { a: 64.45, b: 66.45, pos: 'left', text: 'Uncle.', big: true },
-  { a: 72.2, b: 75.6, pos: 'right', eyebrow: 'THE GATE STOOD UNGUARDED', text: 'Home. Get home.' },
-  { a: 78.8, b: 81.8, pos: 'left', text: 'The door was<br>already open.' },
-  { a: 85.0, b: 86.9, pos: 'words', eyebrow: 'HIS UNCLE’S LAST WORDS', text: '“Don’t avenge me.”' },
-  { a: 87.1, b: 89.0, pos: 'words', eyebrow: 'HIS UNCLE’S LAST WORDS', text: '“Forget this place.<br>Forget me.”' },
-  { a: 89.2, b: 91.6, pos: 'words', eyebrow: 'HIS UNCLE’S LAST WORDS', text: '“Live a good life.<br><em>A long one.</em>”' },
-  { a: 95.2, b: 98.2, pos: 'left', eyebrow: 'AN UNANSWERED QUESTION', text: 'Avenge…?<br>Those were monsters.' },
-  { a: 99.3, b: 102.6, pos: 'right', eyebrow: 'ON THE CRAG ABOVE CINDERFALL', text: 'Unless someone<br><em>sent them.</em>' },
-  { a: 103.8, b: 105.5, pos: 'right', eyebrow: 'THAT NIGHT', text: 'He followed the light west,<br>until the fires were only a glow behind him.', small: true },
-  { a: 108.95, b: 110.75, pos: 'center', eyebrow: 'BEYOND THE RIDGES, WHERE NO ONE WENT', text: 'The Forbidden Forest.', big: true },
-  { a: 112.6, b: 113.45, pos: 'left', eyebrow: 'THE FIRST WINTER', text: 'It nearly killed him.' },
-  { a: 113.5, b: 114.35, pos: 'right', text: 'As his uncle knew herbs,<br>he learned the forest.', small: true },
-  { a: 114.45, b: 115.85, pos: 'left', text: 'Snares. A bow.<br>Patience.' },
-  { a: 116.2, b: 117.45, pos: 'left', eyebrow: 'THE YEARS', text: 'Every winter, he measured<br>himself against the tree.' },
-  { a: 123.0, b: 124.55, pos: 'center', text: 'Six years.', big: true },
-  { a: 124.85, b: 126.65, pos: 'left', eyebrow: 'THE SIXTH AUTUMN', text: 'No game near the camp that day.<br><em>Not one track.</em>', small: true },
-  { a: 126.85, b: 128.75, pos: 'right', text: 'So he went farther<br>than he ever had.' },
-  { a: 129.3, b: 131.6, pos: 'left', eyebrow: 'THE OLD WOOD', text: 'The forest grew older.<br><em>The air began to glow.</em>', small: true },
-  { a: 133.6, b: 135.9, pos: 'right', eyebrow: 'UNDER THE OLDEST TREE', text: 'What fell from the sky that night<br><em>had waited for him.</em>', small: true },
-  { a: 139.58, b: 140.85, pos: 'left', text: 'Some paths<br>find you.', big: true },
-  { a: 142.6, b: 146.0, pos: 'end', eyebrow: 'THE FIRST PAGE OF SOMETHING MORE', text: 'His story has only begun.' },
-];
 const CHAPTERS = [[0, '01 / AN ORDINARY MORNING'], [46.5, '02 / THE SKY TURNS'], [61.6, '03 / CINDERFALL BURNS'], [84.4, '04 / A FINAL WARNING'], [108.3, '05 / THE YEARS BETWEEN'], [124, '06 / WHAT FELL THAT NIGHT']];
-const paceAt = u => { let p = PACE[0][1]; for (const [a, v] of PACE) if (u >= a) p = v; return p; };
+// the most the story may be carried forward by the scroll here, in scroll units a second, and how many screens behind
+// the reader it may fall before the ink catches it up (timeline.js PROTECT, and the held moments): null where it is free
+const PROTECT_ALL = [...PROTECT, ...PAUSES.map(([sp, L]) => [sp - 0.02, sp + L * 0.2 + 0.02, 3, 2])];
+const protectAt = s => { let p = null; for (const [a, b, k, n] of PROTECT_ALL) if (s >= a && s <= b && (!p || k < p.k)) p = { k, n }; return p && { cap: p.k * paceAt(s), screens: p.n }; };
 // where the screen is paper-light, so the HUD and captions switch to ink
 // (the night after the soul gives the world back its colour, until the light floods it white, is dark)
+// (the ink's black, and his blood)
+const INK = [0.035, 0.032, 0.03], BLOOD = [0.5, 0.045, 0.03];
 const lightAt = u => u < 5.4 || (u > 62.6 && u < 94.6) || (u > 107.62 && u < 124.4) || u > 141.0;
 
 // The brush's pace along one stroke of the sign: about 820 units of it a second along a straight, slowing into each
@@ -96,7 +63,8 @@ async function boot() {
   // ---------------------------------------------------------------- DOM scaffolding
   const capWrap = el('div', 'cf-captions');
   stage.appendChild(capWrap);
-  const caps = CAPTIONS.map(c => {
+  // (each line's span on the scroll axis, its fades and Watch's slowing while it is up: watch.js)
+  const caps = CAPS.map(c => {
     const n = el('div', `cf-cap ${c.pos}${c.big ? ' big' : ''}${c.small ? ' small' : ''}${c.red ? ' red' : ''}`,
       `${c.eyebrow ? `<span class="eyebrow">${c.eyebrow}</span>` : ''}<p>${c.text}</p>`);
     capWrap.appendChild(n);
@@ -239,6 +207,8 @@ async function boot() {
   const uFromScroll = () => clamp(-root.getBoundingClientRect().top / scrollable()) * TOTAL_U;
   const scrollToU = (su, behavior = 'auto') => scrollTo({ top: root.offsetTop + (su / TOTAL_U) * scrollable(), behavior });
   let su = uFromScroll(), suV = 0, target = su, last = performance.now();
+  // (the ink catch-up: 0 flooding in, 1 lifting; after one, a moment in which the passage is not held back)
+  let catchUp = null, capFreeUntil = 0;
   // the story's own clock (seconds): it runs slow in the slow-motion beats (timeline.js SLOWMO)
   let clock = 0;
   let autoplay = false, autoU = 0, forced = null, rendered = false;
@@ -272,6 +242,8 @@ async function boot() {
     async frame(v, t = 1, dtF) { forced = v; su = target = sToU(v); suV = 0; frame(performance.now(), t, dtF); },
     // (the tempo map, for tools: scroll position ↔ story position)
     tempo: { uToS, sToU },
+    // (for tools: set the ink catch-up's state, to see the flood)
+    setCatchUp(v) { catchUp = v; },
   };
 
   const op = (n, v) => { n.style.opacity = v.toFixed(3); n.style.visibility = v > 0.002 ? 'visible' : 'hidden'; };
@@ -306,7 +278,7 @@ async function boot() {
     const inView = rect.bottom > 0;
     if (forced == null) {
       if (autoplay && ready) {
-        autoU = Math.min(TOTAL_U, autoU + paceAt(uToS(autoU)) * dt);
+        autoU = Math.min(TOTAL_U, autoU + watchPace(autoU) * dt);
         scrollToU(autoU);
         target = autoU;
         if (autoU >= TOTAL_U) setAuto(false);
@@ -314,10 +286,25 @@ async function boot() {
       // the story follows the scroll on a critically damped spring: no jolt when the wheel turns or stops, the
       // camera's speed through the story always continuous (the exact step, so any frame time is stable)
       const w = Math.abs(target - su) > 8 ? 10 : 6.5;
+      const prev = su;
       const x0 = su - target, B = suV + w * x0, e = Math.exp(-w * dt);
       su = target + (x0 + B * dt) * e;
       suV = (suV - w * B * dt) * e;
       if (Math.abs(su - target) < 0.0005 && Math.abs(suV) < 0.002) { su = target; suV = 0; }
+      // protected passages: no faster forward than the cap here; too far behind, the ink catch-up
+      if (ready && !autoplay && !catchUp && su > prev && now > capFreeUntil) {
+        const p = protectAt(uToS(prev));
+        if (p) {
+          if (su - prev > p.cap * dt) { su = prev + p.cap * dt; suV = Math.min(suV, p.cap); }
+          const screen = TOTAL_U * innerHeight / scrollable();
+          if (target - su > p.screens * screen) catchUp = { phase: 0, t: 0 };
+        }
+      }
+      if (catchUp) {
+        catchUp.t += dt;
+        if (catchUp.phase === 0) { const p = protectAt(uToS(prev)); if (p) su = Math.min(su, prev + p.cap * dt); if (catchUp.t >= 0.24) { su = target; suV = 0; catchUp = { phase: 1, t: 0 }; } }
+        else if (catchUp.t >= 0.5) { catchUp = null; capFreeUntil = now + 1500; }
+      }
     }
     // the story position (held moments run slow); forced test frames are given in story time
     // (while the loading screen is up the page shows the opening; scrolling meanwhile takes the reader straight there)
@@ -359,13 +346,17 @@ async function boot() {
       if (opening && bloomR > 0) blots.push({ x: so.x, y: so.y, r: bloomR, a: 1 - openLift });
       // his hand falls: a tear, landing where their hands met
       const tu = (engine && engine.metrics.tearUV) || [0.5, 0.56];
-      if (u > 91.45 && u < 92.05) drop = [tu[0], lerp(tu[1], 1.12, (inkfx.drop(u) - 0.58) / 0.54), 0.018, 0];
+      // (from above the page: its track rises to the top first, unseen)
+      if (u > 91.6 && u < 92.05) drop = [tu[0], lerp(tu[1], 1.12, (inkfx.drop(u) - 0.58) / 0.54), 0.018, 0];
       else if (u >= 92.05 && u < 92.65) drop = [tu[0], tu[1], 0.026, inkfx.splash(u)];
-      // the first page: the last drop, and the sign written in gold inside its bloom
+      // the first page: the last drop, his blood, from the palm torn on the way down into the dell; it blooms where the
+      // first drop bloomed, darkening to ink as it spreads, and the sign is written in gold inside it
       const endK = u > 140.9, se = endK ? sealAt(endSvg) : null;
-      if (u > 140.95 && u < 141.55) drop = [se.x, lerp(se.y, 1.12, (inkfx.endDrop(u) - 0.58) / 0.54), 0.022, 0];
+      let dropCol = null;
+      if (u > 141.1 && u < 141.55) drop = [se.x, lerp(se.y, 1.12, (inkfx.endDrop(u) - 0.58) / 0.54), 0.022, 0];
       else if (u >= 141.55 && u < 142.15) drop = [se.x, se.y, 0.03, inkfx.endSplash(u)];
-      if (endK) blots.push({ x: se.x, y: se.y, r: (smooth(141.5, 142.6, u) * 0.905 + smooth(142, 145, u) * 0.095) * se.r, a: 1 });
+      if (u > 141.1 && u < 142.15) dropCol = BLOOD;
+      if (endK) { const dk = smooth(141.75, 142.9, u); blots.push({ x: se.x, y: se.y, r: (smooth(141.5, 142.6, u) * 0.905 + smooth(142, 145, u) * 0.095) * se.r, a: 1, col: BLOOD.map((c, i) => lerp(c, INK[i], dk)) }); }
       inkCanvas.style.opacity = (u > 61 && u < 67 ? inkfx.splatFade(u) : 1).toFixed(3);
       // the crossing: the light goes down beyond the ridge and floods the world white; out of where it went down the
       // gold thread is written across the page, and the Forbidden Forest is painted in ink in its wake; then the eye
@@ -379,7 +370,11 @@ async function boot() {
           pts: [S, [S[0] + 0.15, Math.min(0.95, S[1] + 0.36)], [D[0] + 0.24, D[1] + 0.36], D] };
         land = { reveal: smooth(108.1, 109.6, u), alpha: smooth(107.98, 108.2, u), clear: smooth(109.75, 110.55, u), zoom: 1 + 1.6 * Math.pow(smooth(109.5, 110.6, u), 1.4), center: D, sun: S };
       }
-      ink.render(time, { blots, flood: cut.flood, floodC: [0.5, u < 9 ? so.y : cut.y], floodLift: cut.lift, drop, splat: u > 61.5 && u < 67 ? inkfx.splat(u) : 0, splatSeed: 3, stroke, land });
+      // (the catch-up's flood, from the middle of the page)
+      const cf = catchUp ? (catchUp.phase === 0 ? smooth(0, 0.24, catchUp.t) : 1) : 0;
+      const flood = cf > cut.flood ? cf : cut.flood, floodC = cf > cut.flood ? [0.5, 0.5] : [0.5, u < 9 ? so.y : cut.y];
+      const floodLift = cf > cut.flood ? (catchUp.phase === 1 ? smooth(0, 0.5, catchUp.t) : 0) : cut.lift;
+      ink.render(time, { blots, flood, floodC, floodLift, drop, dropCol, splat: u > 61.5 && u < 67 ? inkfx.splat(u) : 0, splatSeed: 3, stroke, land });
     }
     // ---------------------------------------------------------------- title and the last page
     const titleShow = u < 5.2 ? 1 - smooth(3.6, 4.9, u) : 0;
@@ -420,12 +415,13 @@ async function boot() {
     // ---------------------------------------------------------------- captions: the strongest one only
     const light = lightAt(u);
     let best = null, bestV = 0;
-    for (const c of caps) { const v = band(c.a, c.a + 0.55, c.b - 0.6, c.b, u); if (v > bestV) { bestV = v; best = c; } }
+    const sNow = forced != null ? sToU(forced) : su;
+    for (const c of caps) { const v = band(c.as, c.as + c.f, c.bs - c.f, c.bs, sNow); if (v > bestV) { bestV = v; best = c; } }
     for (const c of caps) {
       const v = c === best ? bestV : 0;
       op(c.n, v);
       if (v > 0) {
-        c.n.style.setProperty('--reveal', String(smooth(c.a, c.a + 1.1, u)));
+        c.n.style.setProperty('--reveal', String(smooth(c.as, c.as + c.rv, sNow)));
         c.n.classList.toggle('ink', light);
       }
     }

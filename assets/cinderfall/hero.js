@@ -24,8 +24,8 @@ export function createHero({ age = 0 } = {}) {
   });
   const { group, rig, K, U, Pc, Pt, Pi, st, contactMin, setAge } = C;
   // ---------------------------------------------------------------- update
-  const defaults = { speed: 0, run: 0, wave: 0, crouch: 0, kneel: 0, reach: 0, grief: 0, draw: 0, release: 0, fall: 0, lie: 0, getUp: 0, sit: 0, pushup: 0, hold: 0, holdWidth: 0, lookAt: null, lookW: 1, wind: null, gripL: null, gripR: null, raise: 0, raiseTarget: null, lookUp: 0, carve: 0, carveTarget: null, carveMode: null, braceTarget: null, palm: 0, palmTarget: null, measure: 0, measureTarget: null, measureSlide: 0, reachL: 0, reachLTarget: null, lift: 0 };
-  const _look = V(), _hp = V(), _lq = new THREE.Quaternion(), _cvK = V(), _cvB = V(), _cvP = V(), _cvM = V();
+  const defaults = { speed: 0, run: 0, wave: 0, crouch: 0, kneel: 0, reach: 0, grief: 0, draw: 0, release: 0, fall: 0, lie: 0, getUp: 0, sit: 0, pushup: 0, hold: 0, holdWidth: 0, lookAt: null, lookW: 1, wind: null, gripL: null, gripR: null, raise: 0, raiseTarget: null, lookUp: 0, carve: 0, carveTarget: null, carveMode: null, braceTarget: null, palm: 0, palmTarget: null, measure: 0, measureTarget: null, measureSlide: 0, reachL: 0, reachLTarget: null, lift: 0, lean: 0 };
+  const _look = V(), _hp = V(), _lq = new THREE.Quaternion(), _lnQ = new THREE.Quaternion(), _cvK = V(), _cvB = V(), _cvP = V(), _cvM = V();
   function computePose(dt, time, s) {
     const d = K.dims();
     const speed = Math.max(0, s.speed || 0), run = clamp(s.run || 0);
@@ -55,6 +55,10 @@ export function createHero({ age = 0 } = {}) {
       }
       rig.blend(Pc, Pt, ease(gw));
     }
+    // bowed forward from the hips over something low before him (kneeling, to hold a hand out over it): the arms reach
+    // from where the bow has brought the shoulders
+    const ln = clamp(s.lean || 0);
+    if (ln > 0) { const e = ease(ln); Pc.q[K.I.spine].multiply(eulerQ(_lnQ, 30 * e, 0, 0)); Pc.q[K.I.chest].multiply(eulerQ(_lnQ, 14 * e, 0, 0)); Pc.q[K.I.neck].multiply(eulerQ(_lnQ, -10 * e, 0, 0)); }
     // overlays
     const wv = clamp(s.wave || 0);
     if (wv > 0) { rig.copyPose(Pt, Pc); waveArm(K, Pt, c, wv); rig.blendBones(Pc, Pt, ease(wv), K.armBones.R); }

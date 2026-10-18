@@ -16,7 +16,8 @@
 // The themes: his uncle's (D major pentatonic, the guzheng's own tuning) — stated whole at the door, it ends open, on
 // the fifth, and is only brought home at the very end; the boy's own tune on the dizi; the dread, the one note outside
 // the scale (G sharp, a tritone from home); sorrow as the same notes centred on B.
-import { uToS, TOTAL_U, PACE } from './timeline.js';
+import { uToS, TOTAL_U } from './timeline.js';
+import { watchPace } from './watch.js';
 import { band, smooth, clamp } from './util.js';
 
 const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
@@ -60,16 +61,15 @@ const XUAN = [A5, D5, B4, E5];
 const LIVE = [[D4, 2, 'v'], [Fs4, 1], [A4, 1], [B4, 2, 'p'], [A4, 3, 'v']];
 const BASS_LIVE = [[D2, 0], [B2, 4], [D2, 6], [A2, 6.02]];
 
-// ---------------------------------------------------------------- the Watch path (boot.js plays the story at PACE)
+// ---------------------------------------------------------------- the Watch path (boot.js plays the story at watch.js's pace)
 // (the music box is composed in seconds of Watch and placed on the story through it)
-const paceAt = s => { let p = PACE[0][1]; for (const [a, v] of PACE) if (s >= a) p = v; return p; };
 // (made the first time it is asked for: only with the sound on)
 let WATCH = null;
 function watch() {
   if (WATCH) return WATCH;
   const us = [0], ts = [0], d = 0.01;
   let su = 0, t = 0;
-  while (su < TOTAL_U) { const s = uToS(su); t += d / paceAt(s); su += d; us.push(uToS(su)); ts.push(t); }
+  while (su < TOTAL_U) { t += d / watchPace(su); su += d; us.push(uToS(su)); ts.push(t); }
   return (WATCH = { us, ts });
 }
 function lookup(xs, ys, x) {
@@ -619,6 +619,8 @@ export function createScore(ctx, out) {
   // ---- VI. what fell that night: no game; the way out as a stride-cut (a drum on each heel strike, a new chord on each
   // cut of the world, the cuts coming quicker); the missed beat: nothing, a mote of gold, the lens leaves him
   at(124.85, t => { pluck(t, Fs4, { gain: 0.07, vib: 0.18 }); pluck(t + 1.2, E4, { gain: 0.05 }); });
+  // (the frost from above, not one track: one cold harmonic, and nothing)
+  at(125.33, t => harm(t, B3, 0.045), 3);
   {
     const U0 = 125.9, DU = 0.318, CUTS = [0, 3, 6, 8, 10, 11];
     const CH = [[D3, A3], [E3, B3], [Fs3, B3], [A3, E4], [B3, Fs4], [D4, A4]];
@@ -641,7 +643,8 @@ export function createScore(ctx, out) {
   at(132.2, t => gliss(t, A3, A5, 1.2, 0.045), 3);
   at(132.35, t => gliss(t, A5, D4, 0.9, 0.035), 3);
   at(133.6, t => { choir(t, [D4, Fs4, A4, D5], 5, { gain: 0.045, vowel: 'a', attack: 3 }); xuan(t + 1.2, 0.55, 0.04); }, 6);
-  at(136.4, t => { XUAN.forEach((m, i) => bell(t + i * 0.5, m + 12, 0.018, 3.2)); }, 4);
+  // (his blood lands on the crystal: one low pluck as it touches, and the crystal rings the sign's four notes)
+  at(136.95, t => { pluck(t, D3, { gain: 0.07 }); harm(t + 0.02, A5, 0.03); XUAN.forEach((m, i) => bell(t + 0.35 + i * 0.5, m + 12, 0.018, 3.2)); }, 4);
   at(137.4, t => { choir(t, [D4, A4, D5, E5], 4, { gain: 0.035, vowel: 'a', attack: 1.6 }); flute(t + 0.4, [[A4, 1.5, 'g'], [B4, 0.75], [D5, 0.75], [B4, 1.5, 'v'], [A4, 3, 'v']], 0.9, { gain: 0.06, xiao: true }); }, 6);
   at(139.16, t => cut(t, 0.5), 2);
   at(138.5, t => gliss(t, E3, E5, 1.6, 0.045), 3);

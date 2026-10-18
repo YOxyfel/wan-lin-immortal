@@ -4,6 +4,7 @@
 //   scene.add(c.group);  // every frame: c.update(time, { glow, crack, shatter })  (a pure function of its inputs)
 //   relic scroll at rest:  scroll.group.position.copy(c.scrollPose.position); scroll.group.quaternion.copy(c.scrollPose.quaternion);
 // glow 0..1: the gold inside wakes. crack 0..1: lines of gold light spread from where he touches it (c.touchPoint).
+// blood 0..1: his blood where it fell on it (at c.touchPoint), seeping into the seams near it as they open.
 // shatter 0..1: the crystal breaks into fragments that drift outward and up, dissolve into gold light and motes, and
 // leave the scroll free where it lay.
 import * as THREE from 'three';
@@ -134,7 +135,7 @@ vDis = smoothstep(.5, 1., flK);
 vec3 transformed = aC + flRot(aS.xyz, aS.w*flK*flK*2.2)*(position - aC)*(1. - smoothstep(.62, 1., flK))
   + aD*(.1*flK + .6*flK*flK) + vec3(0., .42*flK*flK, 0.);`;
 const FRAG_COMMON = `
-uniform float uGlow, uCrack, uShatter, uTime, uDust; uniform vec3 uTouch; uniform sampler2D uNoise;
+uniform float uGlow, uCrack, uShatter, uTime, uDust, uBlood; uniform vec3 uTouch; uniform sampler2D uNoise;
 varying vec3 vOP; varying float vDis; varying float vCore; varying float vInner;
 float flHeart(vec3 p){ return (1. - smoothstep(.02, .17, length(p.yz - vec2(${CORE_Y.toFixed(3)}, 0.))))*(1. - smoothstep(.26, .42, abs(p.x))); }
 vec3 flTint(vec3 p){
@@ -187,7 +188,10 @@ vec3 flWN = normalize(cross(dFdx(vOP), dFdy(vOP)));
 // time's dust and moss on the upper facets, until the light wakes inside
 float flDust = smoothstep(.3, .8, flWN.y)*smoothstep(.3, .65, flVar + .12)*uDust*(1. - uGlow*.75)*(1. - vInner);
 // a jade body (pale green, amber about the heart) that holds its colour in strong light instead of going white
-diffuseColor.rgb = mix(flTint(vOP)*mix(.34, .2, uGlow)*(.85 + flVar*.3), vec3(.3, .35, .17)*(.8 + flVar*.5), flDust);`)
+diffuseColor.rgb = mix(flTint(vOP)*mix(.34, .2, uGlow)*(.85 + flVar*.3), vec3(.3, .35, .17)*(.8 + flVar*.5), flDust);
+// his blood where the drop of it landed (from his palm, torn on the way down into the dell): a splash, ragged-edged
+float flPrint = (1. - smoothstep(.03, .056, length((vOP - uTouch)*vec3(.75, 1., 1.25)) + (texture2D(uNoise, vOP.xz*7.3 + vOP.y*3.).r - .5)*.034))*uBlood*(1. - vInner)*(1. - vDis);
+diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.3, .018, .012), flPrint*.9);`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 // the heart: the scroll's gold through the crystal, the glow shifting a little with the view (a hint of refraction)
 vec3 flPar = vOP - flWN*.02;
@@ -201,7 +205,10 @@ float flC = flCells(vOP*15.);
 float flDist = length(vOP - uTouch) + (texture2D(uNoise, vOP.xy*3.1).g - .5)*.12;
 float flFront = uCrack*.62;
 float flLine = (1. - smoothstep(.0, .035 + .025*uCrack, flC))*(1. - smoothstep(flFront - .02, flFront, flDist))*step(.001, uCrack)*(1. - vDis)*(1. - smoothstep(0., .3, uShatter));
-totalEmissiveRadiance += vec3(1., .7, .26)*flLine*(1.3 + 2.2*smoothstep(flFront - .1, flFront, flDist));
+// (his blood seeps into the seams from where it fell, like ink in water, behind the gold running ahead of it)
+float flRed = uBlood*(1. - smoothstep(flFront*.5 - .05, flFront*.5 + .03, flDist + (texture2D(uNoise, vOP.yz*5.1 + .6).b - .5)*.06));
+totalEmissiveRadiance += mix(vec3(1., .7, .26), vec3(.55, .035, .02), flRed)*flLine*(1.3 + 2.2*smoothstep(flFront - .1, flFront, flDist))*mix(1., .7, flRed);
+totalEmissiveRadiance += vec3(.32, .02, .012)*flPrint*.5;
 // dissolving fragments burn gold
 totalEmissiveRadiance += vec3(1., .66, .24)*vDis*.9;`)
       .replace('#include <opaque_fragment>', `#include <opaque_fragment>
@@ -210,6 +217,7 @@ totalEmissiveRadiance += vec3(1., .66, .24)*vDis*.9;`)
   float a = mix(.3, .82, fres)*mix(1., .8, uGlow);
   a = max(a, flDust*.92);
   a = max(a, flLine*.8);
+  a = max(a, flPrint*.92);
   // fracture planes inside: faint while it cracks, whole once it breaks into pieces
   float flShow = mix(1., max(smoothstep(.3, 1., uCrack)*.25, step(.001, uShatter)), vInner);
   // premultiplied: the reflections and the glow add, the surface itself covers by a
@@ -279,7 +287,7 @@ export function createScrollCrystal(opts = {}) {
   group.quaternion.setFromUnitVectors(V3(1, 0, 0), ax);
   group.updateMatrixWorld(true);
   const uni = {
-    uShatter: { value: 0 }, uGlow: { value: 0 }, uCrack: { value: 0 }, uDust: { value: 0.36 }, uTouch: { value: V3(0.06, 0.2, 0.11) },
+    uShatter: { value: 0 }, uGlow: { value: 0 }, uCrack: { value: 0 }, uBlood: { value: 0 }, uDust: { value: 0.36 }, uTouch: { value: V3(0.06, 0.2, 0.11) },
     uTime: U.uTime, uNoise: U.uNoise, uPx: { value: 900 },
   };
   const geo = buildCrystal(r);
@@ -340,6 +348,7 @@ export function createScrollCrystal(opts = {}) {
       uni.uGlow.value = clamp(s.glow ?? 0);
       uni.uCrack.value = clamp(s.crack ?? 0);
       uni.uShatter.value = clamp(s.shatter ?? 0);
+      uni.uBlood.value = clamp(s.blood ?? 0);
       const live = uni.uShatter.value < 0.999;
       back.visible = tint.visible = front.visible = live;
       mo.visible = uni.uGlow.value > 0.01 || (uni.uShatter.value > 0.001 && live);

@@ -164,6 +164,7 @@ uniform sampler2D uNoise;
 uniform vec4 uBlot[8]; uniform vec3 uBlotCol[8];
 uniform float uFlood; uniform vec2 uFloodC; uniform vec3 uFloodCol; uniform float uFloodLift;
 uniform vec4 uDrop;      // x, y (uv), size, splash progress
+uniform vec3 uDropCol;   // what it is (ink, or blood)
 uniform float uSplat; uniform float uSplatSeed;
 uniform vec4 uStroke;    // x: written to (0..1), y: width, z: alpha, w: tail (0..1, where the stroke has dried away)
 uniform vec2 uStrokeA, uStrokeB, uStrokeC, uStrokeD;   // a cubic across the page (uv)
@@ -232,7 +233,7 @@ void main(){
       float tear=length(vec2(q.x*(1.+max(q.y,0.)*1.6),q.y*(q.y>0.?.55:1.)));
       float d=smoothstep(1.,.92,tear);
       float spec=smoothstep(.35,.0,length(q-vec2(-.32,-.05)))*.9+smoothstep(.2,.0,length(q-vec2(.25,-.55)))*.3;
-      vec3 dc=mix(ink,vec3(.9,.92,1.),spec);
+      vec3 dc=mix(uDropCol,vec3(.9,.92,1.),spec);
       col=col*(1.-d)+dc*d; a=a+d*(1.-a);
     } else {
       float t=uDrop.w;
@@ -242,7 +243,7 @@ void main(){
         vec2 sp=vec2(cos(an),sin(an)*.55)*dist+vec2(0.,(1.-t)*t*2.5*h1(fk+5.));
         float rad=(.12+h1(fk+9.)*.18)*(1.-t*.6);
         float d=smoothstep(rad,rad*.6,length(q-sp))*(1.-smoothstep(.75,1.,t));
-        col=col*(1.-d)+ink*d; a=a+d*(1.-a);
+        col=col*(1.-d)+uDropCol*d; a=a+d*(1.-a);
       }
     }
   }
@@ -374,7 +375,7 @@ export function createInkOverlay(canvas, noiseURL) {
   gl.enableVertexAttribArray(0);
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
   const L = name => gl.getUniformLocation(prog, name);
-  const u = { res: L('uRes'), time: L('uTime'), noise: L('uNoise'), blot: L('uBlot'), blotCol: L('uBlotCol'), flood: L('uFlood'), floodC: L('uFloodC'), floodCol: L('uFloodCol'), floodLift: L('uFloodLift'), drop: L('uDrop'), splat: L('uSplat'), splatSeed: L('uSplatSeed'), stroke: L('uStroke'), sA: L('uStrokeA'), sB: L('uStrokeB'), sC: L('uStrokeC'), sD: L('uStrokeD'), land: L('uLand'), landC: L('uLandC'), sun: L('uSun'), paint: L('uPaint') };
+  const u = { res: L('uRes'), time: L('uTime'), noise: L('uNoise'), blot: L('uBlot'), blotCol: L('uBlotCol'), flood: L('uFlood'), floodC: L('uFloodC'), floodCol: L('uFloodCol'), floodLift: L('uFloodLift'), drop: L('uDrop'), dropCol: L('uDropCol'), splat: L('uSplat'), splatSeed: L('uSplatSeed'), stroke: L('uStroke'), sA: L('uStrokeA'), sB: L('uStrokeB'), sC: L('uStrokeC'), sD: L('uStrokeD'), land: L('uLand'), landC: L('uLandC'), sun: L('uSun'), paint: L('uPaint') };
   const tex = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([128, 128, 128, 255]));
@@ -435,7 +436,7 @@ export function createInkOverlay(canvas, noiseURL) {
     gl.useProgram(prog);
   }
   return {
-    // state: {blots:[{x,y,r,a,col:[r,g,b]}], flood, floodC:[x,y], floodCol, floodLift, drop:[x,y,size,splash], splat, splatSeed}
+    // state: {blots:[{x,y,r,a,col:[r,g,b]}], flood, floodC:[x,y], floodCol, floodLift, drop:[x,y,size,splash], dropCol, splat, splatSeed}
     render(time, s) {
       const dpr = Math.min(devicePixelRatio || 1, 1.5);
       const W = Math.round(innerWidth * dpr), H = Math.round(innerHeight * dpr);
@@ -468,6 +469,7 @@ export function createInkOverlay(canvas, noiseURL) {
       gl.uniform3fv(u.floodCol, s.floodCol || [0.035, 0.032, 0.03]);
       gl.uniform1f(u.floodLift, s.floodLift || 0);
       gl.uniform4fv(u.drop, s.drop);
+      gl.uniform3fv(u.dropCol, s.dropCol || [0.035, 0.032, 0.03]);
       gl.uniform1f(u.splat, s.splat);
       gl.uniform1f(u.splatSeed, s.splatSeed || 0);
       if (st) {

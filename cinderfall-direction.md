@@ -181,17 +181,21 @@ cut from the mask; the gauntlet run; crystal shards hanging in slow motion; the 
 "no hard cuts" rule; the scale ladder as a formula.
 
 ## Order of work
-1. Foundations: the story clock (done); protected passages (speed cap and ink catch-up); impacts and flashes fired on
-   crossing and the flash cap; the phone buttons (done).
-2. The launch and the dive (the launch done; the dive's chase still to come).
-3. The six winters (done, see the review's round 7; the notches on the uncle's door frame still to plant).
-4. The walk out (the stride-cut done; the omen's top-down insert of the frost still to come).
-5. The heart: the uncle at the door, the hands, the last words, the morning rewound.
-6. The war made legible: the shadow-play, the masked fighter, the fall, the scroll in the light; violet for the sect.
-7. The lens pass over act 01, the street, the smith, the gate, the quiet stretch, the ink climbing.
-8. The ending: the blood, 玄, the pillar as the bolt inverted, the three drops.
-9. Captions and pacing: act 01 from about 63 s to 50 s, act 05 from 35 s to 55 s, the dell doubled, holds on their lines.
-10. The score; the launch cue prototyped as soon as the launch is locked.
+1. Foundations: the story clock; protected passages (speed cap and ink catch-up); impacts and flashes fired on
+   crossing and the flash cap; the phone buttons. *Done.*
+2. The launch and the dive (with the dive's chase). *Done.*
+3. The six winters, and the height notches on the uncle's door frame. *Done.*
+4. The walk out: the stride-cut, the omen's top-down insert of the frost. *Done.*
+5. The heart: the uncle at the door, the hands, the last words, the morning rewound (the gate; the door, its prints).
+   *Done, but for the untended bell.*
+6. The war made legible: the shadow-play, the masked fighter, the fall, violet for the sect. *Done, but for the close
+   pass and the scroll in the light.*
+7. The lens pass over act 01, the street, the smith, the gate, the quiet stretch, the ink climbing. *Done, but for the
+   bridge.*
+8. The ending: the blood, 玄, the three drops, "His began here." *Done; the pillar not yet framed as the bolt.*
+9. Captions and pacing: every line readable under the scroll (about half a screen at full strength) and in Watch.
+   *Done.*
+10. The score. *Done.*
 
 Each step goes live once it is verified (headless renders of every changed beat, no shader compiled mid-story, frame
 times on a real machine).

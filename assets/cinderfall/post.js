@@ -483,7 +483,8 @@ void main(){
     vec2 q = (vUv - uInkSpread.xy) * vec2(aspect, 1.);
     float spread = smoothstep(uInkSpread.z, uInkSpread.z - uInkSpread.w, length(q) + (fbm(vUv * 1.7 + 3.1) - .5) * .45);
     vec2 q2 = (vUv - uSeep.xy) * vec2(aspect, 1.);
-    float seep = smoothstep(uSeep.z, uSeep.z - uSeep.w, length(q2) + (fbm(vUv * 2.3 + .7) - .5) * .5);
+    // (its edge ragged with the paper's grain, the more so the wider it is: a small one stays round)
+    float seep = smoothstep(uSeep.z, uSeep.z - uSeep.w, length(q2) + (fbm(vUv * 2.3 + .7) - .5) * .5 * clamp(uSeep.z / .6, .12, 1.));
     // the opening watercolour bleed: colour flows out from a point
     vec2 qb = (vUv - uBleedC) * vec2(aspect, 1.);
     float bd = length(qb) + (fbm(vUv * 1.3 + uTime * .002) - .5) * .42 + (fbm(vUv * 6.) - .5) * .08;
