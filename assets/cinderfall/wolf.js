@@ -22,15 +22,19 @@ const TAU = Math.PI * 2;
 // ------------------------------------------------------------------ materials
 let mats = null, dogMats = null;
 // (the wolves' fur and the dog's are one shader program: the same code and key, each material its own uniforms)
-function furMaterial(color, rimU) {
+// (figA: the wolves are marked among the figures in the scene alpha (1.1), so the ink outlines and models them and
+// keeps them ink in the colour a strike brings back, as it does the people: marked as solid, a wolf in the street in
+// the colour round a strike was a maroon mass of red-orange blobs with two violet dots, and in the ink a black lump)
+function furMaterial(color, rimU, figA = 0) {
   const fur = new THREE.MeshStandardMaterial({ color, roughness: 0.96, metalness: 0, vertexColors: true });
+  const figU = { uFigA: { value: figA } };
   fur.onBeforeCompile = sh => {
-    Object.assign(sh.uniforms, rimU, { uNoise: U.uNoise, uTime: U.uTime });
+    Object.assign(sh.uniforms, rimU, figU, { uNoise: U.uNoise, uTime: U.uTime });
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vWp; varying vec3 vWn;')
       .replace('#include <project_vertex>', '#include <project_vertex>\nvWp=(modelMatrix*vec4(transformed,1.)).xyz; vWn=normalize(mat3(modelMatrix)*objectNormal);');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vWp; varying vec3 vWn; uniform vec3 uRimCol; uniform float uRimAmt,uTime; uniform sampler2D uNoise;')
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWp; varying vec3 vWn; uniform vec3 uRimCol; uniform float uRimAmt,uTime,uFigA; uniform sampler2D uNoise;')
       // fur: streaks of ash-grey in the dark coat, darker toward the belly
       .replace('#include <color_fragment>', `#include <color_fragment>
 { float st = texture2D(uNoise, vWp.xz * vec2(3.1, .9) + vWp.y * 2.3).r * .6 + texture2D(uNoise, vWp.xy * vec2(.8, 4.2)).g * .4;
@@ -40,7 +44,8 @@ vec3 Vv=normalize(cameraPosition-vWp);
 float rim=pow(clamp(1.-dot(Vv,normalize(vWn)),0.,1.),4.);
 float fn=texture2D(uNoise,vWp.xz*.9+vWp.y*.7).a;
 float emb=smoothstep(.74,.8,fn)*(.5+.5*sin(uTime*4.+fn*30.));
-totalEmissiveRadiance+=uRimCol*(rim*.45+emb*.4)*uRimAmt;`);
+totalEmissiveRadiance+=uRimCol*(rim*.45+emb*.4)*uRimAmt;`)
+      .replace('#include <dithering_fragment>', '#include <dithering_fragment>\nif (uFigA > 0.) gl_FragColor.a = uFigA;');
   };
   fur.customProgramCacheKey = () => 'cf-wolf-fur';
   return fur;
@@ -48,7 +53,7 @@ totalEmissiveRadiance+=uRimCol*(rim*.45+emb*.4)*uRimAmt;`);
 function materials() {
   if (mats) return mats;
   const rimU = { uRimCol: { value: new THREE.Color(1.0, 0.36, 0.12) }, uRimAmt: { value: 1 } };
-  const fur = furMaterial(0x46413d, rimU);
+  const fur = furMaterial(0x46413d, rimU, 1.1);
   mats = {
     fur,
     // (violet: the sect's colour, and only theirs; it stays violet in the ink)

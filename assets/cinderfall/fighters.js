@@ -14,8 +14,9 @@ const SPAN = 0.62;           // seconds of flight a trail shows
 const BURSTS = 3;            // the last few meetings
 const SPARKS = 56;           // sparks thrown out of each
 // by the kind of blow (see duel.js): a blow, a flurry's, the smash down, the crater, a pulse out of the lock, its burst
-// (and the war's own, war.js: the crescent thrown, the crescent split on the glaive, lightning breaking on the bell)
-const KSIZE = [0.42, 0.3, 0.5, 0.5, 0.2, 0.62, 0.34, 0.56, 0.26], KSPARK = [1, 0.6, 1.2, 1.3, 0.35, 1.5, 0.5, 1.35, 0.55], KAMT = [1, 0.85, 1.15, 1.2, 0.6, 1.4, 0.9, 1.3, 0.75];
+// (and the war's own, war.js: the crescent thrown, the crescent split on the glaive, lightning breaking on the bell, and
+// the lock's grinding, close to the lens: a small ring, sparks off blade and shaft at a smith's speed, not a cannon's)
+const KSIZE = [0.42, 0.3, 0.5, 0.5, 0.2, 0.62, 0.34, 0.56, 0.26, 0.07], KSPARK = [1, 0.6, 1.2, 1.3, 0.35, 1.5, 0.5, 1.35, 0.55, 0.03], KAMT = [1, 0.85, 1.15, 1.2, 0.6, 1.4, 0.9, 1.3, 0.75, 0.55];
 
 const TRAIL_VS = `attribute float aK, aSide; varying float vK, vSide;
 void main(){ vK = aK; vSide = aSide; gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.); }`;
@@ -52,7 +53,8 @@ void main(){
   vec3 c = mix(uCol, vec3(1., .98, .95), smoothstep(.28, .02, r));
   // (far off, a cultivator is a light: the people in it are seen only close to, war.js)
   float T = texture2D(tSky, gl_FragCoord.xy / uRes).g;
-  float edge = smoothstep(1., .72, max(abs(q.x), abs(q.y)));
+  // (round to the sprite's edge: cut square, the glow of a far light was a pale square patch about it)
+  float edge = smoothstep(1., .72, length(q));
   gl_FragColor = vec4(c * g * fl * uAmt * (.4 + .6 * T) * edge, 1.);
 }`;
 const BURST_FS = `uniform float uAmt, uAge, uSeed, uKind; uniform vec2 uAxis; uniform sampler2D tSky; uniform vec2 uRes; varying vec2 vUv;
@@ -69,10 +71,13 @@ void main(){
   float glow = exp(-r * r * 30.) * exp(-a * 6.) * .8;
   // the shock ring: thin, racing out and slowing, thinning away
   float R = mix(.04, .82, 1. - pow(clamp(1. - a, 0., 1.), 3.));
-  float ring = exp(-pow((r - R) / mix(.007, .04, a), 2.)) * pow(clamp(1. - a, 0., 1.), 1.6) * 1.9;
+  // (squared, not pow: pow of a negative number is not a number on some machines, inside the ring)
+  float rk = (r - R) / mix(.007, .04, a);
+  float ring = exp(-rk * rk) * pow(clamp(1. - a, 0., 1.), 1.6) * 1.9;
   // impact lines: thin spikes flicked out at odd angles, each its own length, there and gone
   float lines = 0.;
-  float ang = atan(q.y, q.x);
+  // (never atan of nothing: undefined at its very middle)
+  float ang = atan(q.y, abs(q.x) > 1e-6 ? q.x : 1e-6);
   for (int i = 0; i < 18; i++) {
     float fi = float(i);
     float an = hs(fi) * 6.2832;
@@ -92,7 +97,7 @@ void main(){
 }`;
 // sparks: thrown out of each meeting along their own directions, slowing in the air, falling; drawn as short streaks
 const SPARK_VS = `attribute vec4 aDir; attribute vec4 aRnd; uniform vec4 uBlow[${BURSTS}]; uniform float uTime, uScale[${BURSTS}];
-varying float vA; varying vec3 vC;
+varying float vA, vS, vH; varying vec3 vC;
 vec3 at(vec3 p0, vec3 v, float t){ float k = 2.6; return p0 + v * (1. - exp(-k * t)) / k + vec3(0., -9.8 * 9., 0.) * t * t * .5; }
 void main(){
   int b = int(aRnd.w);
@@ -104,17 +109,29 @@ void main(){
   vec3 v = aDir.xyz * aDir.w * uScale[b];
   vec3 p1 = at(B.xyz, v, age), p0 = at(B.xyz, v, max(age - .035, 0.));
   vec4 c1 = viewMatrix * vec4(p1, 1.), c0 = viewMatrix * vec4(p0, 1.);
+  // (a spark at or behind the lens is not drawn: a streak with an end behind it was thrown across the whole frame, a
+  // great pale pane, close to a meeting)
+  if (c1.z > -.6 || c0.z > -.6) { gl_Position = vec4(2., 2., 2., 1.); return; }
   vec2 d = c1.xy - c0.xy; float L = length(d); d = L > 1e-4 ? d / L : vec2(1., 0.);
   vec2 n = vec2(-d.y, d.x);
   float w = -c1.z * .0028 * mix(.6, 1.4, aRnd.z);
   vec4 c = position.x > 0. ? c1 : c0;
-  c.xy += n * position.y * w;
+  // (wider than the streak itself, to hold its soft edge, and run on a little past its ends)
+  c.xy += n * position.y * w * 1.8 + d * position.x * w;
+  vS = position.y; vH = position.x * .5 + .5;
   vA = (1. - age / life) * (1. - age / life) * 2.2;
   gl_Position = projectionMatrix * c;
 }`;
-const SPARK_FS = `uniform float uAmt; varying float vA; varying vec3 vC;
-void main(){ gl_FragColor = vec4(mix(vC, vec3(1.), .45) * vA * uAmt, 1.); }`;
+// (a soft streak, white-hot at its head and fading back along it into its colour: flat and square-cut, they were chips
+// of white paper, confetti)
+const SPARK_FS = `uniform float uAmt; varying float vA, vS, vH; varying vec3 vC;
+void main(){
+  float a = exp(-vS * vS * 4.5) * (.12 + .88 * vH * vH);
+  vec3 c = mix(vC, vec3(1.), .55 * exp(-vS * vS * 16.) * vH);
+  gl_FragColor = vec4(c * vA * uAmt * a, 1.);
+}`;
 
+const smooth01 = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 export function createFighters() {
   const group = new THREE.Group();
   group.name = 'fighters';
@@ -180,25 +197,46 @@ export function createFighters() {
   })();
   const a = new THREE.Vector3(), b = new THREE.Vector3(), pts = [[], []];
   for (let i = 0; i < N; i++) { pts[0].push(new THREE.Vector3()); pts[1].push(new THREE.Vector3()); }
+  // (the trail's last seconds sampled finely by time, then laid evenly along the way it went: laid by time, where the
+  // light slowed its points crowded together and their added light heaped up there, beads along the trail)
+  const M = N * 4, fine = [[], []], cum = new Float32Array(M), ks = [new Float32Array(N), new Float32Array(N)];
+  for (let j = 0; j < M; j++) { fine[0].push(new THREE.Vector3()); fine[1].push(new THREE.Vector3()); }
   const t0 = new THREE.Vector3(), toCam = new THREE.Vector3(), sd = new THREE.Vector3(), v0 = new THREE.Vector3(), v1 = new THREE.Vector3();
   const g1 = new THREE.Vector3(), g2 = new THREE.Vector3();
   return {
     group,
     // flight(t, outGold, outViolet): where the two are at time t; amts: [gold, violet] 0..1; blows: the last meetings,
     // newest first [{ pos (world), t, kind, amt }]; pull: [point, weight] drawing the gold one's last stretch to a point
-    update({ time, flight, amts, blows = [], camera, skyTex, res, pull = null, headK = [1, 1] }) {
+    // (trailS: how much of the span each one's trail shows; headS: how big each one's head is)
+    update({ time, flight, amts, blows = [], camera, skyTex, res, pull = null, headK = [1, 1], trailK = [1, 1], trailW = [1, 1], trailS = [1, 1], headS = [1, 1] }) {
       const anyBurst = blows.some(bl => bl && time - bl.t >= 0 && time - bl.t < 1.3);
       group.visible = amts[0] > 0.003 || amts[1] > 0.003 || anyBurst;
       if (!group.visible) return;
       shared.tSky.value = skyTex; shared.uRes.value.copy(res);
       const V = camera.matrixWorldInverse;
-      for (let i = 0; i < N; i++) {
-        flight(time - (i / (N - 1)) * SPAN, a, b);
-        pts[0][i].copy(a); pts[1][i].copy(b);
-        if (pull && pull[1] > 0) pts[0][i].lerp(pull[0], pull[1] * (1 - i / (N - 1) * 0.6));
+      for (let j = 0; j < M; j++) {
+        flight(time - (j / (M - 1)) * SPAN * trailS[0], a, b);
+        fine[0][j].copy(a);
+        if (trailS[1] !== trailS[0]) flight(time - (j / (M - 1)) * SPAN * trailS[1], a, b);
+        fine[1][j].copy(b);
+        if (pull && pull[1] > 0) fine[0][j].lerp(pull[0], pull[1] * (1 - j / (M - 1) * 0.6));
       }
       for (let f = 0; f < 2; f++) {
-        const P = pts[f], g = trails[f].geometry.attributes.position;
+        const F = fine[f];
+        cum[0] = 0;
+        for (let j = 1; j < M; j++) cum[j] = cum[j - 1] + F[j].distanceTo(F[j - 1]);
+        const L = cum[M - 1];
+        for (let i = 0, j = 0; i < N; i++) {
+          const sL = (i / (N - 1)) * L;
+          while (j < M - 2 && cum[j + 1] < sL) j++;
+          const seg = cum[j + 1] - cum[j], x = seg > 1e-9 ? Math.min(1, Math.max(0, (sL - cum[j]) / seg)) : 0;
+          pts[f][i].copy(F[j]).lerp(F[j + 1], x);
+          // (how far back in its time it is: the trail cools along that)
+          ks[f][i] = L > 1e-6 ? (j + x) / (M - 1) : 0;
+        }
+      }
+      for (let f = 0; f < 2; f++) {
+        const P = pts[f], g = trails[f].geometry.attributes.position, gk = trails[f].geometry.attributes.aK;
         for (let i = 0; i < N; i++) {
           t0.copy(P[Math.max(0, i - 1)]).sub(P[Math.min(N - 1, i + 1)]);
           if (t0.lengthSq() < 1e-6) t0.set(0, 1, 0);
@@ -207,21 +245,25 @@ export function createFighters() {
           const d = toCam.length();
           toCam.divideScalar(Math.max(d, 1e-3));
           sd.crossVectors(t0, toCam).normalize();
-          const k = i / (N - 1);
+          const k = ks[f][i];
+          gk.setX(i * 2, k); gk.setX(i * 2 + 1, k);
           // wide enough to read at any distance, narrowing toward the tail; the violet one crackles
-          const w = d * 0.0042 * (0.3 + 0.7 * Math.pow(1 - k, 0.8));
-          const jit = f === 1 ? Math.sin(i * 2.7 + time * 61) * Math.sin(i * 1.3 - time * 37) * d * 0.006 * k : 0;
+          const w = d * 0.0042 * trailW[f] * (0.3 + 0.7 * Math.pow(1 - k, 0.8));
+          // (its crackle slight: at twice this its width swelled and pinched at even steps along it, a string of beads)
+          // (and a wave along it a few samples long, not a kink at every sample: kinked at every other one, the trail
+          // folded over itself at each kink, and its glow heaped up there into evenly spaced beads)
+          const jit = f === 1 ? Math.sin(i * 0.62 + time * 61) * Math.sin(i * 0.29 - time * 37) * d * 0.0018 * k : 0;
           g.setXYZ(i * 2, P[i].x - sd.x * (w - jit), P[i].y - sd.y * (w - jit), P[i].z - sd.z * (w - jit));
           g.setXYZ(i * 2 + 1, P[i].x + sd.x * (w + jit), P[i].y + sd.y * (w + jit), P[i].z + sd.z * (w + jit));
         }
-        g.needsUpdate = true;
-        trails[f].material.uniforms.uAmt.value = amts[f];
-        trails[f].visible = amts[f] > 0.003;
+        g.needsUpdate = true; gk.needsUpdate = true;
+        trails[f].material.uniforms.uAmt.value = amts[f] * trailK[f];
+        trails[f].visible = amts[f] * trailK[f] > 0.003;
         // the head: drawn out along the way it is going (in view space), the faster the longer
         const h = heads[f], U = h.material.uniforms;
         h.position.copy(P[0]);
         const dist = P[0].distanceTo(camera.position);
-        U.uSize.value = dist * 0.045;
+        U.uSize.value = dist * 0.045 * headS[f];
         v0.copy(P[0]).applyMatrix4(V); v1.copy(P[2]).applyMatrix4(V);
         const dx = v0.x - v1.x, dy = v0.y - v1.y, dl = Math.hypot(dx, dy);
         U.uDir.value.set(dl > 1e-4 ? dx / dl : 1, dl > 1e-4 ? dy / dl : 0);
@@ -250,7 +292,8 @@ export function createFighters() {
         U.uStretch.value = 0;
         U.uDir.value.set(1, 0);
         U.uAge.value = age;
-        U.uAmt.value = (bl.amt ?? 1) * (KAMT[bl.kind] ?? 1);
+        // (a meeting at the lens is not drawn as a ring round it: there its ring was an arc across the frame)
+        U.uAmt.value = (bl.amt ?? 1) * (KAMT[bl.kind] ?? 1) * (bl.kind === 9 ? 1 : smooth01(5, 18, dist));
         U.uSeed.value = (Math.floor(bl.t * 1000) % 977) * 0.731;
         U.uKind.value = bl.kind;
         // (which way the gold one stands from the meeting, on the screen)

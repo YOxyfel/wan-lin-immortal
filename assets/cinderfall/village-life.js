@@ -5,9 +5,10 @@ import * as THREE from 'three';
 import { roadX, heightAt } from './layout.js';
 import { mcZ } from './timeline.js';
 import { pose } from './people3d.js';
-import { poseWolf } from './wolf.js';
+import { poseWolf, poseWolfMix, lookWolf } from './wolf.js';
 import { DOG_GATE_AT } from './bonds.js';
-import { clamp, lerp, smooth, band } from './util.js';
+import { BEAT, wt, WALK } from './walk.js';
+import { clamp, lerp, smooth, band, TAU } from './util.js';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 // ground covered per unit of the pose clocks (people3d / beasts): one walk cycle ~1.4 m, a run ~3.2 m, a gallop ~4.5 m
@@ -65,15 +66,24 @@ export function createVillageLife(world) {
   // [house they come out of, then the way they run, start (u), pace (m per u)]. The street runs north (-z) to the
   // gate; he comes the other way. Lanes stay clear of the jars and bushes along the house fronts, the laundry
   // lines, the fallen and the woman crouched by the steps.
+  // (and those who run at the lens keep to the street's sides, at least three metres out from his line, so they go by
+  // it as people in the street, not as a figure flung across the frame's edge an arm's length away)
   const FLEE = [
-    { from: 'west-i', way: [lane(-30, -2.0), lane(-40, -1.9), lane(-50, -2.4), lane(-62, -2.6)], u0: 71.4, v: 5.6 },
-    { from: 'east-j', way: [lane(-36, 1.8), lane(-46, 1.6), lane(-56, 2.1), lane(-66, 2.4)], u0: 71.9, v: 5.8 },
+    // (under the far side's eaves: two metres out, he went behind the boy and out of the frame by the lens at its edge)
+    { from: 'west-i', way: [lane(-30, -3.2), lane(-38, -2.8), lane(-44, -2.0), lane(-50, -2.4), lane(-62, -2.6)], u0: 71.4, v: 5.6 },
+    // (up his own side and into the gap between his house and the wine house: across the street toward the gate, he ran
+    // into the boy in the frame as the cut came in on his side, and by the lens at the frame's edge a moment after; on the
+    // street's near side before that, straight at the lens, into it)
+    { from: 'east-j', way: [lane(-27.6, 2.2), lane(-24.6, 3.6), [roadX(-23.8) + 8.5, -23.8], [roadX(-23.8) + 15, -23.8]], u0: 71.9, v: 5.8 },
     { from: 'buns', way: [lane(-14, -1.2), lane(-26, -1.0), lane(-38, -1.4), lane(-52, -1.6)], u0: 72.9, v: 5.6 },
     // chased across the street into the gap between the laundry house and the tea house (the wolf is behind her)
     { from: 'east-e', way: [lane(29.5, 1.0), lane(30.4, -3.5), [roadX(30.6) - 9, 30.7], [roadX(30.8) - 16, 30.8]], u0: 74.4, v: 6.0 },
-    { from: 'smith', way: [lane(6, 2.2), lane(-6, 2.0), lane(-20, 2.3), lane(-36, 2.0)], u0: 74.25, v: 5.8 },
-    { from: 'smith', way: [lane(7, 1.4), lane(-5, 1.3), lane(-19, 1.5), lane(-35, 1.4)], u0: 74.5, v: 4.6 },  // the child, behind her mother
-    { from: 'tea', way: [lane(16, -2.2), lane(4, -2.0), lane(-10, -2.3), lane(-26, -2.0)], u0: 75.0, v: 5.6 },
+    // (the mother and child out of the smith's, off the long lens down the street)
+    { from: 'smith', way: [lane(6, 3.6), lane(-6, 3.2), lane(-20, 2.6), lane(-36, 2.0)], u0: 74.25, v: 5.8 },
+    { from: 'smith', way: [lane(7, 3.0), lane(-5, 2.8), lane(-19, 1.8), lane(-35, 1.4)], u0: 74.5, v: 4.6 },  // the child, behind her mother
+    // (from the tea house, on up the street ahead of him and into the gap after the woman the wolf chased: down the
+    // street toward the gate, he ran at the long lens and loomed at its edge a metre or two off, and was gone)
+    { from: 'tea', way: [lane(25.5, -3.4), lane(29.4, -4.0), [roadX(30.5) - 9, 30.5], [roadX(30.7) - 16, 30.7]], u0: 75.0, v: 5.6 },
   ].map(r => ({ ...r, path: path([...fromDoor(r.from), ...r.way]) }));
 
   // ---------------------------------------------------------------- the wolves
@@ -120,7 +130,14 @@ export function createVillageLife(world) {
   // the one at the gate: prowls in from the guard post, then stands its ground where the dog sat that morning, snarling
   // at him as he comes in through the gate (bonds.js)
   const g = A.gate.center, dg = DOG_GATE_AT();
-  const PROWL = path([[g.x + 2.4, g.z + 16], [g.x + 2.9, g.z + 11], [dg.x, dg.z]]);
+  // (a little east of the dog's place, so he goes by it with room: a metre off his line, in the frame he ran through its
+  // hindquarters in one ink outline and came out with its embers on his back)
+  const PROWL = path([[g.x + 2.4, g.z + 16], [g.x + 2.9, g.z + 11], [dg.x + 0.8, dg.z]]);
+  // (where it stops, the way it faces as it stops, and the way into the street it wheels to after him)
+  const PROWL_AT = PROWL.curve.getPointAt(1), PROWL_YAW = (t => Math.atan2(t.x, t.z))(PROWL.curve.getTangentAt(1));
+  const WHEEL_YAW = Math.atan2(roadX(g.z + 14) - PROWL_AT.x, g.z + 14 - PROWL_AT.z);
+  // (from one heading to another the short way round)
+  const turnA = (a, b, k) => a + ((((b - a) % TAU) + TAU + Math.PI) % TAU - Math.PI) * k;
 
   // ---------------------------------------------------------------- helpers
   const castFrustum = new THREE.Frustum(), castPM = new THREE.Matrix4(), castSph = new THREE.Sphere(V3(), 1.3);
@@ -136,6 +153,8 @@ export function createVillageLife(world) {
   // the garrison's way out: up the road from the guard post, through the gate, then off along the track to the east
   const MARCH = path([lane(-30, 0), lane(-38, 0), lane(-46, 0), lane(-50.5, 0.6), [roadX(-53) + 6, -54.5], [16, -58.5], [32, -64], [56, -71], [86, -77]]);
 
+  // (the walk's own time, held at its start before it and at its end after it)
+  const walkT = u => (u < WALK.u0 ? -0.001 * (WALK.u0 - u) : wt(Math.min(u, 36.9)));
   function update(u, time, broken, P, cam) {
     camera = cam;
     castFrustum.setFromProjectionMatrix(castPM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
@@ -152,7 +171,8 @@ export function createVillageLife(world) {
         poseSeen(c, 'sitwave', time, band(15.6, 16.2, 18, 18.8, u));
       } else if (isDay) {
         if (c.role === 'laundry') {
-          const w = band(20, 20.6, 21.8, 22.6, u);
+          // (she turns from her line and waves to him as he goes by up the street: walk.js)
+          const t = walkT(u), w = band(2.4, 3.2, 5.8, 6.8, t);
           c.root.rotation.y = lerp(c.homeRot, c.homeRot + Math.PI, w);
           poseSeen(c, w > 0.5 ? 'wave' : 'hang', time, w);
         } else if (c.role === 'kid') {
@@ -162,28 +182,33 @@ export function createVillageLife(world) {
           stand(c, x, z, Math.atan2(-Math.sin(a) * rx, Math.cos(a) * rz));
           const dist = a * (rx + rz) * 0.5;
           poseSeen(c, 'run', dist / (RUN_M * 0.6));
-        } else if (c.role === 'seller' && u > 27.9 && u < 31.4) {
-          // (at the edge of her terrace, a bun held out to him across it; her hand to her hip, laughing, when he gives it
-          // to the dog) see engine.js BUN
-          stand(c, BUN_SELLER.x, BUN_SELLER.z, Math.PI / 2);
-          const give = band(28.75, 29.05, 29.45, 29.75, u), laugh = band(30.05, 30.35, 31.0, 31.4, u);
-          if (laugh > 0.02) poseSeen(c, 'laugh', time, laugh); else poseSeen(c, 'give', time, give);
+        } else if (c.role === 'seller' && walkT(u) > BEAT.mei - 9.4 && walkT(u) < BEAT.meiOff + 4.8) {
+          // (out from her stall to the edge of her terrace as he comes up the street, calling him over, a bun held out to
+          // him across it; her hand to her hip, laughing, when he gives it to the dog; back to her stall as he goes on)
+          // see bonds.js BUN
+          const t = walkT(u), M = BEAT.mei, MO = BEAT.meiOff;
+          const out = smooth(M - 9.4, M - 6.8, t) * (1 - smooth(MO + 2.0, MO + 4.6, t)), home = c.home;
+          const x = lerp(home.x, BUN_SELLER.x, out), z = lerp(home.z, BUN_SELLER.z, out);
+          const going = out > 0.01 && out < 0.99, back = t > MO + 1.5;
+          stand(c, x, z, going ? (back ? -Math.PI / 2 : Math.PI / 2) : Math.PI / 2);
+          const give = band(M - 2.4, M - 1.8, M + 0.8, M + 1.25, t), laugh = band(M + 3.25, M + 3.65, MO + 0.9, MO + 1.6, t);
+          if (going) poseSeen(c, 'walk', Math.abs(x - home.x) / WALK_M);
+          else if (laugh > 0.02) poseSeen(c, 'laugh', time, laugh); else poseSeen(c, 'give', time, give);
         } else if (c.role === 'cartman') {
-          // up the street from the gate's end of town, unhurried
-          const z0 = -34, z1 = -6, k = smooth(24, 34, u), zz = lerp(z0, z1, k);
+          // up the street from the gate's end of town, unhurried, by him as he goes the other way to the gate
+          const t = walkT(u), z0 = -40, z1 = -10, zz = clamp(z0 + 1.1 * (t - 34.5), z0, z1);
           stand(c, roadX(zz) - 1.9, zz, Math.atan2(roadX(zz + 0.5) - roadX(zz - 0.5), 1));
-          poseSeen(c, 'walk', (zz - z0) / WALK_M);
+          if (zz > z0 && zz < z1) poseSeen(c, 'walk', (zz - z0) / WALK_M); else poseSeen(c, 'idle', time);
         } else if (c.role === 'soldier') {
-          // (once he speeds up along the road the column keeps pace: through the gate and off east along the track
-          // before he reaches the turning, so he never walks through it)
-          const t = clamp(u - 34.5, 0, 1), extra = 4.85 * (u > 35.5 ? u - 35.0 : t * t * t - t * t * t * t / 2);
-          const i = c.index, s = Math.max(0, (u - 24) * 2.15 + extra - i * 1.7);
+          // (the garrison's last men, formed up by the guard post, march out under the gate while he is on his way to it,
+          // and are off east along the track long before he reaches the turning)
+          const i = c.index, s = Math.max(0, (walkT(u) - 36) * 1.3) + (4 - i) * 1.7;
           const k = clamp(s / MARCH.len);
           MARCH.curve.getPointAt(k, _p); MARCH.curve.getTangentAt(k, _t);
           const side = (i % 2 ? 0.7 : -0.7);
           const x = _p.x + _t.z * side, z = _p.z - _t.x * side;
           stand(c, x, z, Math.atan2(_t.x, _t.z));
-          poseSeen(c, s > 0 && s < MARCH.len ? 'walk' : 'idle', s / WALK_M + i * 0.3);
+          poseSeen(c, walkT(u) > 36 && s < MARCH.len ? 'walk' : 'idle', s / WALK_M + i * 0.3);
           c.root.visible = u > 20 && u < 46;
         } else {
           poseSeen(c, c.day, time);
@@ -228,15 +253,28 @@ export function createVillageLife(world) {
         poseWolf(w1, 'gallop', q.s / GALLOP_M);
       }
     }
-    // at the gate
+    // at the gate: in from the guard post to where the dog sat that morning, and there it stands its ground, side on
+    // across his way and its head round to him, snarling; as he swerves by it it wheels after him into the street
+    // (square on to him, from behind him it was a mass of fur with two violet dots, a wolf only once the lens was past
+    // it; and it swung round on the spot to face him from its prowl in one frame, then turned after him with him)
     if (u > 66 && u < 74.4) {
       const w2 = W[2], q = along(PROWL, u, 66.2, PROWL.len / 3.8);
-      const end = PROWL.curve.getPointAt(1);
-      const p = q ? V3(q.x, 0, q.z) : end;
+      const p = q ? V3(q.x, 0, q.z) : PROWL_AT;
       w2.root.visible = true;
       w2.root.position.set(p.x, groundY(p.x, p.z), p.z);
-      w2.root.rotation.y = q ? q.yaw : Math.atan2(P.x - p.x, P.z - p.z);
-      if (q) poseWolf(w2, 'prowl', q.s / PROWL_M); else poseWolf(w2, 'snarl', time);
+      if (q) { w2.root.rotation.y = q.yaw; poseWolf(w2, 'prowl', q.s / PROWL_M); }
+      else {
+        // (side on: its body turned toward where he will go by, the head back round to him; lookWolf turns it by up to
+        // 1.1 radians)
+        const settle = smooth(70.0, 70.9, u), wheel = smooth(72.9, 73.5, u);
+        const side = PROWL_YAW + 0.9 * settle, yaw = turnA(side, WHEEL_YAW, wheel);
+        w2.root.rotation.y = yaw;
+        // (its feet stepping round as it wheels, not turned on the spot like a figure on a stand)
+        const stepped = Math.abs(turnA(0, yaw - side, 1)) * 0.55 / PROWL_M;
+        if (wheel > 0.001) poseWolfMix(w2, ['snarl', time], ['prowl', stepped], Math.min(1, wheel * 1.6) * (1 - smooth(73.6, 73.9, u)));
+        else poseWolfMix(w2, ['prowl', PROWL.len / PROWL_M], ['snarl', time], settle);
+        lookWolf(w2, V3(P.x, P.y + 1.1, P.z), settle);
+      }
     }
     {
       // howling below the crag, where the ones who sent them stand

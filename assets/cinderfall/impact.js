@@ -51,6 +51,8 @@ void main(){
   vec3 v = aDir.xyz * aDir.w * uScale;
   vec3 p1 = at(v, t), p0 = at(v, max(t - .05, 0.));
   vec4 c1 = viewMatrix * vec4(p1, 1.), c0 = viewMatrix * vec4(p0, 1.);
+  // (none at or behind the lens: a streak with an end behind it is thrown across the whole frame)
+  if (c1.z > -.6 || c0.z > -.6) { gl_Position = vec4(2., 2., 2., 1.); return; }
   vec2 d = c1.xy - c0.xy; float L = length(d); d = L > 1e-4 ? d / L : vec2(1., 0.);
   vec2 n = vec2(-d.y, d.x);
   float w = -c1.z * .0022 * mix(.7, 1.5, aRnd.z);

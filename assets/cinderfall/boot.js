@@ -450,8 +450,11 @@ async function boot() {
     let best = null, bestV = 0;
     const sNow = forced != null ? sToU(forced) : su;
     for (const c of caps) { const v = band(c.as, c.as + c.f, c.bs - c.f, c.bs, sNow); if (v > bestV) { bestV = v; best = c; } }
+    // (and in the white of a cut, the line goes white with the page)
+    const cw = engine && inView ? engine.metrics.cutWhite || 0 : 0;
     for (const c of caps) {
-      const v = c === best ? bestV : 0;
+      // (a line may go with the white of a cut before its span is out: `gone`, watch.js; Watch's pace keeps its span)
+      const v = c === best && !(c.gone != null && u >= c.gone) ? bestV * (1 - cw) : 0;
       op(c.n, v);
       if (v > 0) {
         c.n.style.setProperty('--reveal', String(smooth(c.as, c.as + c.rv, sNow)));

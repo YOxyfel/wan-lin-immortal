@@ -11,11 +11,12 @@ import { track, curve1, curveMono, smooth, band, clamp, lerp } from './util.js';
 import { P } from './palettes.js';
 export const TOTAL = 145;
 // autoplay pace (units per second) by story position: slower where the story breathes
-export const PACE = [[0, 0.55], [4, 0.75], [10, 0.9], [11.4, 0.7], [13.9, 0.9], [15, 0.6], [19, 0.85], [19.6, 0.62], [22.4, 0.6], [25.35, 0.85], [28.05, 0.67], [31, 0.7], [36, 1.1], [42, 0.6], [46.5, 0.42], [49.35, 0.2], [52.47, 0.34], [55.4, 0.5], [56, 0.55], [58.4, 0.7], [61.5, 0.36], [66, 0.9], [77, 0.55], [80.6, 0.42], [84.6, 0.3], [92.4, 0.42], [98, 0.38], [103.5, 0.44], [107.6, 0.42], [112, 0.45], [124, 0.45], [125.8, 0.42], [130.45, 0.5], [131, 0.42], [133.4, 0.36], [136, 0.3], [141, 0.38], [145, 0.4]];
+export const PACE = [[0, 0.55], [4, 0.75], [10, 0.9], [11.4, 0.7], [13.9, 0.9], [15, 0.6], [19, 0.85], [19.6, 0.62], [21.85, 0.35409], [35.75, 0.6], [42, 0.6], [46.5, 0.42], [49.35, 0.2], [52.47, 0.34], [55.4, 0.5], [56, 0.55], [58.4, 0.7], [61.5, 0.36], [66, 0.9], [77, 0.55], [80.6, 0.42], [84.6, 0.3], [92.4, 0.42], [98, 0.38], [103.5, 0.44], [107.6, 0.42], [112, 0.45], [124, 0.45], [125.8, 0.42], [130.45, 0.5], [131, 0.42], [133.4, 0.36], [136, 0.3], [141, 0.38], [145, 0.4]];
 // Held moments: at each [story position, scroll length] the story slows to a fifth of its pace for that much scroll,
 // so the reader waits on it — the forest falls silent, the storm stands over the valley, the glow below, the boy who
 // cannot move, the open door, the hand that falls, the morning he goes farther, the rim of the dell, the crystal.
-export const PAUSES = [[26.45, 1.4], [46.95, 2.1], [49.35, 0.725], [54.62, 1.2], [58.7, 0.5], [65.45, 1.0], [80.95, 1.3], [92.15, 2.2], [124.5, 1.0], [132.15, 1.5], [136.85, 1.1], [139.18, 2.6]];
+// (the smith's stall has no held moment: the walk up the street is one take on Watch's clock, walk.js)
+export const PAUSES = [[46.95, 2.1], [49.35, 0.725], [54.62, 1.2], [58.7, 0.5], [65.45, 1.0], [80.95, 1.3], [92.15, 2.2], [124.5, 1.0], [132.15, 1.5], [136.85, 1.1], [139.18, 2.6]];
 const SLOW = 0.2;
 // Stretches: [story position, story length, rate]. The story runs at `rate` of its pace over that much of it, so
 // it takes 1/rate as much scroll; unlike a held moment the camera keeps going, only slower under the same scroll.
@@ -32,11 +33,21 @@ export const STRETCHES = [[47.42, 0.05, 0.3], [47.47, 0.065, 0.12], [47.535, 0.4
   // Forest; the dell; the pillar. (A fourth value: how much of the stretch Watch gives back, keeping its own pace
   // through it, watch.js; Watch has its own way of giving a line time.)
   [43.3, 2.3, 0.85, 1], [55.4, 2.95, 0.85, 0.5], [62.0, 2.2, 0.8, 1], [84.95, 6.65, 0.64, 1], [104.95, 1.8, 0.6, 1], [108.95, 1.8, 0.6, 1], [133.6, 2.3, 0.75, 1], [139.7, 1.15, 0.5],
+  // the end of the fight above the clouds, given time: the masked one thrown back up by the burst; hanging there, shaking,
+  // gathering his fury while the storm pours into him; letting it go, the blade sweeping down the sky; the storm's blade
+  // on the bell, its shattering, his fall (war.js FURY)
+  // (the sweep, from afar, slower still: in under half a second the greatest blow of the fight was a stick turning over)
+  [52.12, 0.12, 0.7], [52.24, 0.12, 0.23], [52.36, 0.025, 0.2], [52.385, 0.045, 0.12], [52.43, 0.04, 0.17],
+  // (and before it, the great sword's swing down the sky as the crescent is born out of it: at full pace it crossed the
+  // frame in two frames; and the crescent split on the glaive, its halves going apart past him either side: at full
+  // pace they were out of the frame in a frame or two, and he seemed to have swallowed it)
+  [50.715, 0.035, 0.3], [50.945, 0.03, 0.35],
   // the run home: the gate, framed as it was that morning (engine.js)
-  [72.5, 0.78, 0.45],
-  // the morning's bonds, given room: his uncle's hand measuring him against himself; the dog at the foot of the steps;
-  // the bun at the stall; the dog told to go home at the gate (engine.js)
-  [11.4, 2.5, 0.55], [19.6, 2.8, 0.5], [28.05, 2.95, 0.55], [31.0, 4.75, 0.6],
+  [72.5, 0.78, 0.36],
+  // the morning's bonds, given room: his uncle's hand measuring him against himself (come down to in three steps, so
+  // the crane eases to the door instead of stopping dead on it); the dog at the foot of the steps; then the walk up
+  // the street to the gate, the whole of it, at a walker's pace on Watch's clock (walk.js: 78.5 s)
+  [11.25, 0.15, 0.8], [11.4, 0.1, 0.75], [11.5, 2.4, 0.55], [19.6, 2.25, 0.5], [21.85, 13.9, 0.5],
   // the empty snare: out to it, crouched over it, the frost seen from above (forest.js OMEN)
   [124.7, 1.2, 0.4],
   // the walk out: a stride to a little under a second of Watch (forest.js STRIDE_DU)
@@ -146,18 +157,15 @@ function shotsZ(shots) {
   return u => { let s = fs[0]; for (const x of fs) { if (u >= x.u0) s = x; else break; } return s.f(u); };
 }
 export const mcZ = shotsZ([
-  // (down off the porch; at the foot of the steps he stops for the dog, crouched with it; then off up the street)
-  [[0, 44.2], [18.2, 44.2], [20.3, 41.4], [21.75, 41.4], [21.95, 41.15], [22.3995, 39.85]],
-  [[22.4, 29.5], [22.5967, 29.15], [22.7933, 28.801], [22.99, 28.451], [23.1867, 28.101], [23.3833, 27.752], [23.58, 27.402], [23.7767, 27.053], [23.9733, 26.703], [24.17, 26.353], [24.3667, 26.004], [24.5633, 25.654], [24.76, 25.304], [24.9567, 24.955], [25.1533, 24.605], [25.3495, 24.276]],
-  [[25.35, 17.6], [25.514, 17.43], [25.678, 17.26], [25.842, 16.997], [26.006, 16.659], [26.17, 16.321], [27.35, 16.321], [27.525, 15.846], [27.7, 15.37], [27.875, 14.895], [28.0495, 14.554]],
-  // (across to the bun stall, and stopped at it; on again: bonds.js BUN)
-  [[28.05, -4.85], [29.0, -7.6], [30.45, -7.6], [30.9995, -8.5]],
-  // (short of the gate the dog sits down in his way; he kneels to it, steps round it, and goes out under the gate
-  // alone: bonds.js GATE)
-  [[31, -31.8], [32.0, -35.2], [32.4, -36.65], [32.6, -36.9], [34.05, -36.9], [34.3, -37.2], [34.6, -37.75], [35.7495, -42.0]],
-  [[35.75, -49], [35.9318, -49.377], [36.1136, -49.668], [36.2955, -49.908], [36.4773, -50.147], [36.6591, -50.387], [36.8409, -50.627], [37.0227, -50.866], [37.2045, -51.106], [37.3864, -51.347], [37.5682, -51.656], [37.7495, -51.972]],
-  [[37.75, -76], [37.94, -76.331], [38.13, -76.661], [38.32, -76.992], [38.51, -77.322], [38.7, -77.653], [38.89, -77.984], [39.08, -78.314], [39.27, -78.645], [39.46, -78.975], [39.65, -79.306], [39.84, -79.637], [40.03, -79.967], [40.22, -80.298], [40.41, -80.628], [40.5995, -80.959]],
-  [[40.6, -151.5], [43.6, -152], [56, -152], [62, -152], [66.25, -152], [66.455, -150.729], [66.66, -149.459], [66.865, -148.187], [67.07, -146.916], [67.275, -145.645], [67.48, -144.376], [67.685, -143.112], [67.89, -141.855], [68.095, -140.608], [68.3, -139.474]],
+  // (down off the porch; at the foot of the steps he stops for the dog, crouched with it; then up the street to the
+  // gate, which is the walk's own path: walk.js)
+  [[0, 44.2], [18.2, 44.2], [20.3, 41.4], [21.85, 41.4]],
+  // (the old road and the bridge: each found empty and walked into, at a walker's pace: engine.js ROAD_SHOTS)
+  [[35.75, -49.6], [37.7495, -54.4]],
+  [[37.75, -73.0], [40.5995, -80.5]],
+  // (off the mark as the basket lands, at five metres a second a second, running by a second later: from a standstill
+  // he was at seven metres a second in a sixth of one, and was gone from in front of the lens in a frame)
+  [[40.6, -151.5], [43.6, -152], [56, -152], [62, -152], [65.9, -152], [65.95, -151.946], [66, -151.785], [66.08, -151.61], [66.16, -151.402], [66.24, -151.15], [66.32, -150.855], [66.4, -150.515], [66.48, -150.131], [66.56, -149.703], [66.643, -149.212], [66.9, -147.619], [67.1, -146.379], [67.3, -145.139], [67.5, -143.899], [67.7, -142.659], [67.9, -141.419], [68.1, -140.179], [68.3, -138.939]],
   [[68.3, -113], [68.5, -111.998], [68.7, -111.114], [68.9, -110.244], [69.1, -109.373], [69.3, -108.489], [69.5, -107.581], [69.7, -106.638], [69.9, -105.649], [70.1, -104.609], [70.3, -103.515], [70.4, -102.949]],
   [[70.4, -77], [70.6049, -75.935], [70.8098, -74.976], [71.0146, -73.974], [71.2195, -72.797], [71.4244, -71.532], [71.6293, -70.291], [71.8341, -69.089], [72.039, -67.936], [72.2439, -66.834], [72.4488, -65.782], [72.5, -65.5]],
   [[72.5, -46.8], [72.7, -44.11], [72.9, -41.358], [73.1, -38.593], [73.3, -35.982], [73.5, -34.739], [73.7, -33.497], [73.9, -32.255], [74.1, -31.014], [74.3, -29.772], [74.5, -28.529], [74.7, -27.286], [74.9, -26.043], [75, -25.421]],
@@ -250,7 +258,12 @@ Object.assign(env, {
   // and between the pines, thin under the ink, thick in the forest's hollows and the dell
   mistK: T([[0, 0.5], [12, 0.5], [14, 0.8], [31, 0.8], [34.5, 1.0], [41, 1.0], [42.4, 1.3], [46.4, 1.3], [48, 1.1], [56, 1.1], [61.4, 0.9], [61.7, 0.35], [103.5, 0.35], [105.2, 0.9], [108, 1], [124.4, 1], [125, 1.15], [131, 1.15], [133, 1], [145, 1]]),
   // blood-red strands of qi: [high over the village, along the road home, near the lens]
-  strands: T([[0, [0, 0, 0]], [61.6, [0, 0, 0]], [62.6, [1, 0, 0]], [65.4, [1, 0, 0]], [66.4, [1, 1, 1]], [77, [1, 1, 1]], [78.6, [1, 0.4, 0]], [93, [1, 0.4, 0]], [94.2, [1, 0.4, 0.7]], [97.4, [1, 0.4, 0.7]], [98.6, [0, 0, 0]], [145, [0, 0, 0]]]),
+  // (none along the road on the run home: from the road beside them, thin and fifty metres long, they were straight red
+  // wires laid across the frame beside the bolts)
+  // (and none in the street, from the white of the cut at the gate until he is at his uncle's house: in among them, those
+  // over the village were a sagging red wire beginning in mid-air by the side lens and a ruler-straight red line across
+  // the top of the long lens)
+  strands: T([[0, [0, 0, 0]], [61.6, [0, 0, 0]], [62.6, [1, 0, 0]], [65.4, [1, 0, 0]], [66.4, [1, 0, 1]], [72.47, [1, 0, 1]], [72.5, [0, 0, 0]], [77.4, [0, 0, 0]], [78.6, [1, 0.4, 0]], [93, [1, 0.4, 0]], [94.2, [1, 0.4, 0.7]], [97.4, [1, 0.4, 0.7]], [98.6, [0, 0, 0]], [145, [0, 0, 0]]]),
   // seasons of the Forbidden Forest (0..1 each)
   snowCover: T([[0, 0], [107.6, 0], [108.2, 0.62], [112.2, 0.66], [112.6, 1], ...yearKeys([], (s, c, e, k, at) => k === 0 ? [[113.55, 1], [113.8, 0.1], [113.9, 0], [115.9, 0], [116.2, 0.95], [e, 1]] : k < 5 ? [[at(0.13), 1], [at(0.23), 0.1], [at(0.29), 0], [at(0.87), 0], [at(0.94), 0.95], [e, 1]] : [[s, 1], [at(0.12), 1], [at(0.22), 0.1], [at(0.28), 0], [at(0.9), 0], [c, 0.28], [e, 0.3]], []), [125.1, 0.5], [125.66, 0.52], [126.3, 0], [145, 0]]),
   wet: T([[0, 0], ...yearKeys([], (s, c, e, k, at) => k === 0 ? [[113.68, 0], [113.86, 1], [114.15, 0.3], [114.35, 0]] : [[at(0.16), 0], [at(0.25), 1], [at(0.38), 0.3], [at(0.46), 0]], []), [145, 0]]),
@@ -264,7 +277,8 @@ export const worldBAt = 108.3;        // the mist: the valley is left behind
 // scripted lightning: [u, strength, which peak (0..1 across the view), kind: 0 storm blue, 1 violet]
 // kind 2: into the ground beside the road on the run home: [u, strength, metres off the road's centre, 2, metres ahead of him]
 export const STRIKES = [
-  [66.6, 1, 7, 2, 26], [68.3, 1, -8, 2, 24], [70.4, 1, 6.5, 2, 28], [72.6, 1, -3.6, 2, 22], [75.0, 1, 3.6, 2, 26],
+  // (each of the run home's cuts is made inside the flash of one: engine.js WHITE_CUTS)
+  [66.6, 1, 7, 2, 26], [68.3, 1, -8, 2, 24], [70.4, 1, 6.5, 2, 28], [72.5, 1, -3.6, 2, 22], [73.28, 0.9, 3.4, 2, 15], [75.0, 1, 3.6, 2, 26],
   [101.2, 1, 0.5, 1], [102.3, 0.7, 0.35, 1]];
 export const STAR = [54.0, 54.42];
 // the pillar of light strikes him in the dell
@@ -307,8 +321,8 @@ export const cam = {
 export const fx = {
   // global ink amount (0 colour .. 1 ink); spread/seep masks shape where it shows
   // (and for one beat at the smith's stall, while his eyes are on the blades, the world drains to ink and only their
-  // light stays gold: what only he can see; the colour rule taught before it is needed)
-  ink: T([[0, 1], [6.0, 1], [10.8, 0], [26.24, 0], [26.42, 1], [26.7, 1], [26.9, 0], [61.5, 0], [61.6, 1], [108.25, 1], [108.3, 0], [112.35, 0], [113.4, 0.95], [123.4, 0.95], [124.6, 0], [139.95, 0], [140.6, 0.9], [145, 0.9]]),
+  // light stays gold: what only he can see; the colour rule taught before it is needed: engine.js stallInk)
+  ink: T([[0, 1], [6.0, 1], [10.8, 0], [61.5, 0], [61.6, 1], [108.25, 1], [108.3, 0], [112.35, 0], [113.4, 0.95], [123.4, 0.95], [124.6, 0], [139.95, 0], [140.6, 0.9], [145, 0.9]]),
   bleed: T([[0, -0.3], [6.4, -0.3], [10.6, 1.7], [11, 9]]),
   // the world drains into ink from the burning village outward as it is revealed (radius in screen units)
   inkSpread: T([[61.6, 0.05], [62.1, 0.75], [62.7, 1.6], [63.3, 2.8]]),

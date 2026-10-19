@@ -147,7 +147,7 @@ export function buildCharacter(cfg) {
   // ---------------------------------------------------------------- pose machinery
   const K = new PoseKit(rig);
   const Pc = rig.newPose(), Pt = rig.newPose(), Pi = rig.newPose();
-  const st = { phase: 0, look: new THREE.Vector2(), lookT: new THREE.Vector2(), yaw: null, t: 0, age: -1, lastState: {}, settled: false };
+  const st = { phase: 0, look: new THREE.Vector2(), lookT: new THREE.Vector2(), lookV: new THREE.Vector2(), yaw: null, t: 0, age: -1, lastState: {}, settled: false };
 
   // contact points (bone, bind point at age 0/1)
   const contacts = [];
@@ -429,7 +429,7 @@ export function buildCharacter(cfg) {
   C.refresh = () => { updateBodies(); updateTargets(); writeSashBones(); hairMesh.update(hairSim, rig, headX, jawX); };
   C.settle = (s) => {
     st.settled = true;
-    st.look.copy(st.lookT);
+    st.look.copy(st.lookT); st.lookV.set(0, 0);
     computeWind(s || {}, U.uTime.value);
     updateBodies();
     updateTargets();

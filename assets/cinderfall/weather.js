@@ -16,6 +16,9 @@ void main(){
   vec3 side = normalize(cross(dir, toCam));
   // wide enough to hold a few pixels of core and a soft halo at any distance
   float w = aInfo.z * (1. + length(cameraPosition - P) * .0042);
+  // (each stroke run on a little past its ends, so the joints between them close: square-ended, they left a notch at
+  // every turn of the channel; run on by half its width, they doubled into a knot of light at each)
+  P += dir * (aInfo.x * 2. - 1.) * w * .18;
   P += side * aInfo.y * w;
   vSide = aInfo.y; vBright = aBright; vAlong = aInfo.w;
   gl_Position = projectionMatrix * viewMatrix * vec4(P, 1.);
@@ -24,19 +27,23 @@ void main(){
 export const BOLT_FS = `uniform float uAmt, uReveal; uniform vec3 uCol; varying float vSide, vBright, vAlong;
 void main(){
   if (vAlong > uReveal) discard;
-  // graded like an electric arc: white-blue core, an ice-blue sheath, a deep blue halo
+  // graded like an electric arc: white-blue core, an ice-blue sheath, a deep blue halo; never the same brightness along
+  // its length (evenly lit, it was a neon tube)
   float core = exp(-vSide * vSide * 60.), sheath = exp(-vSide * vSide * 9.), halo = exp(-vSide * vSide * 2.2);
-  float head = 1. + smoothstep(uReveal - .05, uReveal, vAlong) * 2.5 * step(uReveal, .999);
-  vec3 c = mix(vec3(1.), uCol, .26) * core * 15. + mix(vec3(.62, .84, 1.), uCol, .72) * sheath * 3.6 + uCol * uCol * halo * 1.15;
+  float along = .62 + .38 * sin(vAlong * 173. + vBright * 31.) * sin(vAlong * 61. + 1.7);
+  float head = (1. + smoothstep(uReveal - .05, uReveal, vAlong) * 2.5 * step(uReveal, .999)) * mix(.25, 1., smoothstep(1., .975, vAlong));
+  vec3 c = (mix(vec3(1.), uCol, .26) * core * 15. + mix(vec3(.62, .84, 1.), uCol, .72) * sheath * 3.6 * along + uCol * uCol * halo * 1.15 * along) * mix(1., along, .5);
   // the scene alpha marks the channel itself (as the flames are marked) so the ink can draw it in electric blue
-  gl_FragColor = vec4(c * vBright * vBright * uAmt * head, min((core + sheath * .6) * 6. * vBright, 4.) * smoothstep(.02, .15, uAmt));
+  // (all or nothing: a little, and the ink took the pixel for a figure's and outlined it, a hollow tube)
+  float aM = min((core + sheath * .6) * 6. * vBright, 4.) * smoothstep(.02, .15, uAmt);
+  gl_FragColor = vec4(c * vBright * vBright * uAmt * head, aM > .25 ? max(aM, 1.5) : 0.);
 }`;
 
 export function perp(d, r) {
   const a = V3(r() - 0.5, r() - 0.5, r() - 0.5);
   return a.sub(d.clone().multiplyScalar(a.dot(d))).normalize();
 }
-export function jag(a, b, disp, levels, r) {
+export function jag(a, b, disp, levels, r, decay = 0.56) {
   let pts = [a.clone(), b.clone()];
   let d = a.distanceTo(b) * disp;
   for (let l = 0; l < levels; l++) {
@@ -48,117 +55,354 @@ export function jag(a, b, disp, levels, r) {
       out.push(mid, q);
     }
     pts = out;
-    d *= 0.56;
+    d *= decay;
   }
   return pts;
 }
 
-export function createLightning(count = 3) {
+// (jagged for the lens that sees it: each kink turned across the stroke as the lens sees it, and no deeper than the
+// stroke is long in the frame. Kinked every way in the world, a stroke seen end-on doubled back on itself in the frame,
+// a lasso, a box of wire; one kinked only toward and away from the lens was a ruler-straight rod)
+const _jv = new THREE.Vector3(), _js = new THREE.Vector3();
+function across(ax, at, eye, r) {
+  _jv.copy(at).sub(eye).normalize();
+  _js.crossVectors(ax, _jv);
+  const fs = _js.length();
+  if (fs < 1e-4) return [perp(ax, r), 0.08];
+  return [_js.divideScalar(fs).clone(), Math.max(0.08, fs)];
+}
+export function jagLens(a, b, disp, levels, r, decay, eye) {
+  const ax = b.clone().sub(a).normalize();
+  let pts = [a.clone(), b.clone()];
+  let d = a.distanceTo(b) * disp;
+  for (let l = 0; l < levels; l++) {
+    const out = [pts[0]];
+    for (let k = 0; k < pts.length - 1; k++) {
+      const p = pts[k], q = pts[k + 1];
+      const mid = p.clone().lerp(q, 0.5);
+      const [s, fs] = across(ax, mid, eye, r);
+      // (and a little in depth, which the lens does not see)
+      mid.addScaledVector(s, d * (r() - 0.5) * 2 * fs).addScaledVector(_jv, d * (r() - 0.5) * 0.6);
+      out.push(mid, q);
+    }
+    pts = out;
+    d *= decay;
+  }
+  return pts;
+}
+
+// The bolts. Each stroke of one (its channel, each branch) is drawn as a single ribbon along it, turned to the lens, its
+// width held to the frame: laid end to end as quads, its joints were knots and notches, a string of beads; as wide as
+// the world made it by the lens, a searchlight's beam; far off, a hairline broken into dots.
+const MAXPTS = 2400;
+const RIBBON_VS = `attribute vec3 aPrev, aNext; attribute vec2 aW; attribute float aSide, aAlong, aBright;
+uniform float uWMin, uWMax, uThin, uHalfPx; uniform vec3 uShift;
+varying float vSide, vBright, vAlong, vTaper, vCoreK, vPx;
+void main(){
+  // (its end kept on what it strikes as that moves: the glaive's head in his shaking hands)
+  vec3 sh = uShift * smoothstep(.55, 1., aAlong);
+  mat4 PV = projectionMatrix * viewMatrix;
+  vec4 c = PV * vec4(position + sh, 1.), cp = PV * vec4(aPrev + sh, 1.), cn = PV * vec4(aNext + sh, 1.);
+  // (a point behind the lens is drawn where its stroke comes through a plane just in front of it)
+  const float E = .12;
+  if (c.w < E) { vec4 o = cn.w >= E ? cn : cp; if (o.w >= E) c = mix(c, o, (E - c.w) / (o.w - c.w)); }
+  if (cp.w < E && c.w >= E) cp = mix(cp, c, (E - cp.w) / (c.w - cp.w));
+  if (cn.w < E && c.w >= E) cn = mix(cn, c, (E - cn.w) / (c.w - cn.w));
+  vec2 A = vec2(projectionMatrix[1][1] / projectionMatrix[0][0], 1.);
+  vec2 s = c.xy / c.w * A, d1 = s - cp.xy / cp.w * A, d2 = cn.xy / cn.w * A - s;
+  float l1 = length(d1), l2 = length(d2);
+  d1 = l1 > 1e-7 ? d1 / l1 : (l2 > 1e-7 ? d2 / l2 : vec2(1., 0.));
+  d2 = l2 > 1e-7 ? d2 / l2 : d1;
+  vec2 t = d1 + d2; t = dot(t, t) > 1e-8 ? normalize(t) : d1;
+  vec2 n = vec2(-t.y, t.x);
+  float mit = 1. / max(dot(n, vec2(-d1.y, d1.x)), .5);
+  // (wide enough to hold a few pixels of core and a soft halo at any distance, never wider than a stroke of the frame)
+  // (drawn to a point by its brightness, not by narrowing below a pixel: under one its thin tips broke into dots)
+  float hw = max(clamp(projectionMatrix[1][1] * aW.x * (1. / max(c.w, E) + .0042), uWMin, uWMax) * aW.y, uWMin * .45);
+  // (its breadth uneven along it, as its light is: held even, a glowing tube of glass; and thinning as it dies, so its
+  // afterglow is a fading thread, not a grey cable left hanging in the sky)
+  hw *= (.78 + .22 * sin(aAlong * 31. + aBright * 17.) * sin(aAlong * 13. + 1.1)) * uThin;
+  c.xy += n * (aSide * hw * mit) / A * c.w;
+  gl_Position = c;
+  gl_Position.z = min(gl_Position.z, gl_Position.w * .99999);
+  vSide = aSide; vBright = aBright; vAlong = aAlong; vTaper = aW.y;
+  // (its white core never under a pixel across: a third of a pixel, it fell between them, a dotted line)
+  float px = hw * uHalfPx;
+  vCoreK = clamp(px * px / 26., .04, 1.);
+  vPx = px;
+}`;
+const RIBBON_FS = `uniform float uAmt, uReveal, uLead, uEnv; uniform vec3 uCol; varying float vSide, vBright, vAlong, vTaper, vCoreK, vPx;
+void main(){
+  if (vAlong > uReveal) discard;
+  // graded like an electric arc: white-blue core, an ice-blue sheath, a deep blue halo dying out before the ribbon's
+  // edge; never the same brightness along its length (evenly lit, it was a neon tube)
+  float x2 = vSide * vSide;
+  float core = exp(-x2 * 46. * vCoreK), sheath = exp(-x2 * 9. * max(vCoreK, .35)), halo = exp(-x2 * 2.6) * (1. - x2);
+  float along = .62 + .38 * sin(vAlong * 173. + vBright * 31.) * sin(vAlong * 61. + 1.7);
+  float head = 1. + smoothstep(uReveal - .05, uReveal, vAlong) * 2.5 * step(uReveal, .999);
+  // (coming down, only its tip burns: the channel behind it is still dark)
+  float lead = mix(1., smoothstep(uReveal - .1, uReveal, vAlong), uLead);
+  // (dimming, between its strokes and dying, it goes to a soft glow, its white core and its sheath first: dimmed whole, a
+  // fine line without its light, it was a grey wire across the sky, lit again where it had hung; and behind the leader's
+  // tip, dark: drawn there at a twelfth, the same wire hung from the sky before the stroke came down it)
+  float dimK = smoothstep(.05, .45, uEnv), coreK = dimK * lead * lead;
+  // (and one a few pixels across goes dark between its strokes, its glow with its core: its glow left alone, a fine line
+  // without its light, it was a thin lavender wire hung in the sky; a broad one keeps its glow)
+  float haloK = mix(dimK, 1., smoothstep(4., 9., vPx));
+  vec3 c = (mix(vec3(1.), uCol, .26) * core * 15. * coreK + mix(vec3(.62, .84, 1.), uCol, .72) * sheath * 3.6 * along * dimK + uCol * uCol * halo * 1.15 * along * haloK) * mix(1., along, .5);
+  // the scene alpha marks the channel itself (as the flames are marked) so the ink can draw it in electric blue
+  // (all or nothing: a little of it, on its soft edges or as it died, put the pixel among the figures, and the ink drew
+  // the figures' outline down both sides of it, a hollow tube)
+  // (the mark is 6 added to what is under it: the frame's four samples to a pixel resolve its edge to 1.5, 3 or 4.5 over
+  // that, never among the figures or the smoke, and what is under it is still there for the ink to read, the remainder
+  // over 1.5 (post.js). Marked from 1.5 up, a pixel three samples in was a figure's, and the ink outlined the bolt in
+  // dots; and taken whole, the mark put black ink behind it as if in the thickest smoke)
+  // (marked while it keeps its glow, so the ink draws it dying in its own blue: unmarked, its last glow lifted the smoke
+  // it was seen through to paper, a pale grey cable across the sky)
+  float aM = min((core * coreK + sheath * .6) * 6. * vBright, 4.) * smoothstep(.02, .15, uAmt) * lead * haloK;
+  gl_FragColor = vec4(c * vBright * vBright * uAmt * head * pow(vTaper, .7) * lead, aM > .25 ? 6. : 0.);
+}`;
+
+// (leadFlash: how much the stepped leader lights the world, against the return stroke: a strike into the ground beside
+// the road lit the house it struck in colour a frame before the bolt itself was there to be seen)
+export function createLightning(count = 3, { leadFlash = 1 } = {}) {
   const group = new THREE.Group();
   group.name = 'lightning';
   const bolts = [];
   for (let i = 0; i < count; i++) {
     const g = new THREE.BufferGeometry();
-    const n = MAXSEG * 4;
+    const n = MAXPTS * 2;
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
-    g.setAttribute('aB', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
-    g.setAttribute('aInfo', new THREE.BufferAttribute(new Float32Array(n * 4), 4));
+    g.setAttribute('aPrev', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+    g.setAttribute('aNext', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+    g.setAttribute('aW', new THREE.BufferAttribute(new Float32Array(n * 2), 2));
+    g.setAttribute('aSide', new THREE.BufferAttribute(new Float32Array(n), 1));
+    g.setAttribute('aAlong', new THREE.BufferAttribute(new Float32Array(n), 1));
     g.setAttribute('aBright', new THREE.BufferAttribute(new Float32Array(n), 1));
-    const idx = new Uint32Array(MAXSEG * 6);
-    for (let s = 0; s < MAXSEG; s++) idx.set([s * 4, s * 4 + 1, s * 4 + 2, s * 4 + 1, s * 4 + 3, s * 4 + 2], s * 6);
-    g.setIndex(new THREE.BufferAttribute(idx, 1));
+    g.setIndex(new THREE.BufferAttribute(new Uint32Array(MAXPTS * 6), 1));
     g.setDrawRange(0, 0);
     const m = new THREE.ShaderMaterial({
-      vertexShader: BOLT_VS, fragmentShader: BOLT_FS, transparent: true, depthWrite: false, fog: false,
+      vertexShader: RIBBON_VS, fragmentShader: RIBBON_FS, transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide, forceSinglePass: true,
       blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneFactor,
-      uniforms: { uAmt: { value: 0 }, uReveal: { value: 1 }, uCol: { value: new THREE.Color(0.85, 0.86, 1.0) } },
+      uniforms: { uAmt: { value: 0 }, uReveal: { value: 1 }, uLead: { value: 0 }, uEnv: { value: 0 }, uCol: { value: new THREE.Color(0.85, 0.86, 1.0) }, uWMin: { value: 0.012 }, uWMax: { value: 0.06 }, uShift: { value: V3() }, uThin: { value: 1 }, uHalfPx: { value: 270 } },
     });
     const mesh = new THREE.Mesh(g, m);
     mesh.frustumCulled = false;
     mesh.visible = false;
     mesh.renderOrder = 20;
     group.add(mesh);
-    bolts.push({ mesh, g, m, t0: -1e9, top: V3(), target: V3(), strength: 1 });
+    bolts.push({ mesh, g, m, t0: -1e9, top: V3(), target: V3(), strength: 1, dur: 1, follow: null, req: null, eye: V3(), final: true });
   }
   let next = 0;
+  const lens = V3(0, 0, 0);
+  let lensKnown = false, cutPending = false;
 
-  function build(b, from, to, seed, width, branches = 0, levels = 6) {
-    const r = rng(seed);
-    const segs = [];
-    const main = jag(from, to, 0.17, levels, r);
-    const total = main.length - 1;
-    for (let k = 0; k < total; k++) segs.push([main[k], main[k + 1], width, k / total, 1]);
-    const nb = branches || 5 + Math.floor(r() * 5);
+  // (a stroke broken finer wherever it would be long in the frame: by the lens its strokes were the straight rods of a
+  // wire coat hanger, a few metres each; so it is crinkled at every distance it is seen at)
+  const _d = V3();
+  function refine(pts, eye, maxAng, disp, r, room) {
+    if (!eye) return pts.slice(0, Math.max(2, Math.min(pts.length, room)));
+    const out = [pts[0]];
+    // (kinked across the stroke's own line as the lens sees it, so it never doubles back: kinked across each piece of
+    // it, its finest kinks closed into boxes and loops)
+    const ax = pts[pts.length - 1].clone().sub(pts[0]).normalize();
+    const sub = (p, q, depth) => {
+      const len = p.distanceTo(q);
+      const mid = p.clone().lerp(q, 0.5);
+      if (depth > 10 || len < 0.02 || out.length >= room - 1 || len < maxAng * Math.max(0.25, mid.distanceTo(eye))) { out.push(q); return; }
+      const [s, fs] = across(ax, mid, eye, r);
+      mid.addScaledVector(s, len * disp * (r() - 0.5) * 2 * fs);
+      sub(p, mid, depth + 1);
+      sub(mid, q, depth + 1);
+    };
+    for (let k = 0; k < pts.length - 1 && out.length < room - 1; k++) sub(pts[k], pts[k + 1], 0);
+    if (out[out.length - 1] !== pts[pts.length - 1]) out.push(pts[pts.length - 1]);
+    return out;
+  }
+
+  // a stroke: its points, its half-width in metres, its taper (per point, 0..1), along (for the leader's reveal), brightness
+  function build(b, from, to, o, eye) {
+    const r = rng(o.seed), rf = rng(o.seed * 7 + 3);
+    const L = from.distanceTo(to);
+    const strokes = [];
+    const J = (a, b2, dp, lv, rr, dc) => eye ? jagLens(a, b2, dp, lv, rr, dc || 0.56, eye) : jag(a, b2, dp, lv, rr, dc);
+    // (off the channel the lens's way: off it every way, a branch could come straight at the lens, a scribble)
+    const outward = (dir, at, amt) => { if (!eye) return dir.addScaledVector(perp(dir, r), amt).normalize(); const [s] = across(dir, at, eye, r); return dir.addScaledVector(s, (r() < 0.5 ? -1 : 1) * amt).addScaledVector(perp(dir, r), amt * 0.25).normalize(); };
+    const coarse = J(from, to, o.disp, o.levels, r, o.decay || (o.levels > 6 ? 0.58 : 0.56));
+    let main = coarse;
+    // (fineEnd, with no lens to go by: its last strokes broken up finer, where it strikes close to the lens)
+    if (!eye && o.fineEnd > 0) {
+      const n0 = Math.max(0, main.length - 1 - o.fineEnd), out = main.slice(0, n0 + 1);
+      for (let k = n0; k < main.length - 1; k++) out.push(...jag(main[k], main[k + 1], 0.3, 3, r, 0.5).slice(1));
+      main = out;
+    }
+    // (the branches off the channel as first jagged, high up it: off the finer end they came down by the lens, in strokes
+    // of six metres, a wire bracket)
+    const ctot = coarse.length - 1;
+    const nb = o.branches || 5 + Math.floor(r() * 5);
+    const raw = [];
     for (let i = 0; i < nb; i++) {
-      const k = Math.floor(lerp(0.08, 0.75, r()) * total);
-      const start = main[k];
-      const dir = main[Math.min(total, k + 4)].clone().sub(start).normalize();
-      dir.addScaledVector(perp(dir, r), lerp(0.5, 1.2, r())).normalize();
-      const len = from.distanceTo(to) * lerp(0.12, 0.34, r()) * (1 - k / total * 0.6);
-      const sub = jag(start, start.clone().addScaledVector(dir, len), 0.24, levels > 6 ? 5 : 4, r);
-      for (let j = 0; j < sub.length - 1; j++) segs.push([sub[j], sub[j + 1], width * 0.5 * (1 - j / sub.length * 0.5), k / total + (j / (sub.length - 1)) * 0.3, 0.62 * (1 - j / sub.length * 0.4)]);
+      // (brK: how far down the channel they fork, if not the usual: struck close to the lens, its upper three quarters lie in
+      // a corner of the frame, and the branches off them crossed into a net there)
+      const k = Math.floor(lerp(o.brK ? o.brK[0] : 0.08, o.brK ? o.brK[1] : 0.75, r()) * ctot);
+      const start = coarse[k];
+      // (off at a clear angle: close beside the channel, they ran down with it, two channels twisted round each other, a cable)
+      const dir = outward(coarse[Math.min(ctot, k + 4)].clone().sub(start).normalize(), start, lerp(0.78, 1.35, r()));
+      const len = L * lerp(0.12, 0.34, r()) * (1 - k / ctot * 0.6);
+      const sub = J(start, start.clone().addScaledVector(dir, len), 0.24, o.levels > 6 ? 5 : 4, r);
+      raw.push({ pts: sub, w: o.width * 0.5, a0: k / ctot, a1: k / ctot + 0.3, br: [0.62, 0.62 * 0.6] });
       if (r() < 0.6) {
         const j0 = Math.floor(sub.length * lerp(0.3, 0.6, r()));
-        const d2 = sub[Math.min(sub.length - 1, j0 + 2)].clone().sub(sub[j0]).normalize().addScaledVector(perp(dir, r), 0.9).normalize();
-        const sub2 = jag(sub[j0], sub[j0].clone().addScaledVector(d2, len * 0.4), 0.26, 3, r);
-        for (let j = 0; j < sub2.length - 1; j++) segs.push([sub2[j], sub2[j + 1], width * 0.3, k / total + 0.15 + j / (sub2.length - 1) * 0.15, 0.42]);
+        const d2 = outward(sub[Math.min(sub.length - 1, j0 + 2)].clone().sub(sub[j0]).normalize(), sub[j0], 0.9);
+        const sub2 = J(sub[j0], sub[j0].clone().addScaledVector(d2, len * 0.4), 0.26, 3, r);
+        raw.push({ pts: sub2, w: o.width * 0.3, a0: k / ctot + 0.15, a1: k / ctot + 0.3, br: [0.42, 0.42] });
       }
     }
-    const P = b.g.attributes.position, B = b.g.attributes.aB, I = b.g.attributes.aInfo, Br = b.g.attributes.aBright;
-    const ns = Math.min(MAXSEG, segs.length);
-    for (let s = 0; s < ns; s++) {
-      const [a, c, w, along, br] = segs[s];
-      for (let v = 0; v < 4; v++) {
-        const i = s * 4 + v;
-        P.setXYZ(i, a.x, a.y, a.z);
-        B.setXYZ(i, c.x, c.y, c.z);
-        I.setXYZW(i, v >> 1, (v & 1) ? 1 : -1, w, Math.min(1, along));
-        Br.setX(i, br);
+    // (and a few short forks close above where it strikes, where a close lens sees only the last few metres of it)
+    for (let i = 0; i < (o.near || 0); i++) {
+      // (nearM: no further up the channel than that many metres, for a lens a few metres from where it strikes)
+      const f0 = r(), dEnd = o.nearM ? Math.min(L * lerp(0.004, 0.03, f0), o.nearM * lerp(0.35, 1, f0)) : L * lerp(0.004, 0.03, f0);
+      let k = Math.max(1, Math.min(ctot - 1, Math.round((1 - dEnd / L) * ctot))), start = coarse[k];
+      // (that far back along the channel itself, finer than its coarse points, which are metres apart)
+      if (o.nearM) {
+        let acc = 0;
+        for (k = ctot; k > 1; k--) { const sg = coarse[k].distanceTo(coarse[k - 1]); if (acc + sg >= dEnd) { start = coarse[k].clone().lerp(coarse[k - 1], (dEnd - acc) / sg); break; } acc += sg; }
+        k = Math.max(1, Math.min(ctot - 1, k));
+      }
+      const dir = outward(coarse[Math.min(ctot, k + 1)].clone().sub(coarse[k - 1]).normalize(), start, lerp(0.6, 1.3, r()));
+      const len = dEnd * lerp(0.5, 1.1, r());
+      raw.push({ pts: J(start, start.clone().addScaledVector(dir, len), 0.22, 4, r), w: o.width * 0.45, a0: k / ctot, a1: k / ctot + 0.02, br: [0.55, 0.4] });
+    }
+    // refined against the lens: the channel first, then the branches with what room is left
+    let room = MAXPTS;
+    const mp = refine(main, eye, o.maxAng, 0.24, rf, Math.min(room, Math.round(MAXPTS * 0.62)));
+    room -= mp.length;
+    {
+      // (arc length along it: the leader's reveal and the taper go by the metre, not by the point)
+      const cum = [0];
+      for (let k = 1; k < mp.length; k++) cum.push(cum[k - 1] + mp[k].distanceTo(mp[k - 1]));
+      const tot = cum[cum.length - 1] || 1;
+      const f = cum.map(c => c / tot);
+      // (both ends drawn out to points, unless it strikes something: then it meets it full)
+      const taper = f.map(x => lerp(0.25, 1, smooth01(x / 0.04)) * (o.tip ? 1 - smooth01((x - 0.93) / 0.07) : 1));
+      strokes.push({ pts: mp, w: o.width, taper, along: f, br: f.map(() => 1) });
+    }
+    for (const s of raw) {
+      if (room < 8) break;
+      const pts = refine(s.pts, eye, o.maxAng, 0.24, rf, room);
+      room -= pts.length;
+      const cum = [0];
+      for (let k = 1; k < pts.length; k++) cum.push(cum[k - 1] + pts[k].distanceTo(pts[k - 1]));
+      const tot = cum[cum.length - 1] || 1;
+      const f = cum.map(c => c / tot);
+      strokes.push({ pts, w: s.w, taper: f.map(x => Math.pow(1 - x, 0.8)), along: f.map(x => lerp(s.a0, s.a1, x)), br: f.map(x => lerp(s.br[0], s.br[1], x)) });
+    }
+    // written out: two vertices a point, one each side; two triangles between each point and the next along a stroke
+    const P = b.g.attributes.position, Pp = b.g.attributes.aPrev, Pn = b.g.attributes.aNext, W = b.g.attributes.aW;
+    const Sd = b.g.attributes.aSide, Al = b.g.attributes.aAlong, Br = b.g.attributes.aBright, I = b.g.index.array;
+    let v = 0, ii = 0;
+    for (const s of strokes) {
+      const n = s.pts.length;
+      if (n < 2) continue;
+      const base = v;
+      for (let k = 0; k < n; k++) {
+        const p = s.pts[k], pv = s.pts[Math.max(0, k - 1)], nx = s.pts[Math.min(n - 1, k + 1)];
+        for (let side = 0; side < 2; side++) {
+          P.setXYZ(v, p.x, p.y, p.z); Pp.setXYZ(v, pv.x, pv.y, pv.z); Pn.setXYZ(v, nx.x, nx.y, nx.z);
+          W.setXY(v, s.w, s.taper[k]); Sd.setX(v, side ? 1 : -1); Al.setX(v, Math.min(1, s.along[k])); Br.setX(v, s.br[k]);
+          v++;
+        }
+      }
+      for (let k = 0; k < n - 1; k++) {
+        const a = base + k * 2;
+        // (wound counter-clockwise on the screen, the left of the way it runs: wound the other way, it was culled, all
+        // but where it turned back on itself, a scatter of chips)
+        I[ii++] = a; I[ii++] = a + 2; I[ii++] = a + 1;
+        I[ii++] = a + 1; I[ii++] = a + 2; I[ii++] = a + 3;
       }
     }
-    for (const at of [P, B, I, Br]) at.needsUpdate = true;
-    b.g.setDrawRange(0, ns * 6);
+    for (const at of [P, Pp, Pn, W, Sd, Al, Br]) at.needsUpdate = true;
+    b.g.index.needsUpdate = true;
+    b.g.setDrawRange(0, ii);
+    if (eye) b.eye.copy(eye);
   }
 
   // envelope of one strike: leader, return stroke, a re-strike, then the fade
   // stepped leader, return stroke, flicker, two re-strikes down the same channel, then the afterglow
+  // [how far down it has come, how bright it is drawn, how much it lights the world, in its leader]
+  // (drawn: dark between its strokes, its afterglow quick, its leader only the tip coming down; caught on any frame
+  // between its strokes, half lit, or dying, or still coming, it was a thin grey wire across the sky. The light it
+  // throws on the world keeps the gentler flicker: the frame is not strobed)
   const envelope = s => {
-    if (s < 0 || s > 1.1) return [0, 0];
+    if (s < 0 || s > 1.1) return [0, 0, 0, 0];
     const reveal = clamp(s / 0.07);
-    let amt;
-    if (s < 0.07) amt = 0.3 + 0.15 * Math.sin(s * 400);
-    else if (s < 0.12) amt = 1.25;
-    else if (s < 0.2) amt = lerp(1, 0.15, (s - 0.12) / 0.08) * (0.75 + 0.25 * Math.sin(s * 300));
-    else if (s < 0.26) amt = 1.0;
-    else if (s < 0.36) amt = lerp(0.8, 0.12, (s - 0.26) / 0.1);
-    else if (s < 0.41) amt = 0.75;
-    else amt = 0.75 * Math.exp(-(s - 0.41) * 6.5);
-    return [reveal, amt];
+    let amt, lit, lead = 0;
+    if (s < 0.07) { amt = 0.35; lit = 0.3 + 0.15 * Math.sin(s * 400); lead = 1; }
+    else if (s < 0.12) amt = lit = 1.25;
+    else if (s < 0.2) { const f = 0.75 + 0.25 * Math.sin(s * 300); lit = lerp(1, 0.15, (s - 0.12) / 0.08) * f; amt = Math.exp(-(s - 0.12) * 55) * f; }
+    else if (s < 0.26) amt = lit = 1.0;
+    else if (s < 0.36) { lit = lerp(0.8, 0.12, (s - 0.26) / 0.1); amt = 0.8 * Math.exp(-(s - 0.26) * 55); }
+    else if (s < 0.41) amt = lit = 0.75;
+    // (the afterglow quick: slow, the channel hung on in the sky for half a second, a grey cable)
+    else { lit = 0.75 * Math.exp(-(s - 0.41) * 17); amt = 0.75 * Math.exp(-(s - 0.41) * 30); }
+    return [reveal, amt, lit, lead];
   };
 
   return {
     group,
     // strike from a point in the cloud base down to `target`
-    strike(time, top, target, { seed = Math.random() * 1e6, width = 2.2, color = null, strength = 1, branches = 0, levels = 6 } = {}) {
+    // (dur: the stroke's length against an ordinary one's: a quick stroke flashes and is gone)
+    // (eye: where the lens is, to break the strokes finer by it; if none, the lens of the last frame drawn, and the bolt
+    // is made again for the lens it is first seen from. maxAng: the longest a stroke may be in the frame, in radians.
+    // wmin, wmax: its half-width in the frame, as a fraction of half its height. tip: it ends in the air, drawn out to a
+    // point; or strikes something, full. near: forks close above where it strikes. follow: what it strikes, if it moves)
+    strike(time, top, target, { seed = Math.random() * 1e6, width = 2.2, color = null, strength = 1, branches = 0, levels = 6, dur = 1, disp = 0.17, fineEnd = 0, decay = 0, eye = null, maxAng = 0.02, wmin = 0.012, wmax = 0.06, tip = 1, near = 0, nearM = 0, brK = null, follow = null } = {}) {
       const b = bolts[next++ % bolts.length];
-      b.t0 = time; b.strength = strength;
+      b.t0 = time; b.strength = strength; b.dur = dur;
       b.top.copy(top); b.target.copy(target);
-      build(b, top, target, seed | 0, width, branches, levels);
+      b.req = { from: top.clone(), to: target.clone(), o: { seed: seed | 0, width, branches, levels, disp, fineEnd, decay, maxAng, tip, near, nearM, brK } };
+      const e = eye || (lensKnown ? lens : null);
+      build(b, b.req.from, b.req.to, b.req.o, e);
+      b.final = !!eye;
+      b.follow = follow;
+      b.m.uniforms.uShift.value.set(0, 0, 0);
+      b.m.uniforms.uWMin.value = wmin; b.m.uniforms.uWMax.value = wmax;
       b.m.uniforms.uCol.value.copy(color || new THREE.Color(0.32, 0.56, 1.0));
+    },
+    // the lens this frame is drawn from (after it is placed): a bolt struck this frame without one is made again for it,
+    // if it has moved (a cut); and an end that follows what it strikes is put on it
+    // (a cut: the bolts still in the air are made again for the new lens. Made for the last one, three hundred metres
+    // off, a bolt carried on into a shot close to what it strikes was a polyline of long straight strokes)
+    cut() { cutPending = true; },
+    lens(eye) {
+      lens.copy(eye); lensKnown = true;
+      const recut = cutPending; cutPending = false;
+      for (const b of bolts) {
+        if (!b.final && b.req) { if (b.eye.distanceTo(eye) > 0.5 || b.g.drawRange.count === 0) build(b, b.req.from, b.req.to, b.req.o, eye); b.final = true; }
+        else if (recut && b.req && b.mesh.visible) build(b, b.req.from, b.req.to, b.req.o, eye);
+        if (b.follow && b.mesh.visible) b.m.uniforms.uShift.value.copy(b.follow()).sub(b.target);
+      }
     },
     // returns the brightest flash this frame
     update(time) {
       let flash = 0, pos = null, col = null;
       for (const b of bolts) {
-        const [reveal, amt] = envelope(time - b.t0);
-        b.mesh.visible = amt > 0.003;
+        const sN = (time - b.t0) / b.dur, [reveal, amt, lit0, lead] = envelope(sN);
+        b.mesh.visible = amt > 0.004;
         b.m.uniforms.uAmt.value = amt * b.strength;
         b.m.uniforms.uReveal.value = reveal;
-        if (amt * b.strength > flash) { flash = amt * b.strength; pos = b.top; col = b.m.uniforms.uCol.value; }
+        b.m.uniforms.uLead.value = lead;
+        // (how far through its own light it is, apart from how strong a bolt it is: dim, it is drawn as a glow, RIBBON_FS)
+        b.m.uniforms.uEnv.value = amt;
+        b.m.uniforms.uThin.value = sN < 0.41 ? 1 : Math.max(0.55, amt / 0.75);
+        const lit = lit0 * b.strength * (lead ? leadFlash : 1);
+        if (lit > flash) { flash = lit; pos = b.top; col = b.m.uniforms.uCol.value; }
       }
       return { flash, pos, col };
     },
-    reset() { for (const b of bolts) { b.t0 = -1e9; b.mesh.visible = false; } },
+    reset() { for (const b of bolts) { b.t0 = -1e9; b.mesh.visible = false; b.follow = null; } },
+    // (the frame's height in pixels: what a pixel is, for the core)
+    res(h) { for (const b of bolts) b.m.uniforms.uHalfPx.value = h * 0.5; },
   };
 }
 
@@ -177,8 +421,8 @@ export function createRain(count = 2400) {
     blending: THREE.CustomBlending, blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneMinusSrcAlphaFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
     // (uCamVel: how fast the eye itself is going, m/s; with uExpo, the time a drop is exposed for, a drop the eye flies
     // past fast is drawn out into a long streak along the way it goes by)
-    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uAmt: { value: 0 }, uCenter: { value: V3() }, uBox: { value: V3(36, 22, 36) }, uWindV: { value: new THREE.Vector2(1.5, 0.6) }, uCol: { value: new THREE.Color(0.75, 0.8, 0.88) }, uCamVel: { value: V3() }, uExpo: { value: 0 }, uTag: { value: 0 } }]),
-    vertexShader: `attribute vec4 aRand; uniform float uTime, uAmt, uExpo; uniform vec3 uCenter, uBox, uCamVel; uniform vec2 uWindV; varying float vA; varying float vX;
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uAmt: { value: 0 }, uCenter: { value: V3() }, uBox: { value: V3(36, 22, 36) }, uWindV: { value: new THREE.Vector2(1.5, 0.6) }, uCol: { value: new THREE.Color(0.75, 0.8, 0.88) }, uCamVel: { value: V3() }, uExpo: { value: 0 }, uTag: { value: 0 }, uResY: { value: 540 } }]),
+    vertexShader: `attribute vec4 aRand; uniform float uTime, uAmt, uExpo, uResY; uniform vec3 uCenter, uBox, uCamVel; uniform vec2 uWindV; varying float vA; varying float vX;
 #include <fog_pars_vertex>
 void main(){
   vec3 vel = vec3(uWindV.x, -9.5 - aRand.w * 3., uWindV.y);
@@ -189,9 +433,14 @@ void main(){
   vec3 dir = normalize(rel);
   vec3 toCam = normalize(cameraPosition - c);
   vec3 side = normalize(cross(dir, toCam));
-  vec3 p = c + side * position.x * .014 + dir * position.y * ((.5 + aRand.w * .4) + length(rel) * uExpo);
+  // (never under a pixel across, fainter instead: a hair under one, each streak fell between the pixels into a row of
+  // dashes, and the rain was a screen door; by the frame's own pixels, not a share of the distance, which at the film's
+  // focal lengths came to six tenths of one)
+  float dC = length(cameraPosition - c);
+  float w = max(max(.014, dC * .0013), 2.6 * dC / (projectionMatrix[1][1] * uResY));
+  vec3 p = c + side * position.x * w + dir * position.y * ((.5 + aRand.w * .4) + length(rel) * uExpo);
   vX = position.x;
-  vA = uAmt * (1. - smoothstep(.25, .5, length(q / uBox))) * step(aRand.w, uAmt * 1.2);
+  vA = uAmt * (1. - smoothstep(.25, .5, length(q / uBox))) * step(aRand.w, uAmt * 1.2) * (.014 / w);
   vec4 mvPosition = viewMatrix * vec4(p, 1.);
   gl_Position = projectionMatrix * mvPosition;
   #include <fog_vertex>
@@ -274,7 +523,7 @@ const SPARKS = 150;
 export function createGroundStrikes(groundAt, max = 2) {
   const group = new THREE.Group();
   group.name = 'groundStrikes';
-  const bolts = createLightning(max);
+  const bolts = createLightning(max, { leadFlash: 0 });
   group.add(bolts.group);
   const slots = [];
   const R = 5.5, N = 14;
@@ -316,7 +565,10 @@ void main(){
   vec2 d = (vUv - vec2(.5, .12)) * vec2(1., .8); float r = length(d);
   float g = exp(-r * r * 22.) * 1.4 + exp(-r * r * 6.) * .35;
   vec3 c = (uCol * g * 2.2 + vec3(.8, .92, 1.) * exp(-r * r * 140.) * 6.) * uGlow;
-  gl_FragColor = vec4(c, min(exp(-r * r * 30.) * uGlow * 2.5, 3.));
+  // (its light only, unmarked: marked in the scene alpha as it fell off, up to 3, its dim outer air against the sky was
+  // taken for smoke and inked black, a dark dome where it struck, and where the mark ran through the figures' values the
+  // ink drew a hard-edged arc round it)
+  gl_FragColor = vec4(c, 0.);
 }`,
     });
     const ball = new THREE.Mesh(new THREE.PlaneGeometry(7, 7).translate(0, 3.5 - 0.84, 0), bm);
@@ -371,7 +623,7 @@ void main(){
       const S = slots[next++ % slots.length];
       S.t0 = time; S.u0 = u0; S.strength = strength;
       S.target.copy(target);
-      bolts.strike(time, top, target, { seed, width: 0.75, strength, branches: 10, color, levels: 9 });
+      bolts.strike(time, top, target, { seed, width: 0.75, strength, branches: 10, color, levels: 9, tip: 0 });
       // lay the burn on the ground
       const pos = S.decal.geometry.attributes.position;
       for (let k = 0; k < pos.count; k++) {
@@ -393,19 +645,22 @@ void main(){
         const s = time - S.t0;
         const live = S.t0 > -1e8 && u > -1e8 && u >= S.u0 - 0.05 && u < S.u0 + 6;
         // the ground flares with the return stroke and the re-strikes, then cools over a second or two
-        const glow = !live || s < 0.05 ? 0 : (s < 0.45 ? 1 : Math.exp(-(s - 0.45) * 1.8)) * (0.55 + 0.45 * Math.max(0, b.flash)) * S.strength;
-        const scorch = live && s > 0.06 ? smooth01((s - 0.06) / 0.25) * (1 - smooth01((u - S.u0 - 2.5) / 3)) : 0;
+        // (from the return stroke, with the bolt there: from inside its leader, the struck house was lit before it came)
+        const glow = !live || s < 0.07 ? 0 : (s < 0.45 ? 1 : Math.exp(-(s - 0.45) * 1.8)) * (0.55 + 0.45 * Math.max(0, b.flash)) * S.strength;
+        const scorch = live && s > 0.07 ? smooth01((s - 0.06) / 0.25) * (1 - smooth01((u - S.u0 - 2.5) / 3)) : 0;
         S.dm.uniforms.uGlow.value = glow;
         S.dm.uniforms.uScorch.value = scorch;
         S.decal.visible = glow > 0.002 || scorch > 0.002;
         S.bm.uniforms.uGlow.value = glow * (0.4 + 0.6 * Math.exp(-Math.max(0, s - 0.1) * 1.5));
         S.ball.visible = glow > 0.002;
         S.sm.uniforms.uAge.value = s - 0.07;
-        S.sparks.visible = live && s > 0.06 && s < 2;
+        S.sparks.visible = live && s > 0.07 && s < 2;
         if (glow > glowMax) { glowMax = glow; gpos = S.target; }
       }
       return { flash: b.flash, pos: b.pos, col: b.col, glow: glowMax, glowPos: gpos };
     },
+    lens(eye) { bolts.lens(eye); },
+    res(h) { bolts.res(h); },
     reset() { bolts.reset(); for (const S of slots) { S.t0 = -1e9; S.u0 = -1e9; S.decal.visible = false; S.sparks.visible = false; } },
   };
 }

@@ -280,7 +280,7 @@ function palette(opts, R, v) {
   P[SLOT.robe] = linC(opts.robe || [0.25, 0.3, 0.45]);
   P[SLOT.sash] = linC(opts.sash || [0.55, 0.15, 0.12]);
   P[SLOT.pants] = linC(opts.pants || [0.28, 0.25, 0.22]);
-  P[SLOT.wraps] = sC(0.66, 0.62, 0.55);
+  P[SLOT.wraps] = opts.wraps ? linC(opts.wraps) : sC(0.66, 0.62, 0.55);
   P[SLOT.shoes] = sC(0.13, 0.12, 0.12);
   P[SLOT.leather] = sC(0.24, 0.17, 0.12);
   P[SLOT.under] = linC(opts.under || [0.85, 0.8, 0.7]);

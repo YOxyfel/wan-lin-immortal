@@ -445,7 +445,7 @@ export function createScore(ctx, out, { play = () => false, has = () => false } 
     // home: D and A, low and warm (the morning, the road; the last page)
     { g: drone([[D2, 0.5], [A2, 0.32], [D3, 0.12]], 'triangle', 480), lvl: 0.016, k: u => Math.max(smooth(1, 5, u) * (1 - smooth(42.5, 45, u)), smooth(141, 142.5, u)) },
     // the dread: low D against the tritone (the smith's iron; the pines; the night of the fire; the crag)
-    { g: drone([[D1, 0.6], [Gs1, 0.38], [D2, 0.2], [Gs2, 0.08]], 'sawtooth', 170), lvl: 0.04, k: u => Math.max(0.35 * band(25.9, 26.4, 27.6, 28.4, u), band(44.4, 46.4, 47.42, 47.5, u), 0.8 * band(55.6, 57.6, 62.5, 64.5, u), 0.7 * band(97.6, 98.6, 102.8, 103.8, u)) },
+    { g: drone([[D1, 0.6], [Gs1, 0.38], [D2, 0.2], [Gs2, 0.08]], 'sawtooth', 170), lvl: 0.04, k: u => Math.max(0.35 * band(25.315, 25.51, 26.218, 26.466, u), band(44.4, 46.4, 47.42, 47.5, u), 0.8 * band(55.6, 57.6, 62.5, 64.5, u), 0.7 * band(97.6, 98.6, 102.8, 103.8, u)) },
     // sorrow: B and F sharp (the house; the night after)
     { g: drone([[B1, 0.5], [Fs2, 0.32], [B2, 0.16], [D3, 0.06]], 'triangle', 360), lvl: 0.028, k: u => Math.max(band(77.2, 79, 92.0, 93.5, u) * 0.8, band(94.8, 96, 103.5, 105.5, u)) },
     // the forest: an open fifth, higher (the years; the dell)
@@ -484,7 +484,7 @@ export function createScore(ctx, out, { play = () => false, has = () => false } 
     };
   }
   // (and the war's: each charge, the swing, the crescent coming, the masked one coming down)
-  const SWELLS = [swell(53.7, 54.42, 0.05, 300, 4200), swell(50.17, 50.25, 0.06, 200, 3600), swell(50.66, 50.742, 0.04, 400, 5200), swell(50.86, 50.95, 0.05, 300, 4400), swell(51.5, 51.555, 0.05, 250, 3800), swell(52.3, 52.47, 0.07, 150, 5000)];
+  const SWELLS = [swell(53.7, 54.42, 0.05, 300, 4200), swell(50.17, 50.25, 0.06, 200, 3600), swell(50.66, 50.742, 0.04, 400, 5200), swell(50.86, 50.95, 0.05, 300, 4400), swell(51.5, 51.555, 0.05, 250, 3800), swell(52.25, 52.445, 0.08, 120, 5200)];
 
   // ================================================================ one melody at a time
   // (a phrase that comes while another is about to end waits for it; one that must be heard makes the other give way)
@@ -528,7 +528,7 @@ export function createScore(ctx, out, { play = () => false, has = () => false } 
     // the street and the road: the strings' bass, a chord to a bar (at the gate, the same strings round B)
     { band: [19.4, 20.6, 42.4, 44.2], beat: 0.72, fn(i, t, k, u) {
       const bar = Math.floor(i / 8), st = i % 8;
-      const gate = u > 31 && u < 36.4, road = u >= 36.4;
+      const gate = u > 32.032 && u < 36.4, road = u >= 36.4;
       const prog = gate ? [[B2, Fs3], [Fs2, B2], [B2, Fs3], [E2, B2]] : road ? [[D2, A2], [A2, E3], [B2, Fs3], [A2, E3]] : [[D2, A2], [B2, Fs3], [E2, B2], [A2, E3]];
       const [r, f] = prog[bar % 4];
       if (st === 0) pluck(t, r, { gain: 0.1 * k, vib: 0.1, vibAt: 0.6 });
@@ -567,9 +567,12 @@ export function createScore(ctx, out, { play = () => false, has = () => false } 
   at(19.4, t => gliss(t, D4, D5, 0.45, 0.04));
   // ---- the street (the boy's own tune), the smith's iron, the gate, the old road
   at(21.4, t => flute(t, DIZI_A, B * 0.98, { gain: 0.065 }));
-  at(26.3, t => { cut(t, 0.5); pluck(t, Fs4, { gain: 0.07, press: 2, pressAt: 0.5, pressTau: 0.35 }); bell(t + 0.6, Gs5, 0.012, 3); });
-  at(28.5, t => flute(t, DIZI_B, B, { gain: 0.065 }));
-  at(31.2, t => zheng(t, GATE, B * 1.04, { gain: 0.13, bass: BASS_GATE }));
+  // (the street's cues on the walk's beats: walk.js; the smith's iron as the world drains to ink, the boy's tune again
+  // as he goes on, and once more after the bun, the gate's tune as he comes up to it)
+  at(25.439, t => { cut(t, 0.5); pluck(t, Fs4, { gain: 0.07, press: 2, pressAt: 0.5, pressTau: 0.35 }); bell(t + 0.6, Gs5, 0.012, 3); });
+  at(26.926, t => flute(t, DIZI_B, B, { gain: 0.065 }));
+  at(30.704, t => flute(t, DIZI_A, B * 1.02, { gain: 0.05 }));
+  at(32.12, t => zheng(t, GATE, B * 1.04, { gain: 0.13, bass: BASS_GATE }));
   at(37.4, t => zheng(t, THEME_A, 0.8, { gain: 0.11, octave: 12 }));
   at(43.2, t => { pluck(t, B4, { gain: 0.08, press: 1, pressAt: 0.6, pressTau: 0.2 }); pluck(t + 1.5, Fs4, { gain: 0.055, vib: 0.2 }); });
   // ---- II. the sky turns: the forest holds its breath
@@ -599,11 +602,19 @@ export function createScore(ctx, out, { play = () => false, has = () => false } 
   at(50.95, t => { if (!play('clash2', { gain: 0.6, at: t, off: 0.08, dest: drumIn })) shock(t, { gain: 0.55, f0: 44, dur: 2.2, crack: 1 }); drum(t, { gain: 0.45, pitch: 42, decay: 1.2, sub: 0.8 }); }, 1);
   for (const u of [51.09, 51.11]) at(u, t => shock(t, { gain: 0.3, f0: 32, dur: 2.6, crack: 0.15 }), 0.5);
   at(51.15, t => { choir(t, [D2, NOTE.Ds2, A2], 2.6, { gain: 0.045, vowel: 'u', attack: 0.6 }); shock(t, { gain: 0.14, f0: 28, dur: 3, crack: 0 }); }, 2);
-  for (const u of [51.172, 51.2, 51.232, 51.262, 51.292, 51.322, 51.354, 51.384, 51.418, 51.448, 51.47]) at(u, t => { shock(t, { gain: 0.3, f0: 62, dur: 1.3, crack: 0.95 }); if (u === 51.172 || u === 51.262 || u === 51.47) play('thunder', { gain: 0.55, at: t, off: 0.35, dest: drumIn }); }, 0.2);
+  for (const u of [51.172, 51.2, 51.232, 51.306, 51.322, 51.343, 51.364, 51.388, 51.418, 51.448, 51.47]) at(u, t => { shock(t, { gain: 0.3, f0: 62, dur: 1.3, crack: 0.95 }); if (u === 51.172 || u === 51.306 || u === 51.47) play('thunder', { gain: 0.55, at: t, off: 0.35, dest: drumIn }); }, 0.2);
   at(51.555, t => { if (!play('clash-lock', { gain: 0.75, at: t, dest: drumIn })) shock(t, { gain: 0.6, f0: 40, dur: 2.4, crack: 1 }); drum(t, { gain: 0.5, pitch: 40, decay: 1.5, sub: 1 }); choir(t + 0.05, [D2, NOTE.Ds2, Gs2, A2], 2.6, { gain: 0.05, vowel: 'a', attack: 0.15, release: 0.4 }); }, 1);
   for (let i = 0; i < 7; i++) at(51.62 + i * 0.07, t => drum(t, { gain: 0.2 + i * 0.03, pitch: 50 - i, decay: 0.6, sub: 0.5 }), 0.2);
-  at(52.1, t => { if (!play('clash', { gain: 0.8, rate: 0.84, at: t, dest: drumIn })) shock(t, { gain: 0.8, f0: 34, dur: 3.2, crack: 1 }); if (!play('gong', { gain: 0.42, rate: 0.84, at: t, dest: drumIn })) gong(t, { gain: 0.18, f0: 42, dur: 7, fall: 0.9 }); drum(t, { gain: 0.65, pitch: 34, decay: 2.2, sub: 1 }); }, 1);
-  for (let i = 0; i < 10; i++) at(52.2 + 0.26 * Math.pow(i / 10, 0.7), t => drum(t, { gain: 0.14 + i * 0.03, pitch: 56 - i * 0.6, decay: 0.32, sub: 0.3 }), 0.2);
+  at(52.085, t => { if (!play('clash', { gain: 0.8, rate: 0.84, at: t, dest: drumIn })) shock(t, { gain: 0.8, f0: 34, dur: 3.2, crack: 1 }); if (!play('gong', { gain: 0.42, rate: 0.84, at: t, dest: drumIn })) gong(t, { gain: 0.18, f0: 42, dur: 7, fall: 0.9 }); drum(t, { gain: 0.65, pitch: 34, decay: 2.2, sub: 1 }); }, 1);
+  // (the drums under the masked one's fury, on Watch's clock: faster and faster from the first bolt into him to the fall
+  // of the storm's blade)
+  { const t0 = watchT(52.25), t1 = watchT(52.44); for (let i = 0; i < 16; i++) { const x = 1 - Math.pow(1 - i / 16, 1.6); at(watchU(t0 + (t1 - t0) * x), t => drum(t, { gain: 0.12 + i * 0.024, pitch: 56 - i * 0.6, decay: 0.32, sub: 0.3 }), 0.2); } }
+  // (the storm let go out of him as he swings: the air torn open)
+  at(52.39, t => { shock(t, { gain: 0.6, f0: 36, dur: 2.6, crack: 1 }); drum(t, { gain: 0.6, pitch: 34, decay: 2.0, sub: 1 }); play('thunder', { gain: 0.5, at: t, off: 0.2, dest: drumIn }); }, 1);
+  // (the storm out of him with the blade, in a volley of bolts onto the bell: thunder with the first)
+  at(52.412, t => { play('thunder', { gain: 0.6, at: t, off: 0.3, dest: drumIn }); shock(t, { gain: 0.35, f0: 58, dur: 1.4, crack: 0.9 }); }, 0.2);
+  // (and the blade of the storm on the bell: it breaks, and he is smashed down)
+  at(52.445, t => { if (!play('clash', { gain: 0.85, rate: 0.78, at: t, dest: drumIn })) shock(t, { gain: 0.8, f0: 32, dur: 3.4, crack: 1 }); drum(t, { gain: 0.7, pitch: 32, decay: 2.4, sub: 1 }); shock(t + 0.02, { gain: 0.3, f0: 70, dur: 0.8, crack: 0.9 }); }, 1);
   // the dive: over the top (weightless), the thunder gathering, the star falling, the strike
   at(52.5, t => choir(t, [Fs4, A4, D5], 0.6, { gain: 0.03, vowel: 'o', attack: 0.35, release: 1.4 }));
   for (let i = 0; i < 16; i++) at(52.95 + 1.05 * Math.pow(i / 16, 0.62), t => drum(t, { gain: 0.16 + i * 0.02, pitch: 58 - i * 0.4, decay: 0.4, sub: 0.3 }), 0.5);
@@ -621,7 +632,7 @@ export function createScore(ctx, out, { play = () => false, has = () => false } 
   at(66.4, t => flute(t, [[Fs4, 2, 'v'], [E4, 1], [D4, 1], [B3, 3, 'f'], [D4, 1.5, 'g'], [Fs4, 1], [Gs4, 2.5, 'v'], [Fs4, 3, 'f']], 0.52, { gain: 0.06, xiao: true }));
   at(70.6, t => flute(t, [[B3, 2, 'v'], [D4, 1], [Fs4, 1], [E4, 2, 'q'], [D4, 1], [B3, 4, 'f']], 0.55, { gain: 0.06, xiao: true }));
   at(74.6, t => { tremolo(t, B3, 2.4, 0.05); choir(t, [B2, NOTE.F3, B3], 3, { gain: 0.035, vowel: 'u', attack: 1.4 }); });
-  for (const u of [66.6, 68.3, 70.4, 72.6, 75.0]) at(u, t => drum(t, { gain: 0.4, pitch: 44, decay: 1.0, sub: 0.8 }), 1);
+  for (const u of [66.6, 68.3, 70.4, 72.6, 73.3, 75.0]) at(u, t => drum(t, { gain: 0.4, pitch: 44, decay: 1.0, sub: 0.8 }), 1);
   // ---- the house; the open door
   at(79.0, t => pluck(t, B3, { gain: 0.08, press: -2, vib: 0.15, vibAt: 0.5 }));
   at(81.0, t => gong(t, { gain: 0.05, f0: 50, dur: 6, fall: 0.96, swell: 0.8 }));

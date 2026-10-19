@@ -158,13 +158,28 @@ export function createElder() {
       rig.copyPose(Pt, Pc); pointArm(K, Pt, c, _d.copy(s.pointDir).applyQuaternion(_wq), 'L');
       rig.blendBones(Pc, Pt, pt, K.armBones.L);
     }
-    // (his eyes on the boy)
+    // (his eyes on the boy: his head turned there the way a head turns, easing into it and out of it; a point nearly
+    // straight over his head gives no way to turn, so it keeps the way it was turned)
     if (s.lookAt) {
       rig.fk(Pc);
       group.worldToLocal(_lk.copy(s.lookAt));
       rig.pointOn(I.head, _hp.set(0, rig.bindPos[I.head].y + 0.07 * d.k, 0.05 * d.k), _hp);
       _lk.sub(_hp).applyQuaternion(_lq.copy(rig.wq[I.chest]).invert());
-      const ly = clamp(Math.atan2(_lk.x, _lk.z) / DEG, -60, 60), lp = clamp(-Math.atan2(_lk.y, Math.hypot(_lk.x, _lk.z)) / DEG, -30, 35);
+      const flat = Math.hypot(_lk.x, _lk.z);
+      const ly = flat < 0.3 * Math.abs(_lk.y) ? st.lookT.x : clamp(Math.atan2(_lk.x, _lk.z) / DEG, -60, 60);
+      st.lookT.set(ly, clamp(-Math.atan2(_lk.y, flat) / DEG, -30, 35));
+    } else st.lookT.set(0, 0);
+    if (!st.settled || !(dt > 0)) { st.look.copy(st.lookT); st.lookV.set(0, 0); }
+    else {
+      const n = Math.max(1, Math.ceil(dt / (1 / 120))), h = dt / n, w = 6.5;
+      for (let i = 0; i < n; i++) {
+        st.lookV.x += (w * w * (st.lookT.x - st.look.x) - 2 * w * st.lookV.x) * h;
+        st.lookV.y += (w * w * (st.lookT.y - st.look.y) - 2 * w * st.lookV.y) * h;
+        st.look.x += st.lookV.x * h; st.look.y += st.lookV.y * h;
+      }
+    }
+    {
+      const ly = st.look.x, lp = st.look.y;
       eulerQ(_lq, lp * 0.35, ly * 0.4, 0); Pc.q[I.neck].premultiply(_lq);
       eulerQ(_lq, lp * 0.5, ly * 0.55, 0); Pc.q[I.head].premultiply(_lq);
     }

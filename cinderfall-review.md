@@ -754,3 +754,334 @@ its peak.
 - **Sound** (`audio.js`, `assets/cinderfall/audio/sfx/`): the dog's bark, its panting, two whines (ElevenLabs: six takes,
   four kept); its tail on the boards is made.
 - **Watch** runs 7:20; the morning, from the crane to the gate, is 69 s of it.
+
+## Round 14: the cuts, found and checked frame by frame (19–20 October 2026)
+
+The reviewer: the cuts on the walk out of the village and on the run back were still bad, after several rounds. A full
+inspection, and a plan, and the cuts gone or properly made. Also: his uncle's head turned like a machine; the petals
+should belong to the opening and be gone before the house, never through a roof; something poked out of the uncle's
+roof; the move after the dog was abrupt; the weapons were gone before anyone could see them; the turn to the bun
+seller was instant, and the walk cut from her to the gate; the dog came out of nowhere at the gate; the cut to the
+bridge was off and the cut to the pines the worst. In the fight above the clouds, the cut from the two lights to his
+sword of light was bad. And: let the one who is thrown back gather his fury, close behind him, and answer with
+something huge; that is why the gold one falls.
+
+**How it happened**: every shot had been checked in still frames and numbers, never at Watch's own speed, so motion
+and joins went unseen. Every passage touched this round is now scanned frame by frame on Watch's clock (30 a second)
+and failed on rules: no shot under 0.75 s; no jump along the road at a cut unless it is inside the white of the page;
+a cut between two shots of him turns the lens 30 degrees or changes his size by half again; the lens never within half
+a metre of him; his face never turned to the lens; no turn of his body faster than 180 degrees a second, of his head
+than 250, of his uncle's than 200; no lens whipping round faster than 120; the dog never jumping or appearing
+mid-frame. And the lens against the world (rays all round it, and to his head and chest). Then every join looked at in
+frames a few hundredths of a second apart, by us and by a second pair of eyes that had not seen the work.
+
+- **The walk out is one take** (`walk.js`, `walkcam.js`): from the porch, where the old man points at the sun, down
+  the steps, down over his shoulder onto the dog sat before him, up with him as he stands, and the whole street at a
+  walker's pace on Watch's clock: past the laundry woman, who turns from her line to wave (he lifts a hand), past the
+  children and the dog in their game; to the smith's stall, where it holds on the wares, the world drains to ink and
+  only the blades burn, closes in past his shoulder on the sword on its stand, and comes back as the colour does (8.6
+  s, was 4); on, the dog bounding back to his heel; Auntie Mei calling him over, his head first and then his body
+  round to her; the bun; on to the gate, the garrison's last men going out under it, the dog trotting ahead, round in
+  front of him and sitting in his way; the kneel; and low behind the dog as he goes out under the gate. 91 s, no cut;
+  the walk alone is 78.5 s, and Watch is 40 s longer for it.
+- **The road to the pines**: three places, each come to through a dip into the warm white of the page and found empty
+  for a moment before he walks into it: the old road past the gate from its verge; the bridge from the road's verge
+  short of it, looking up its hump, him coming past the lens and up its steps (from the far bank, low in the reeds, he
+  had been a speck behind them and its parapet, under the line); the pines, from among them, him coming in off the
+  road to the mushrooms.
+- **The run home**: every cut inside a bolt's flash (the bolt's own frame, the page white for a tenth of a second);
+  the first lens higher and wider off his shoulder so the next, low behind his heel, turns well away from it; the gate
+  seen from behind him now, from the road outside, the wolf in its way snarling at him, pushing in after him as he
+  swerves round it (he no longer runs at the lens: his face was in it), and the cut in close at his side in the street
+  on a bolt of its own; the cut in on the wolf's head, which whipped round at a thousand degrees a second, is gone;
+  the street lens looks across him at the burning terraces. A bell's ripples go with the shot they were tolled in (one
+  had been left on the page across a cut, in the white).
+- **The fight**: the eye rushes in on the two lights into the war's first frame (the cut in on the same line from afar
+  was a jump). Their meeting: side on and wide, the two lights at either edge of it drawing back and streaking in at
+  each other; the page goes white with the flash of their meeting, and the cut is made in that white, to him, close,
+  behind his left shoulder, as he is blown back out of it, arched and flung: the lens rides with him, the sea and the
+  far peaks rushing past and slowing, the light of the meeting falling away ahead; as he steadies it draws back and
+  out, and the great sword swings down and throws its crescent, one shot. (The shock had been the white of the sea
+  with nobody in it, cut on both sides; then a view from where he would stop, which made him a speck in the white with
+  the other's violet light at his hip, and the cut came after the flash instead of in it; then over his right
+  shoulder, across the line, so the crescent went off one way and came in at the other the other way. The shell of
+  light no longer lies over the next shot like a cracked lens once it has passed the lens.) The lock is a lock now:
+  they had hung two and three metres apart, the masked one high over him, neither weapon near the other (two men near
+  each other with light round them, a second pair of eyes said); now he comes down on the gold one out of his dash,
+  bent over it, the glaive's shaft across in both fists, and the gold one's blade is up against the shaft between
+  them, braced, both hands on the hilt; the white heart of the lock is a point where they cross. Seen close over the
+  gold one's left shoulder, the mask over the crossing, his head dark in the lower right. Locked, the two keep face to
+  face (on their own paths they slid apart sideways out of the frame), and the sparks fly off blade and shaft at a
+  smith's speed, not a cannon's. The end (`war.js` FURY): the burst flings the masked one back and up, tumbling away
+  from the lens it leaves behind (from far below it had been two lights and a bolt); behind his right shoulder, at its
+  height, he hangs there shaking while the day goes dark and violet and the storm strikes into the glaive's head,
+  thin, finely jagged strokes, faster and faster, the motes drawn in about it (under him he had been a stack of
+  shapes, the bolts were beams ending in the air, the motes were snow); he raises the glaive straight up (raised back
+  over his shoulder, its head had come at the lens) and the storm's blade rises out of it into the dark. Then far off
+  and low, the whole of it: the blade standing over him, sweeping over and down the sky at the gold one, a volley of
+  bolts with it; and the cut in close to the gold one in the small bell he throws up, the blade out of the top of the
+  frame onto it: it shatters, and his light is smashed down out of the frame into the dive. (Seen from afar he had
+  been a dot in a dim disc on the white of the sea; the blade had sat on the bell for a second; the sky had gone back
+  to day at the cut.) The storm's blade has the storm in it, veins of lightning crawling up it, its edges torn (it was
+  a capsule of glass); it is light, not ice, lit at once and shooting up out of the glaive's head as a beam before it
+  is a blade (grown slowly, short and broad, it had been born a frosted crystal); the hands go from one hold of a
+  weapon to the next along the way between, so the glaive no longer whirls the long way round on its way up. And as he
+  lets it go the storm bursts out of him, the frame struck, lightning thrown out across the sky; the bell breaks in
+  pieces along its cracks. Flung back, he goes away from the lens, smaller and smaller, a broad streak behind him
+  (with the lens riding beside him, the sky stood still behind him and he spun in place; left beside where he was
+  flung from, it whipped round after him at 250 degrees a second; a hairline, his streak had read as a wire). 4.6 s
+  more of Watch for the end of the fight. Before it: the two lights are drawn down out of their duel to where they
+  face each other (at the war's first frame they had jumped there); the lightning that answers his raised glaive is
+  fine and jagged (three metres wide, twenty metres from the lens, it had come down past it as a column of glass
+  panes); and all the lightning is lightning, wherever it strikes: each stroke of a bolt is one ribbon along its
+  channel, turned to the lens, its breadth held to the frame (laid end to end in pieces its joints had been knots and
+  notches, a string of beads; as broad as the world made it by the lens, a searchlight's beam; far off, a hairline
+  broken into dots); it is broken finer wherever it would be long in the frame, so it is crinkled at every distance it
+  is seen from (by the lens its strokes had been the rods of a wire coat hanger), its kinks in proportion at every
+  scale (finer down, each had been most of its stroke's length, and the channel looped); branched high on its channel
+  (off its fine end the branches came down by the lens) and forking just over where it strikes; uneven along its
+  length (a neon tube); its free ends drawn out to points of light, its end kept on what it strikes as that moves, its
+  strokes quick. The storm comes down into the glaive's head steeply out of the dark over him (from behind, they had
+  come down past the lens as searchlight beams; from low ahead, their far reaches heaped up end on into scribbles),
+  and the head flares at each stroke (as the burst of a meeting, a lens's width off, its sparks had been a starburst
+  of white rods). The first bell is seen from under it, against the sky, the storm coming down onto it (level with it,
+  its lower half lay on the white of the sea, a cream ball with nobody in it), its lattice thinning toward its middle
+  so his light shows in it. Sparks are soft streaks, white at their heads and going back into their colour (flat and
+  square-cut, they had been chips of white paper); the bolts a meeting throws out start a way off it (at the lens they
+  were great panes, gold and lilac, over the first frame of the lock), and the lights' trails and rings are not drawn
+  past the lens; sparks at the lens are not drawn (a spark's streak with an end behind the lens had been thrown across
+  the frame as a great pale pane at the lock); the great sword of light comes to the gold one over his right shoulder
+  and swings down about its own hilt, burning as he swings it (over the lens it had swung down past it as a pane of
+  white), what of it passes close to the lens let go, so the swing is its length sweeping down the sky (its root,
+  swung past twenty metres off, had been a flat cream pane over half the frame), and the story slowed for the swing as
+  the crescent is born out of it (at full pace it crossed the frame in two frames), and again as the crescent splits
+  on the glaive, its halves easing apart either side of him in the frame before they speed away down to the sea, and
+  let go where they rush by the lens (going on at the crescent's own speed and flung apart at once, they were out of
+  the frame in a frame or two: he seemed to have swallowed it); it meets the glaive where it strikes (its middle runs
+  ahead of its ends, and unallowed for, it had gone ten metres past him, out over the lens, by then: the split was a
+  white wall), and the halves' broken ends are torn, burning white (cut square across their breadth, they had been
+  panes of glass); far under him, he stands in the lower left third, the sword rising out of the frame over him, the
+  caption clear of him (he had stood on the frame's foot by its buttons); the burst that throws the masked one is held
+  before the cut (it fell between); he goes over backwards, a full turn; the iron mask, grey, sits out in front of the
+  face it had let through, in a deep cowl drawn forward round it at its sides, not over the brow (from behind,
+  standing out of a shallow hood, it was a flat plate beside his head, the brim of an umbrella), the cowl's peak
+  falling back down it (it stood up as a horn); the sect's shin wraps are black (under him in the fury they had been a
+  pair of pale soles at the bottom of the frame); and the glow of what is brightest bleeds only a little way in over
+  the edges of the cinema bars (in the dive, the frame washed bright all over, it had filled them: pale panes with
+  hard seams across the frame).
+- **The end of the fight, after a second look** (a second pair of eyes held it back: the climax landed on nothing). As
+  the storm's blade is born out of the glaive's head the storm explodes out of him, close behind him: the frame
+  struck, the air bent round it, lightning thrown out of him across the sky (the blade had only switched on, a beam).
+  The blade is violet storm light, boiling, a white-hot heart down its middle, lightning crawling up it, its edges
+  torn and a glow about it in the dark (lit pale all through, with a fine crackle in it, it had been an icicle), and
+  the glaive's head burns with it (dark against it, it had been a hollow outline). The storm he calls puts out the sun
+  (only dimmed, it hung by his head and was taken for the one he turns on). The release is seen from far enough off
+  for the whole of it: the blade standing over the violet star, the gold one's light under it to the right and the
+  small bell he throws up, a shell of violet light racing out of the masked one, the blade sweeping down the sky onto
+  him, the volley with it (closer, under the masked one, the blade came down onto an empty frame's edge and the gold
+  one was never seen; the shell, wider, swelled past the lens and laid a violet ball over the next shot too). Close to
+  him in the bell he is a man in white, the bell small and clear in its middle but for its cracks (from twenty-four
+  metres, through its glow, he had been a few strokes of ink), and the blade breaks it into pieces flung out under it,
+  of every size, their edges burning (it had melted away where it was; then, as a full set of like triangles, it was a
+  shower of confetti).
+- **The end of the fight, a third look** (the second pair of eyes again: the fall did not read, and the technique was
+  not huge). When the bell breaks, he is his light: a great gold light with a broad short streak going down out of the
+  frame, the lens tipping down after it (a white star had hung on where he had been, the sky's own mark of the blow,
+  for most of a second, and was taken for him; his fall was a hairline and a dashed outline). He falls faster and
+  faster (eased into a slower fall, he slowed as he went). The pieces of the bell are clear glass, their edges ragged
+  and burning in from the break, now and then catching the light, flung out from where it was (filled, they were paper
+  confetti; and they had fallen with him). The release, far off, is given more time (1.7 s, was 1.0) and the blade the
+  storm's breadth, running on out of the frame over him, the wake of its sweep burning behind it (a slender spike over
+  the star, turning over in under half a second); his bell larger from afar, so it is a shell about his light (a soft
+  blur), the volley's bolts kept on it across the cut. The glaive's head is light while the blade burns out of it,
+  with no line drawn round it (a hollow shape). The blades' glow is gone before the edge of its own plane (that edge
+  rode the storm blade's flank across the sky as a pane with a ruler-straight side). The first bell breaks into pieces
+  as he goes through it at the other (it was there, and then not).
+- **Lightning, a third time**: drawn dark between its strokes, its leader only the tip coming down, its afterglow
+  quick (on any frame between its strokes, half lit, or coming, or dying, it was a thin grey wire across the sky); the
+  world it lights keeps the gentler flicker, so the frame is not strobed. Marked for the ink all or nothing (a little
+  of it, on its soft edges or as it died, put a pixel among the figures, and the ink drew a figure's outline down both
+  sides of it, a hollow tube, a ribbon). Branches leave at a clear angle; the forks just over the glaive's head are
+  within a metre or so of it, by the metre (by a share of the bolt's length they started metres up the channel, and
+  from a lens three metres away ran down beside it, two channels twisted into a cable). The sky's bolts come down from
+  beyond the frame (begun inside it, one came out of empty sky from a star of its own forks), the gathering ones fork
+  lower (their high branches crossed into a net), and the bell's first bolt is struck once the bell is in the frame.
+- **The run home, nothing pops**: a villager fleeing up the street runs its far side (he ran straight at the lens,
+  into it, and was gone from the middle of the shot); the struck ground is lit with the bolt's return stroke, its
+  leader lighting nothing (the struck house was lit in colour a frame before the bolt itself came); the people stay
+  ink in the colour that comes back round a strike (the boy's linen, lit blue by a strike or orange by the fire, read
+  as bare skin one moment and an orange tunic the next).
+- **The end of the dive**: rain is never under a pixel and a third across, counted in the frame's own pixels (a share
+  of the distance came to six tenths of one at the film's focal lengths: columns of dashes); the great bolt's pieces
+  are round-ended (square, a broad channel's edge stepped at every joint, a stack of white boxes). Under the storm,
+  its far rain curtains thin out as the eye looks higher (cut off at once, from a lens near the base their top edge
+  ran over the sky as the hard rim of a brown dome).
+- **The end of the fight, a fourth look** (a second pair of eyes again: the technique played small, the lightning
+  turned to wire at the climax, the cut into the dive snapped). As the storm goes out of him its light at the glaive's
+  head swells past the frame's edges and dies away, the air it bends ringing out past them, more lightning thrown out
+  of him (a flash in a corner of the frame). From afar the blade is three times as broad, a breadth of the sky (twenty
+  metres of it was a spike thirty pixels thick, a laser), and sweeps on until it is all but on him at the cut (it was
+  a third of the way short of him, and never landed); his bell from afar is half again as large again, a shell about
+  his light (a gold disc no bigger than it). The glaive's head marked as no thing at all while the blade burns from it
+  (as light, its edge against the sky fell among the figures and was drawn round it dotted). The pieces of the bell
+  burn gold at their edges, a glow going in from them (white lines round empty triangles, clip-art). The lens comes to
+  rest a moment before the cut into the dive, and the dive opens on his falling light alone: no second burst at the
+  cut (a white starburst in a ring), no frame struck into two tones there (his light two puffballs on violet), and the
+  violet one not seen again (from where the dive starts, far off, his light hung beside the gold one's, falling with
+  him). The sky's sun is put out further in the fury (a cream disc by his head).
+- **Lightning, a fourth time**: dimming, between its strokes and dying, it goes to a soft glow, its white core first,
+  and behind the leader's tip only a glow (dimmed whole, a fine line without its light, it hung in the sky as a grey
+  wire, lit again where it had hung); each of the war's bolts has its own channel (two struck a moment apart shared a
+  seed and came down side by side in one shape, a doubled cable); at a cut the bolts still in the air are made again
+  for the new lens (made from three hundred metres off, one carried on into the close shot was long straight strokes).
+  The great bolt broken finer, two metres a stroke, and narrower, so close by its white core is a jagged line in its
+  glow, and its crown's forks thinner and finer broken (a smooth tube, neon; a hub of glowing rods); the lens rides
+  down its old, coarse course. The shell racing out of a blow lets its veins go near the lens (a net of cells over the
+  frame).
+- **The run home, a second look** (a second pair of eyes: lightning still tubes and grey cable, two flat panes, the
+  line over his legs, red tape and a red rod, a target over the gate). The lens never meets the world: high behind him
+  three and a half metres out, not six (six out, it went through the roadside pavilion, its beams a flat grey card
+  over half the frame as the shot opened), and over the bridge's balustrade, farther back and looking down the road so
+  he is in the frame from the waist, until it comes off the end, then sinking low behind his heel (low beside it, the
+  balustrade towered over the lens, a flat black slab across a quarter of the frame, wiped off its edge as the lens
+  passed the end post). "Home. Get home." on the left, and gone with the white of the cut into the long lens, where he
+  runs left of the middle (on the right, the line lay across his running legs for two and a half seconds). The strands
+  of qi are a brush's flick seen from afar, and near they thin away; none along the road on the run home (from under
+  them in the street a hundred metres of ribbon crossed the frame as red tape, the road's lay in it as red wire and
+  ran beside the bolts as straight red lines, and one beside the lens was a red rod laid against his head). No bell
+  ripple when a cut comes within a second (cut short by the flash, its ring stood a moment over where the bolt came
+  down, a target drawn on the page). The wolves are among the figures, outlined, modelled, and ink in the colour a
+  strike brings back, like the people (a maroon mass of blobs with two violet dots; in the ink a black lump); the
+  violet wash no longer lands on the people (his grey hair went lilac). Smoke puffs end before the card they are drawn
+  on (the noise pushed them out to its edge).
+- **Lightning in the ink, a fifth time**: laid on like pigment, as thick as it burns, in one electric blue, only its
+  heart white, and no white heart in the white of a cut (graded from dark blue at its dim edges to white at its heart,
+  and inked over black as if in the thickest smoke, a dimming bolt was a pale band between two dark lines, a neon
+  tube, its kinks crossed knots; in the wash of a cut, two blue lines). Its mark in the scene alpha is 6 over what is
+  under it, so the frame's four samples a pixel never put its edge among the figures (marked from 1.5 up, an edge
+  pixel three samples in was a figure's, and the ink outlined the bolt in dots), and the ink reads the smoke behind it
+  as it is; the mark is read at the pixel's own texel (read between two, through the shake, it averaged into a
+  figure's). Marked while it keeps its glow (unmarked, its last glow lifted the smoke to paper, a pale grey cable
+  across the sky). A thin bolt, a few pixels across, goes dark between its strokes, its glow with its core (its glow
+  alone was a fine lavender wire hung in the sky in the fury, a grey cable in the run home). The air where a bolt
+  strikes is light only (marked up to 3, its dim outer air was taken for smoke and inked black, a dark dome where it
+  struck, and where the mark ran through the figures' values, a hard-edged arc). The great bolt's leader comes down
+  half as broad as its stroke, its channel behind the tip only a glow, its breadth grown less with distance (from the
+  land it was a white tube thirty pixels across with a round bright end, let down out of the cloud).
+- **The run home, a third look** (our own look at the frames, and a second pair of eyes): the bridge's deck is laid the
+  right way round (built as its own mirror image, it was a metre higher than the steps he ran on at the village end
+  and a metre lower at the far one: running down its last steps he was waist deep in them, his head on a ruled line,
+  and walking out over it in the morning his feet were in the steps). The second shot is high and wide, him small on
+  the road among the fields (four metres back and five up, he was the size he is in the high lens over the bridge
+  after the next cut, a jump cut on one heading). At the gate the wolf stands side on across his way a little east of
+  where the dog sat, its head round to him, snarling, and wheels after him as he goes by, its feet stepping round
+  (square on to him, from behind him it was a mass of fur with two violet dots until the lens was past it; a metre off
+  his line, he ran through its hindquarters in one ink outline and came out with its embers on his back). Those
+  fleeing up the street keep three metres and more out from him (from the house by the gate, one crossed into his path
+  as the side shot opened, the two one figure, and went by the lens at the frame's edge an arm's length off; one from
+  the tea house loomed at the long lens's edge), and the one from the house by the gate goes up his own side into the
+  gap by the wine house, the one from the tea house on up the street ahead of him into the gap after the woman the
+  wolf chased. His hair stays in ink with the rest of him, in the colour, the violet and a bolt's blue (its fine
+  strands are marked only in part: in the long lens half of it went violet, beside a bolt it went blue): post.js
+  heroOf, the box round his head and shoulders. No strands of qi in the street (in among them they were a sagging red
+  wire and a ruled red line), no bell ring on the road where the bell is a speck on the horizon (a gunsight over his
+  head). He is off the mark as the basket lands, running a second later (at seven metres a second in a sixth of one
+  from a standstill). Onto his uncle's porch the lens comes in under the eaves with him, nearer and lower (it went in
+  under the eave beam, a black band across the top of the frame, nearly into it). The basket is round (twelve-sided,
+  it lay on the road like a dial).
+- **The duel's trails, again**: each trail is laid evenly along the way its light went, from its last seconds sampled
+  finely (laid by time, where a light slowed in its dash its points crowded together and their added light heaped up
+  there: evenly spaced beads along the trail, a string of beads); the violet one's crackle a wave along it, not a kink
+  at every other point (folded over itself at each kink, it beaded too). The masked one's long streamer is torn at its
+  edges and end and folded down its length (from behind, a flat violet board with ruler-straight sides under his
+  mantle). The captions' wash comes as the line is written (before it, on a pale sky, a dark smudge with nothing in
+  it).
+- **The duel before the war**: the two lights' streaks short (the gold one's ran across the frame from its edge as a
+  rod, the violet one's folded into a loop of wire), the violet one's crackle slight (a string of beads).
+- **Flung back, again**: out of the white he is hurled back at the lens from the distance and it is dragged along with
+  him (riding with him from the first, his flight was only the sky going on behind him, and he seemed to change his
+  pose in place); the mist streaming past him grey-blue in its shade, and more of it (white, it was lost in the sky,
+  and he seemed to tumble at a lens standing still); his sleeves short and broad, cloth (the one off his raised hand,
+  long and narrowing to a point, was taken for a curved blade in it, then a spike, then a flag); his blade held down
+  and out to his right (pointing on ahead of him, from behind it went end-on and seemed to vanish from his hand).
+- **The great sword going by the lens**: it swings out where it stood in the lens's view but half again as far off,
+  slenderer as it passes, drawn there as a glow hottest down its middle, its light running along it in streaks and its
+  edges only where its glow ends (bright ruled lines, they made it a glass ruler), its light rising out of the burst
+  of its hilt over its first metres, and dimmed only by cloud between it and the lens (sixteen metres off and nearly
+  seven broad, its glow laid even across it between ruled edges, it crossed the frame as a cream plank a third of its
+  height, blotted dark where cloud far beyond it dimmed it, its root a square end in the burst).
+- **The great sword's cut**: he cuts across the sky in front of him from over his right shoulder down to his left,
+  across the view of the lens behind him, in a plane fifteen metres before it, and the crescent is born in the plane
+  of that cut (swung down the line, away from the lens, the sword went end-on as it came down and was a hairline
+  before the cut was done; and in his own plane, three metres from the lens, it would have swept the frame from edge
+  to edge). The day dims for a breath as he cuts, the light drawn into it, so its gold burns (laid on a white sky and
+  the white of the sea it was a pale card); it has a gold glow about it and the wake of the cut behind it, its heat a
+  line down its middle (spread over its breadth, a cream slab), full-bladed right out of the burst of its hilt (it
+  swelled out of a point there and was pointed at both ends). His sash's ends no longer dangle under his feet (a stray
+  pair of gold wires).
+- **The split**: born in the plane of the cut, the crescent rights itself as it flies, so it comes at him upright, the
+  middle of its leading edge on his glaive, and it is cleaved there, a half going away either side of him, their
+  broken ends torn (tilted all the way, it passed over his left shoulder and broke up there, the halves going off
+  together along its own line, the sun on that line taken for its point; and its middle running ahead of its ends, it
+  had gone ten metres past him, out over the lens, as it struck: a white wall).
+- **The masked one from behind**: no peak to his hood (however soft, from behind it stood up off his head as a horn);
+  the hood deep, down round his neck; a short mantle close about his shoulders that hangs from them as he bends (long,
+  flared and fixed to his chest, bent over the glaive it stood up off his back: from behind, the canopy of an umbrella
+  over a box).
+- **Lightning, again**: each stroke is kinked across its own line as the lens sees it, so it never doubles back on
+  itself (kinked every way in the world, a stroke seen end-on closed into a lasso, a box of wire, a loop at a joint;
+  one kinked only toward and away from the lens was a ruler-straight rod); its branches go off it the lens's way
+  (every way, one could come straight at the lens, a scribble). A dying bolt thins as it fades, quickly (its afterglow
+  had hung in the sky half a second, a grey cable beside the next); its white core is never under a pixel across (a
+  third of one, it fell between them, a dotted line); its breadth is uneven along it (held even, a tube of glass).
+  What a blow throws out of it goes out across the frame of the shot it is struck in (thrown every way, one came at
+  the lens end-on, a short fat fuzz); the volley is quick, no more than two bolts at once (a second's worth crossed
+  into a net of cells over the bell); the bolts on the first bell stay on it as he moves in it (they ended in the air
+  short of it). The pillar's branches are kinked less at their fine end (they closed into boxes).
+- **Flung back**: mist streams past the lens riding with him (with only the far sea and peaks behind him, he was
+  struck still); thrown, his trail is short (its length ran in from the frame's edge, as if he flew in from it).
+- **The cinema bars**: plain black, their inner edges the same few soft pixels in every frame, nothing drawn over them
+  (rain, speed lines and bolts let through, the pillar a grey cut-out where it crossed one; the glow of the brightest
+  things let in over their edges made them hard in one frame and feathered the next). Rain is never under a pixel
+  across, fainter instead (a hair under one, it fell into rows of dashes, a screen door). The shell of light pressed
+  out of the lock is round when it fills the frame (faceted down both sides).
+- **The lock, close**: above the clouds the shade of creases is thin (on the gold one's white sleeve it lay as a
+  mottled grey smudge), and the glaive's head is steel, lit from within only a little at rest (a flat violet cut-out,
+  a flag).
+- **His uncle's head**: his look was at his hand held level over his own head, a point straight above it, so the turn
+  flipped sixty degrees one way and the other every frame. His eyes now go only a little way with the hand while it is
+  before his face; and both their heads turn on a spring (easing into a turn and out of it).
+- **The petals**: the gust at its height while the crane is still high over the roofs, thinning petal by petal and
+  gone before it is among the houses, never deeper in front of the lens than the house it is coming down to; the
+  falling petals of the street are gone. And the crane eases onto the door instead of stopping dead on it (the story
+  slowed from its pace to the measure's in one step; now in three).
+- **The dog at his feet**: it sat square before him, where his arm and shoulder hid it from the lens over his right
+  shoulder; it sits a little to his right now, its face turned up into his hand in the frame. (A target straight under
+  his eyes no longer turns his head: with the dog's head under his chin it had swung his face round to the lens.)
+- **Up from the dog, up from his knee**: the lens rises with him as he stands from the dog, on him, and only as he
+  walks tilts on to the street (from the dog to the street in half a second, it read as a cut); at the gate he goes
+  down onto his knee and up again each over more than a second (he had stood in a single frame), the lens drawing back
+  as he rises and down off the dog's right flank as he goes round it (from straight behind it, low and close, it was a
+  tube of fur, and he filled the side of the frame).
+- **Lines in the white**: a line on the page goes white with the page at a cut (its dark ground had printed a grey
+  smear on the white).
+- **Heads first**: on the walk and the road his head goes ahead of his body into each turn (it looks the way he will
+  face half a second on), away from the smith's wares, from Auntie Mei, into the pines, to the mushrooms; only at the
+  gate does it stay on the dog as he turns to go.
+- **The roof**: the shop sign on a house of one floor stood up out of its porch roof. It is smaller now, and lower.
+- **Smaller**: the porch turn at the house that turned him and the lens behind him by a threshold, the look down at
+  the prints that lifted in the last frames before the cut, the dog lying by the old man now there all night (it was
+  seen to appear), the lens at the mushrooms no longer whipping round him as he squats.
+- **The checks in the repo**: the tools every passage is now checked with live in `tools/verify/` (frames stepped on
+  Watch's clock, contact sheets, the cut rules on every frame, the story and shader check, the lightning lab, probes
+  for what the lens meets), with `CLAUDE.md`, a guide to the code; they had lived only on a cloud machine that is
+  thrown away when it is idle.
+- **Still open after this round** (for the next): on the run home, the colour round strikes one and two goes out within
+  a tenth of a second while the gate's lingers; bolts one, two and six still a pale band between dark edges in a frame
+  or two; the far pagoda a dark dome until strike one lights it; every strike the same rhythm. In the fight: the dive's
+  end under the storm (the pines telephone poles, the hillside a slab, the great bolt a capsule and then a smooth tube,
+  the lens plunging to him and stopping dead under the flash as he appears); single-frame grey hairlines among the
+  fury's strokes and its last stroke a frozen curve onto his hood; the great sword's notched crown as it forms, a flat
+  ruler of a blade at the swing, the crescent's halves smears; the gold one's own sword gone from his hand in the push
+  back, the ride with him a held pose; the opening's trails still beads on rods.
+- **Watch** runs 8:12; the morning, from the crane to the gate, is 1:44 of it.

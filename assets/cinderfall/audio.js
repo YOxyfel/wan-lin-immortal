@@ -243,7 +243,7 @@ export function createAudio({ context = null } = {}) {
       // in at the door; a whine as the hand falls
       if (pass(19.05)) play('dog-bark', { gain: 0.3, pan: -0.15 });
       if (pass(20.62)) play('dog-pant', { gain: 0.3 });
-      if (pass(33.42)) play('dog-whine-soft', { gain: 0.24 });
+      if (pass(34.404)) play('dog-whine-soft', { gain: 0.24 });
       if (pass(81.72)) { burst(0.09, 0.07, 150, 0.8, 'lowpass', t); burst(0.06, 0.07, 150, 0.8, 'lowpass', t + 0.3); }
       if (pass(91.62)) play('dog-whine', { gain: 0.3 });
       // the launch: the burst out of the pines; a thud as the eye goes through each sheet of cloud; out into the sun
@@ -251,6 +251,8 @@ export function createAudio({ context = null } = {}) {
       if (pass(47.535)) { if (!play('launch', { gain: 0.85 })) { burst(0.3, 1.4, 90, 0.6); tone(38, 'sine', 0.3, 0.02, 1.6, 1.8); } }
       for (const at of [48.21, 48.34, 48.45]) if (pass(at)) { if (!play('cloud-punch', { gain: 0.8, rate: 0.9 + Math.random() * 0.2 })) { burst(0.22, 0.5, 160, 0.6); tone(55, 'sine', 0.22, 0.004, 0.45, 0.7); } }
       // (the dive after the falling light)
+      // (the storm pouring into the masked one as he gathers his fury)
+      if (pass(52.25)) play('gather', { gain: 0.5, rate: 0.82 });
       if (pass(52.5)) play('dive', { gain: 0.55 });
       if (pass(48.6)) tone(1760, 'sine', 0.022, 0.9, 3.2, 1);
       // the star: its fall, and where it comes down

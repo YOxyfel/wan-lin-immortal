@@ -146,7 +146,9 @@ ${FOG_F}
 void main(){
   vec2 d=vUv-.5;
   float n=texture2D(uNoise,vUv*.6+vec2(vSeed,uTime*.01)).r;
-  float a=smoothstep(.5,.1,length(d)+(n-.5)*.35);
+  // (gone before the card's edge, however its ragged edge runs: the noise pushed it out to the card's sides, and a puff
+  // near the lens showed the card's straight edge)
+  float a=smoothstep(.5,.1,length(d)+(n-.5)*.35)*smoothstep(.5,.4,length(d));
   a*=smoothstep(0.,.12,vAge)*(1.-smoothstep(.55,1.,vAge))*uAlpha*vOn*vNear;
   // dense smoke: dark, ragged, lit from below by the flames only while it is young and low
   vec3 col=uCol*(.55+n*.7)+uGlow*uGlowAmt*.42*pow(1.-smoothstep(.0,.38,vAge),2.)*(.5+n*.8);
@@ -535,6 +537,10 @@ void main(){
   vV = vec2(s, sd); vR = vec4(ph, sp, L, layer);
   float dCam = length(cameraPosition - c);
   vA = amt * smoothstep(1.5, 5., dCam);
+  // (seen from afar only, a brush's flick: near enough to be broader than a seventieth of the frame's height they thin,
+  // and by a thirtieth they are gone. Seen from under them in the street, a hundred metres of ribbon three broad crossed
+  // the frame as red tape, the road's lay in it as red wire, and one beside the lens was a red rod laid against his head)
+  vA *= 1. - smoothstep(.014, .033, aQ.y * projectionMatrix[1][1] / (2. * max(dCam, .1)));
   vec4 mvPosition = viewMatrix * vec4(P, 1.);
   gl_Position = projectionMatrix * mvPosition;
   #include <fog_vertex>

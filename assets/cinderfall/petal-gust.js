@@ -16,7 +16,7 @@ import { FXU } from './fx.js';
 const VS = `#include <packing>
 attribute vec2 aCorner;      // grid point on the petal, -1..1 (x across, y from the claw to the tip)
 attribute vec4 aSeed, aSeed2;
-uniform float uTime, uAmt, uU, uTanH, uTanV, uTravel, uPx, uMinD;
+uniform float uTime, uAmt, uU, uTanH, uTanV, uTravel, uPx, uMinD, uFarD;
 uniform vec3 uSunDirP;       // the sun as the drifting things see it (world)
 uniform mat4 uShadowMatP; uniform sampler2D tShadowP; uniform float uHasShadowP;
 varying vec2 vQ; varying float vA; varying vec3 vTint, vN, vL, vP; varying float vNear, vSeed, vSun;
@@ -74,7 +74,7 @@ void main(){
   vP = P;
   // fade in far, out right at the lens and off the frame's edges; only as many as the gust carries
   float edge = (1. - smoothstep(1.25, 1.5, abs(sx))) * (1. - smoothstep(1.05, 1.35, abs(sy)));
-  vA = uAmt * edge * (lensP ? .85 : smoothstep(uMinD, uMinD + 1.4, d)) * (1. - smoothstep(56., 70., d)) * step(aSeed2.z * .999, uAmt * 1.15);
+  vA = uAmt * edge * (lensP ? .85 : smoothstep(uMinD, uMinD + 1.4, d)) * (1. - smoothstep(uFarD * .78, uFarD, d)) * step(aSeed2.z * .999, uAmt * 1.15);
   // never a blot on the glass: very near petals stay small, and soften
   float px = size / d * uPx;
   vA *= 1. - smoothstep(lensP ? 170. : 70., lensP ? 260. : 120., px);
@@ -143,7 +143,7 @@ export function createPetalGust({ count = 3200 } = {}) {
   g.setAttribute('aSeed2', new THREE.BufferAttribute(aS2, 4));
   g.setIndex(new THREE.BufferAttribute(idx, 1));
   const uniforms = {
-    uTime: { value: 0 }, uAmt: { value: 0 }, uU: { value: 0 }, uTanH: { value: 0.8 }, uTanV: { value: 0.45 }, uTravel: { value: 0 }, uPx: { value: 1000 }, uMinD: { value: 2 },
+    uTime: { value: 0 }, uAmt: { value: 0 }, uU: { value: 0 }, uTanH: { value: 0.8 }, uTanV: { value: 0.45 }, uTravel: { value: 0 }, uPx: { value: 1000 }, uMinD: { value: 2 }, uFarD: { value: 70 },
     uSunDirP: FXU.uSunDirP, uSunColP: FXU.uSunColP, uAmbP: FXU.uAmbP, uShadowMatP: FXU.uShadowMatP, tShadowP: FXU.tShadowP, uHasShadowP: FXU.uHasShadowP,
   };
   const material = new THREE.ShaderMaterial({
@@ -158,11 +158,13 @@ export function createPetalGust({ count = 3200 } = {}) {
   mesh.name = 'petal-gust';
   return {
     mesh, uniforms,
-    // u: story position, amt 0..1, travel: metres the stream has rushed toward the lens, pxPerRad: pixels per radian
-    update({ u, time, amt, travel, camera, pxPerRad }) {
+    // u: story position, amt 0..1, travel: metres the stream has rushed toward the lens, pxPerRad: pixels per radian,
+    // far: how deep in front of the lens they may be (short of the nearest house it looks at, so none passes through
+    // a roof or a wall)
+    update({ u, time, amt, travel, camera, pxPerRad, far = 70 }) {
       mesh.visible = amt > 0.002;
       if (!mesh.visible) return;
-      uniforms.uTime.value = time; uniforms.uAmt.value = amt; uniforms.uU.value = u; uniforms.uTravel.value = travel;
+      uniforms.uTime.value = time; uniforms.uAmt.value = amt; uniforms.uU.value = u; uniforms.uTravel.value = travel; uniforms.uFarD.value = far;
       const tv = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
       uniforms.uTanV.value = tv; uniforms.uTanH.value = tv * camera.aspect;
       uniforms.uPx.value = pxPerRad;

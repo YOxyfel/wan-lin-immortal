@@ -138,12 +138,24 @@ export function createHero({ age = 0 } = {}) {
       lyaw = Math.atan2(_look.x, _look.z) / DEG;
       lpitch = -Math.atan2(_look.y, Math.hypot(_look.x, _look.z)) / DEG;
       if (_look.z < 0 && Math.abs(lyaw) > 100) lyaw = Math.sign(lyaw) * 100;
+      // (a target almost straight under or over the eyes has no clear way round: the head turns toward it only as far
+      // as it lies off to one side, so a dog's head under his chin cannot swing his face round to the lens)
+      lyaw *= smooth(0.12, 0.4, Math.hypot(_look.x, _look.z) / Math.max(_look.length(), 1e-6));
     }
     // lookW (0..1) fades the look in and out; without a target the head eases back to neutral
     const lkw = s.lookAt ? clamp(s.lookW ?? 1) : 0;
     st.lookT.set(clamp(lyaw, -70, 70) * lkw, clamp(lpitch, -35 - 22 * lu, 45) * lkw);
-    const kk = dt > 0 ? 1 - Math.exp(-dt * 5) : 1;
-    if (!st.settled) st.look.copy(st.lookT); else st.look.lerp(st.lookT, kk);
+    // (a head turns the way a head does: it gathers speed into the turn and eases out of it, never snapping to a new
+    // target: a critically damped spring, about half a second to settle)
+    if (!st.settled || !(dt > 0)) { st.look.copy(st.lookT); st.lookV.set(0, 0); }
+    else {
+      const n = Math.max(1, Math.ceil(dt / (1 / 120))), h = dt / n, w = 7.5;
+      for (let i = 0; i < n; i++) {
+        st.lookV.x += (w * w * (st.lookT.x - st.look.x) - 2 * w * st.lookV.x) * h;
+        st.lookV.y += (w * w * (st.lookT.y - st.look.y) - 2 * w * st.lookV.y) * h;
+        st.look.x += st.lookV.x * h; st.look.y += st.lookV.y * h;
+      }
+    }
     const ly = st.look.x, lp = st.look.y;
     if (Math.abs(ly) + Math.abs(lp) > 0.02) {
       eulerQ(_lq, lp * 0.35, ly * 0.4, 0); Pc.q[rig.idx.neck].premultiply(_lq);

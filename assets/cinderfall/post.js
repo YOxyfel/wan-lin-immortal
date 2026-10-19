@@ -205,7 +205,7 @@ uniform sampler2D tColor, tDepth, tBloom, tAO, tShafts, tPaper, tNoise, tBlur, t
 uniform vec2 uRes; uniform float uNear, uFar, uDpr, uTime;
 uniform float uExposure, uBloom, uShafts, uAOAmt;
 uniform float uSat, uContrast, uVignette, uGrain, uGrainT, uGreenWarm; uniform vec3 uTint, uShadowTint, uHighTint;
-uniform float uInk, uInkLine, uInkNear, uInkFar, uInkWash, uInkKey, uSepia, uFigSil; uniform vec4 uInkSpread, uSeep, uAccent;
+uniform float uInk, uInkLine, uInkNear, uInkFar, uInkWash, uInkKey, uSepia, uFigSil, uSeepFig; uniform vec4 uInkSpread, uSeep, uAccent, uHeroBox;
 uniform float uBleed, uDebugView; uniform vec2 uBleedC;
 uniform float uToon, uToonR, uToonLine, uToonBand, uToonSat, uToonW;
 uniform float uPaper, uRedWash, uFlash, uShock, uBlack, uWhite, uDesat; uniform vec3 uFlashTint; uniform vec2 uBoltK; uniform vec3 uWhiteCol; uniform vec4 uWhiteR;
@@ -249,6 +249,14 @@ vec3 worldRay(vec2 uv){ vec4 c = vec4(uv * 2. - 1., 1., 1.); vec4 v = uProjInv *
 vec3 vpos(vec2 uv){ float d = texture2D(tDepth, uv).x; vec4 v = uProjInv * vec4(uv * 2. - 1., d * 2. - 1., 1.); return v.xyz / v.w; }
 float folOf(float a){ return smoothstep(.95, .962, a) * (1. - smoothstep(.978, .99, a)); }
 float figOf(float a){ return smoothstep(1.03, 1.07, a) * (1. - smoothstep(1.2, 1.25, a)); }
+// his hair where its strands are fine enough to be marked only in part (alpha to coverage leaves a fine strand's pixel
+// at a fraction of the figure's mark, below the figures' band): what is neither solid, nor leaves, nor sky inside the
+// box round his head and shoulders on the screen (engine.js uHeroBox; empty, z < x, when he is not in the frame)
+// (unmarked, the long lens down the street laid the violet wash over half his hair, and a strike's colour seeped into it)
+float heroOf(vec2 uv, float a){
+  if (uHeroBox.z <= uHeroBox.x || uv.x < uHeroBox.x || uv.x > uHeroBox.z || uv.y < uHeroBox.y || uv.y > uHeroBox.w || iz(uv) <= 0.) return 0.;
+  return smoothstep(.3, .45, a) * (1. - smoothstep(.945, .955, a));
+}
 
 vec3 inkOf(vec3 hdrC, vec2 uv, vec2 px, float aspect, float sceneA, out float far, out float dens, out vec4 Bq){
   vec2 nuv = uv * vec2(aspect, 1.);
@@ -325,7 +333,12 @@ vec3 inkOf(vec3 hdrC, vec2 uv, vec2 px, float aspect, float sceneA, out float fa
     // open sky is paper, a faint wash low on the horizon; smoke in front of it is ink
     vec3 rd = worldRay(uv);
     float hz = exp(-max(rd.y, 0.) * 7.) * .16 * uSkyWash * (.6 + nW * .8);
-    float smoke = clamp(sceneA, 0., 1.) * (1. - smoothstep(.42, .8, toneOf(lum(hdrC))));
+    // (under a bolt, the smoke that is there: its mark is 6 over it, its edge 1.5, 3 or 4.5 (weather.js), so the smoke is
+    // the remainder over 1.5; flames, warm, keep their own. Taken whole, the mark put the bolt in front of the thickest
+    // smoke: dimming, its edges were inked black, two dark lines down a pale band, a hollow tube)
+    vec3 hc = max(hdrC, 0.) / max(max(hdrC.r, max(hdrC.g, hdrC.b)), 1e-4);
+    float sA = sceneA >= 1.45 && hc.r - hc.b < .35 ? mod(sceneA + .01, 1.5) - .01 : sceneA;
+    float smoke = clamp(sA, 0., 1.) * (1. - smoothstep(.42, .8, toneOf(lum(hdrC))));
     d = max(hz, smoke * (.9 + nM * .2));
   }
   // (for one held moment a figure is black against the light, not drawn: the boy in the doorway)
@@ -433,7 +446,8 @@ void main(){
   vec3 shf = airS.rgb;
   if (!(any(isnan(airS)) || any(isinf(airS)))) hdr = hdr * mix(1., clamp(airS.a, 0., 1.), uShafts) + shf * uShafts;
   if (uDebugView > .5 && uDebugView < 2.5) { gl_FragColor = vec4(uDebugView < 1.5 ? toSRGB(shf * uShafts * 3.) : vec3(ao), 1.); return; }
-  hdr += texture2D(tBloom, uv).rgb * uBloom;
+  // (a broken pixel's glow is no glow: one not-a-number in the scene, blurred into the bloom, printed a black speck)
+  { vec3 bl = texture2D(tBloom, uv).rgb; if (!(any(isnan(bl)) || any(isinf(bl)))) hdr += bl * uBloom; }
   // grade in scene-linear light, then tone map
   hdr *= uTint;
   hdr.r += max(hdr.g - max(hdr.r, hdr.b), 0.) * uGreenWarm;
@@ -487,6 +501,10 @@ void main(){
     vec2 q2 = (vUv - uSeep.xy) * vec2(aspect, 1.);
     // (its edge ragged with the paper's grain, the more so the wider it is: a small one stays round)
     float seep = smoothstep(uSeep.z, uSeep.z - uSeep.w, length(q2) + (fbm(vUv * 2.3 + .7) - .5) * .5 * clamp(uSeep.z / .6, .12, 1.));
+    // (the people left in ink where the colour comes back round them, if asked: in it, lit blue by a strike or orange by
+    // the fire, the boy's linen read as bare skin one moment and an orange tunic the next, and a grey robe between)
+    // (and what is round them, from the blurred marks: his hair's fine ends are not marked, and came out pink)
+    if (uSeepFig > 0.) { float sa = texture2D(tColor, uv).a; seep *= 1. - uSeepFig * max(max(figOf(sa), heroOf(uv, sa)), smoothstep(.06, .3, texture2D(tMark, uv).g)); }
     // the opening watercolour bleed: colour flows out from a point
     vec2 qb = (vUv - uBleedC) * vec2(aspect, 1.);
     float bd = length(qb) + (fbm(vUv * 1.3 + uTime * .002) - .5) * .42 + (fbm(vUv * 6.) - .5) * .08;
@@ -494,7 +512,9 @@ void main(){
     inkK = uInk * spread * (1. - seep) * (1. - bleed);
     if (inkK > .001) {
       float far, dens; vec4 Bq;
-      float sceneA = texture2D(tColor, uv).a;
+      // (what a pixel is, read at its own texel: the shake moves the frame by a fraction of a pixel, and read between two
+      // texels a bolt's mark and the sky beside it averaged into a figure's, outlined in dots)
+      float sceneA = texture2D(tColor, (floor(uv * uRes) + .5) / uRes).a;
       vec3 inkImg = inkOf(hdr, uv, px, aspect, sceneA, far, dens, Bq);
       float ex = uExposure / .6;
       // ---- what burns: flames and embers mark themselves in the scene alpha (> 1.25) with their own shape
@@ -514,15 +534,23 @@ void main(){
       inkImg = mix(inkImg, flameCol, clamp(flame * 1.15, 0., 1.) * uAccent.x);
       // ---- lightning, marked like the flames but cold: electric-blue strokes, cyan where they burn, white-hot cores
       // (the colour comes from the hue, not the brightness: a white-hot channel would vanish into the paper)
-      float boltM = smoothstep(1.25, 2.1, sceneA) * smoothstep(-.02, .12, hn.b - hn.r) * uBoltK.x;
+      // (laid on like pigment, as thick as it is bright, in one blue: dimming, it thins into what is behind it, its hue
+      // held; only its heart, burning, goes white. Graded from dark blue at its dim edge to white at its heart, a dim
+      // stroke was a pale band between two dark-blue lines, a neon tube, its kinks crossed knots; and in the white of a
+      // cut, two blue lines)
+      float boltM = smoothstep(1.25, 2.1, sceneA) * smoothstep(-.02, .12, hn.b - hn.r) * smoothstep(.1, 1.1, Lf) * uBoltK.x;
       float blueness = smoothstep(.1, .45, hn.b - hn.r);
-      vec3 boltCol = mix(vec3(.02, .12, .56), vec3(.1, .62, .98), smoothstep(.3, 1.6, Lf));
-      boltCol = mix(boltCol, vec3(.86, .97, 1.), (1. - blueness * .6) * smoothstep(9., 30., Lf));
+      // (and no white heart in the white of a cut: with its glow washed out there, the heart was the page and the stroke
+      // two blue lines)
+      vec3 boltCol = mix(vec3(.15, .56, 1.), vec3(.82, .95, 1.), (1. - blueness * .6) * smoothstep(10., 32., Lf) * (1. - smoothstep(0., .35, uWhite)));
       // their light: a cyan glow soaked round the channel, a pale cyan wash where the flash falls on the paper
+      // (the people and the wolves stay ink in a bolt's blue as in the colour round a strike: in its soak and its cold
+      // light, his grey hair went blue beside a bolt on the road)
+      float figV = max(max(figOf(sceneA), heroOf(uv, sceneA)), smoothstep(.06, .3, texture2D(tMark, uv).g));
       float glowB = smoothstep(.02, .3, texture2D(tMark, uv).r) * smoothstep(.0, .25, bn.b - bn.r) * uBoltK.x;
-      inkImg = mix(inkImg, inkImg * vec3(.42, .8, 1.04) + vec3(.0, .05, .12), glowB * .85 * uAccent.x);
+      inkImg = mix(inkImg, inkImg * vec3(.42, .8, 1.04) + vec3(.0, .05, .12), glowB * .85 * uAccent.x * (1. - figV));
       float coldLit = smoothstep(.12, .4, bn.b - bn.r) * smoothstep(.3, 1.4, lum(Bq.rgb) * ex) * uBoltK.y;
-      inkImg = mix(inkImg, inkImg * vec3(.6, .88, 1.05), coldLit * .65 * uAccent.x);
+      inkImg = mix(inkImg, inkImg * vec3(.6, .88, 1.05), coldLit * .65 * uAccent.x * (1. - figV));
       inkImg = mix(inkImg, boltCol, clamp(boltM * 1.3, 0., 1.) * uAccent.x);
       // the sect's violet: a wash and a bright core
       float hv = rgb2hsv(bn).x;
@@ -532,7 +560,8 @@ void main(){
       // the wolves' eyes, the sect's fires)
       vec3 rawC = max(texture2D(tColor, uv).rgb, 0.), rn = rawC / max(max(rawC.r, max(rawC.g, rawC.b)), 1e-4);
       vcore = max(vcore, smoothstep(.09, .03, abs(rgb2hsv(rn).x - .76)) * smoothstep(.45, .7, rgb2hsv(rn).y) * smoothstep(.5, 1.6, lum(rawC) * ex));
-      inkImg = mix(inkImg, inkImg * vec3(.75, .45, 1.1), violet * .8 * uAccent.z);
+      // (its wash not over the people, nor the wolves: in a glow beside his head, the boy's grey hair went lilac)
+      inkImg = mix(inkImg, inkImg * vec3(.75, .45, 1.1), violet * .8 * uAccent.z * (1. - figV));
       // (violet however bright: a small hot light, a wolf's eye, the slit of a mask, stays violet; only the very heart of
       // a great one pales)
       inkImg = mix(inkImg, mix(vec3(.5, .15, .88), vec3(.86, .72, 1.), smoothstep(4., 14., Lf) * .75), vcore * uAccent.z);
@@ -574,14 +603,14 @@ void main(){
   col = mix(lit, mix(max(uWhiteCol, lit), uWhiteCol, uWhiteR.z >= 0. && uWhiteR.w > 0. ? smoothstep(1.2, 2.4, uWhiteR.z) : 1.), uWhite * wR);
   vec2 v = (vUv - .5) * vec2(aspect, 1.);
   col *= 1. - uVignette * smoothstep(.35, 1.05, length(v)) * (1. - uPaper) * (1. - uWhite);
-  // the cinema bars at the key moments: whatever is marked as breaking the frame (scene alpha 3 and up: rain going by,
-  // lightning, the pillar of light) passes over them, and the glow of the brightest things bleeds over their edges
+  // the cinema bars at the key moments: black, their inner edges always the same soft few pixels, and nothing drawn over
+  // them (rain, speed lines and bolts let through them, they were bars with things falling across them, and where the
+  // pillar crossed one it was a grey cut-out; the glow of the brightest things let in over their edges made them hard in
+  // one frame and feathered in the next)
   if (uBars.x > 0.) {
     float by = min(vUv.y, 1. - vUv.y), edge = uBars.y * uBars.x;
-    float inBar = 1. - smoothstep(edge - uBars.z, edge + uBars.z, by);
-    float brk = smoothstep(2.9, 3.3, texture2D(tColor, vUv).a);
-    vec3 glow = 1. - exp(-texture2D(tBloom, vUv).rgb * uBars.w);
-    col = mix(col, uBarCol + glow, inBar * (1. - brk));
+    float inBar = 1. - smoothstep(edge - uBars.z * 9., edge + uBars.z * 3., by);
+    col = mix(col, uBarCol, inBar);
   }
   float g = texture2D(tNoise, vUv * uRes / 512. + fract(uGrainT * vec2(17.31, 9.17))).a - .5;
   col += g * uGrain * (.3 + lum(col));
@@ -633,7 +662,7 @@ export function createPost(renderer, scene, camera, mats, quality, sun) {
     uSat: { value: 1 }, uContrast: { value: 1 }, uVignette: { value: 0.35 }, uGrain: { value: 0.035 }, uGrainT: { value: 0 }, uGreenWarm: { value: 0.2 }, uBars: { value: new THREE.Vector4(0, 0.12, 0.0005, 0.5) }, uBarCol: { value: new THREE.Color(0.009, 0.008, 0.007) },
     uTint: { value: new THREE.Color(1, 1, 1) }, uShadowTint: { value: new THREE.Color(1, 1, 1) }, uHighTint: { value: new THREE.Color(1, 1, 1) },
     uInk: { value: 0 }, uInkLine: { value: 1.1 }, uInkNear: { value: 25 }, uInkFar: { value: 260 }, uInkWash: { value: 1 }, uInkKey: { value: 0.5 }, uSepia: { value: 0 }, uFigSil: { value: 0 },
-    uInkSpread: { value: new THREE.Vector4(0.5, 0.5, 3, 0.3) }, uSeep: { value: new THREE.Vector4(0.5, 0.5, -1, 0.3) }, uAccent: { value: new THREE.Vector4(1, 1, 1, 0) },
+    uInkSpread: { value: new THREE.Vector4(0.5, 0.5, 3, 0.3) }, uSeep: { value: new THREE.Vector4(0.5, 0.5, -1, 0.3) }, uSeepFig: { value: 0 }, uHeroBox: { value: new THREE.Vector4(0, 0, -1, -1) }, uAccent: { value: new THREE.Vector4(1, 1, 1, 0) },
     uBleed: { value: -1 }, uBleedC: { value: new THREE.Vector2(0.5, 0.5) }, uDebugView: { value: 0 },
     uToon: { value: 0 }, uToonR: { value: 1 }, uToonLine: { value: 0.95 }, uToonBand: { value: 0.45 }, uToonSat: { value: 0.28 }, uToonW: { value: 1.6 },
     tCloudL: { value: null }, tCloudD: { value: null }, uCloudK: { value: 0 }, uShockR: { value: new THREE.Vector4(0.5, 0.5, 0, 0) }, uImpactF: { value: 0 },

@@ -17,12 +17,15 @@ import { createBurst } from './burst.js';
 import { createGoldTrail } from './trail.js';
 import { createVillageLife } from './village-life.js';
 import { createBonds } from './bonds.js';
+import { WALK, BEAT, walkAt, wt, inWalk, tband } from './walk.js';
+import { createWalkCam } from './walkcam.js';
+import { watchT, watchU } from './score.js';
 import { createPetalGust } from './petal-gust.js';
 import { WAKE } from './decor.js';
 import { createBirdBurst } from './bird-burst.js';
 import { createFighters } from './fighters.js';
 import { createDuel, DUEL_P } from './duel.js';
-import { createWar, WAR, shot as warShotAt, goldAt as warGold, BLOWS as WAR_BLOWS, BOLTS as WAR_BOLTS, TRENCH as WAR_TRENCH, W0 as WAR_C } from './war.js';
+import { createWar, WAR, shot as warShotAt, goldAt as warGold, BLOWS as WAR_BLOWS, BOLTS as WAR_BOLTS, TRENCH as WAR_TRENCH, W0 as WAR_C, FURY_U as WAR_FURY_U } from './war.js';
 import { createMegaBolt } from './mega-bolt.js';
 import { createCharge } from './charge.js';
 import { createImpact } from './impact.js';
@@ -340,8 +343,6 @@ export async function createEngine(canvas) {
   // (the one that is not like the others, and where he stops to look at it: a step off the road toward the stall)
   const legendAura = A.auras ? (A.auras.find(x => x.tier === 4) || A.auras[0]) : null;
   const legend = legendAura ? legendAura.base.clone().addScaledVector(legendAura.dir, legendAura.len * 0.45) : null;
-  // (done stepping back into the middle of the street before the cut ahead at 28.05: mcZ)
-  const stallK = u => band(25.4, 26.15, 27.4, 28.0, u);
   scene.add(charge.group);
   // the shreds of cloud rushing past the eye as it dives through the sea's top and the storm
   const rush = createCloudRush({ count: quality.low ? 40 : 70, noise: U.uNoise.value });
@@ -379,7 +380,8 @@ export async function createEngine(canvas) {
   // the 3D hero (hero.js): origin at his feet, faces +Z; the engine yaws him to `heading` and drives his pose state.
   // Built in idle time once the valley is on screen (prepareForest), or on demand when he is first needed.
   let wuhen = null, heldAnchor = null, wPrev = null, lastSpeed = 0;
-  const basketGeo = new THREE.LatheGeometry([[0, 0], [0.13, 0], [0.18, 0.2], [0.17, 0.22], [0, 0.22]].map(p => new THREE.Vector2(p[0], p[1])), 12);
+  // (round: twelve sides, it lay on the road at his feet as he ran, seen from above in the ink, as a dodecagon)
+  const basketGeo = new THREE.LatheGeometry([[0, 0], [0.13, 0], [0.18, 0.2], [0.17, 0.22], [0, 0.22]].map(p => new THREE.Vector2(p[0], p[1])), 36);
   const basketMat = new THREE.MeshStandardMaterial({ map: mats.straw.map, roughness: 0.95 });
   const held = new THREE.Group();
   const hb = new THREE.Mesh(basketGeo, basketMat);
@@ -574,17 +576,29 @@ export async function createEngine(canvas) {
     return V3(x, y, z);
   };
   const northDir = z => V3(roadX(z - 1.5) - roadX(z + 1.5), 0, -3).normalize();
-  // the old road and the bridge: where the lens stands off him (back, to his right, up) and where it looks (ahead,
-  // to his left, up); it keeps clear of the shrine by the road and of the lanterns at the bridge's ends (on a long lens,
-  // 32°, from farther off: earth is long-lens; the land beyond him stacks up behind him)
-  const ROAD_SHOT = {
-    back: track([[36.9, 7.8], [37.75, 7.4], [38.3, 5.4], [39.95, 5.4], [40.5, 7.0]]),
-    side: track([[36.9, -2.6], [37.75, -2.6], [38.3, 6.4], [39.95, 6.4], [40.5, 0.7]]),
-    up: track([[36.9, 2.0], [37.75, 2.1], [38.3, 4.2], [39.95, 4.2], [40.5, 2.3]]),
-    fwd: track([[36.9, 16], [37.75, 15], [38.3, 9], [39.95, 9], [40.5, 14]]),
-    left: track([[36.9, 3], [37.75, 3.5], [38.3, 13], [39.95, 13], [40.5, 4]]),
-    lookUp: track([[36.9, 1.9], [37.75, 1.7], [38.3, 0.4], [39.95, 0.4], [40.5, 1.6]]),
-  };
+  // the way to the pines, each place come to through the white of the page (WHITE_CUTS) and found empty for a moment
+  // before he walks into it: the old road past the gate, from the verge as it bends away west through the fields; the
+  // bridge, from the near bank, him coming up onto its arch over the water; the pines, from among them, him coming in
+  // off the road past the lens to the mushrooms at the foot of the old pine (then the lens follows him in: mushShot).
+  // [from, to, lens from, lens to, where it looks from, to, focal length]
+  const ROAD_SHOTS = [
+    { a: 35.75, b: 37.75, p0: V3(0.3, 1.1, -50.2), p1: V3(0.15, 1.12, -50.6), l0: V3(-6.5, 1.55, -61.5), l1: V3(-6.9, 1.5, -61.8), fov: 42 },
+    // (the bridge: from the road's right-hand verge short of it, looking along it up its hump, the river under it; he
+    // comes past the lens a moment after the white has cleared and walks away up onto it. From the far bank, among the
+    // reeds, he was a speck behind them and its parapet)
+    { a: 37.75, b: 40.6, p0: V3(-9.6, 2.8, -73.2), p1: V3(-9.7, 2.85, -73.6), l0: V3(-13.4, 5.6, -84.5), l1: V3(-13.4, 6.0, -85.0), fov: 40 },
+    { a: 40.6, b: 44.0, p0: V3(10.6, 12.0, -152.9), p1: V3(10.65, 12.0, -153.1), l0: V3(12.0, 11.6, -157.5), l1: V3(12.1, 11.5, -157.6), fov: 44 },
+  ];
+  const _rsP = V3(), _rsL = V3();
+  function roadShot(u) {
+    for (const s of ROAD_SHOTS) {
+      if (u < s.a || u >= s.b) continue;
+      const k = smooth(s.a, s.b, u);
+      _rsP.copy(s.p0).lerp(s.p1, k); _rsL.copy(s.l0).lerp(s.l1, k);
+      return { pos: _rsP, look: _rsL, fov: s.fov };
+    }
+    return null;
+  }
   const shake = (t, amt) => V3(Math.sin(t * 13.1) * 0.6 + Math.sin(t * 29.7) * 0.4, Math.sin(t * 17.3) * 0.5 + Math.sin(t * 41.1) * 0.3, Math.sin(t * 11.7) * 0.5).multiplyScalar(amt * 0.06);
 
   const metrics = { frames: 0, u: 0, wind: 0.4, crossUV: [0.4, 0.58], bellToll: 0, ripples: [] };
@@ -682,10 +696,6 @@ export async function createEngine(canvas) {
   // it becomes: the eye tips over and chases its light down (the dive)
   const SMASH = 52.47;
   // the cut in on the wolf at the gate as he comes through it
-  // the cut in on the burning blade at the smith's (see the camera)
-  const SMITH_IN = [26.3, 26.76];
-  // (held until he is past it: running in at the lens, his face would be seen)
-  const WOLF_IN = [72.86, 73.28];
   // the cut to the room from inside it, from the prints at the door until he kneels (see the camera)
   const REVERSE = [80.98, 83.5];
   // the cut in on their hands as the old man's falls, the tear (see the camera)
@@ -706,7 +716,7 @@ export async function createEngine(canvas) {
   // the eye of the gathering: the two fight low in it while the deck forms round them (seen from the pines, west-south-
   // west and high), then go up out of it over the sea, where the eye follows them up through it
   const D_EYE = V3(EYE.x, 1500, EYE.z);
-  const _dc = V3(), _gf = V3(), _wg = V3(), _wm = V3();
+  const _dc = V3(), _gf = V3(), _wg = V3(), _wm = V3(), _wb1 = V3(), _wb2 = V3();
   let lastBlowT = 0, lastArc = -1, lastBlowBolt = -9;
   const duelUp = u => Math.pow(smooth(47.9, 48.8, u), 0.8);
   function duelCentre(u, out) {
@@ -754,7 +764,7 @@ export async function createEngine(canvas) {
     else { target = camera.position.clone().addScaledVector(fwd.setY(0).normalize(), 900); target.y = heightAt(target.x, target.z) + 20; }
     const top = target.clone().add(V3((Math.random() - 0.5) * 360, 0, (Math.random() - 0.5) * 360));
     top.y = violet ? target.y + 420 : 640 + Math.random() * 180;
-    lightning.strike(time, top, target, { strength, width: violet ? 1.6 : 2.2, color: violet ? new THREE.Color(0.78, 0.45, 1.0) : null });
+    lightning.strike(time, top, target, { strength, width: violet ? 1.6 : 2.2, tip: 0, color: violet ? new THREE.Color(0.78, 0.45, 1.0) : null });
   }
 
   // a strike into the ground beside the road, `ahead` metres in front of him, `side` metres off the road's centre
@@ -798,7 +808,9 @@ export async function createEngine(canvas) {
   const mushPick = A.mushrooms.clone().add(V3(-0.27, 0.06, 0.33));
   // (he goes back to the road once the eye has left him for the sky)
   // (off the road to them from the cut onto its last stretch, at a walk: mcZ)
-  const mushK = u => smooth(40.7, 43.85, u) * (1 - smooth(48.0, 49.2, u));
+  // (found already a third of the way in off the road, at the lens's side, as the pines are come to through the white:
+  // the road's last steps are in the cut)
+  const mushK = u => (u < 40.6 ? 0 : lerp(0.32, 1, smooth(40.6, 43.85, u))) * (1 - smooth(48.0, 49.2, u));
   // where he looks when the sky turns: the fight low in the eye of the gathering, west-south-west and high
   const SKYFIGHT = V3(EYE.x, 1450, EYE.z);
   const toEye = EYE.clone().sub(mushSpot).setY(0).normalize();
@@ -836,6 +848,27 @@ export async function createEngine(canvas) {
   // the morning's bonds: his uncle's hand measuring him, the dog, the bun, the dog sent home at the gate; that night the
   // wolf where the dog sat, the dog by the old man (bonds.js)
   const bonds = createBonds({ world, life: () => life, valleyP, valleyHeading, groundY: (x, z) => life.groundY(x, z) });
+  // the walk out of the village, one take from the porch to the gate (walkcam.js)
+  const walkCam = createWalkCam({ groundY: (x, z) => life.groundY(x, z), anchors: () => Object.assign(bonds.anchors(), { legend: legend ? legend.clone() : A.stall.clone() }) });
+  // (and for one beat at the smith's stall, while his eyes are on the blades, the world drains to ink and only their
+  // light stays gold: what only he can see; the colour rule taught before it is needed)
+  const stallInk = u => (inWalk(u) ? tband(BEAT.smith + 2.2, BEAT.smith + 3.0, BEAT.smith + 6.6, BEAT.smith + 7.4, wt(u)) : 0);
+  // the cuts made inside the white of the page: a dip into it between the places on the way to the pines (out of the
+  // gate; onto the bridge; up to the pines), the flash of the two meeting above the clouds, and a bolt's flash at each
+  // cut of the run home. [story position of the cut,
+  // seconds of Watch it whitens over before it, seconds it clears over after it]
+  const WHITE_CUTS = [[35.75, 0.38, 0.5], [37.75, 0.38, 0.5], [40.6, 0.38, 0.5], [50.265, 0.05, 0.24], [68.3, 0.07, 0.34], [70.4, 0.07, 0.34], [72.5, 0.07, 0.34], [73.28, 0.07, 0.34], [75.0, 0.07, 0.34]].map(([c, r, f]) => ({ c, r, f, t: null }));
+  function cutWhite(u) {
+    let w = 0;
+    for (const x of WHITE_CUTS) {
+      if (Math.abs(u - x.c) > 1.5) continue;
+      if (x.t === null) x.t = watchT(x.c);
+      const d = watchT(u) - x.t;
+      if (d < -x.r || d > x.f + 0.05) continue;
+      w = Math.max(w, d < 0 ? smooth(-x.r, -x.r * 0.12, d) : 1 - smooth(0.04, 0.04 + x.f, d));
+    }
+    return w;
+  }
   // that night the dog is lying by the old man, between him and the door, its nose to the door (bonds.js)
   const dogNight = { p: UH.local(-0.3, 0, 2.0).setY(0), yaw: Math.atan2(UH.door.x - UH.center.x, UH.door.z - UH.center.z),
     boy: () => (wuhen && wuhen.group.visible ? wuhen.anchors.head() : UH.door.clone().add(V3(0, 1.5, 0))), old: () => (elder ? elder.anchors.head() : UH.uncleSpot.clone()), soul: () => soulP.clone() };
@@ -902,10 +935,20 @@ export async function createEngine(canvas) {
     world.root.add(g);
     return g;
   })();
-  let bellN = null;
+  let bellN = null, lastWarShot = null;
+  // (each of the war's bolts its own channel: two struck a moment apart had the same seed, and came down side by side
+  // in the same shape, a doubled cable)
+  const WAR_SEED = new Map();
+  { const used = new Set(); for (const Bt of WAR_BOLTS) { let s = Math.floor(Bt.u * 131); while (used.has(s)) s += 7919; used.add(s); WAR_SEED.set(Bt, s); } }
+  const _fdV = new THREE.Color();
   const ripples = [];
+  // (a toll's ripples belong to the shot it was tolled in: at a cut, or in the white of one, they are gone)
+  const _ripCam = V3(1e9, 0, 0), _ripFwd = V3(), _ripF = V3();
   function valleyP(u) {
-    let P = roadPoint(mcZ(u));
+    // (up the street to the gate: on the walk's own path, at a walker's pace on Watch's clock: walk.js)
+    let P;
+    if (inWalk(u)) { const w = walkAt(wt(u)); P = V3(w.x, Math.max(roadY(w.z), heightAt(w.x, w.z)), w.z); }
+    else P = roadPoint(mcZ(u));
     // (on the porch in the morning; down the steps into the street)
     const mo = morningK(u);
     if (mo > 0) P.lerp(BOY_AT, mo);
@@ -914,12 +957,6 @@ export async function createEngine(canvas) {
       const y0 = P.y;
       P.lerp(mushSpot, mk);
       P.y = lerp(y0, heightAt(P.x, P.z), smooth(0, 0.2, mk));
-    }
-    // (at the smith's stall he steps off the middle of the street toward it, and stops to look)
-    const sk = stallK(u);
-    if (sk > 0 && A.stall) {
-      const T = A.stall.clone().lerp(P, 0.62);
-      P.lerp(T.setY(P.y), sk * 0.5);
     }
     bonds.feet(u, P, mo);
     const pb = porchBlend(u);
@@ -938,7 +975,28 @@ export async function createEngine(canvas) {
     }
     return P;
   }
+  // which way he faces on the walk up the street (walk time t): the way he goes, smoothed over a stride; round to the
+  // sword on its stand as he comes to a stop at the smith's, back to the way on as he goes; to Auntie Mei at her
+  // terrace, and a little round to the dog at his feet to give it the bun; square to the dog in his way at the gate
+  function walkHeading(t, P) {
+    const a = walkAt(t - 0.3), ax = a.x, az = a.z, b = walkAt(t + 0.3);
+    const h = V3(b.x - ax, 0, b.z - az);
+    if (h.lengthSq() < 1e-6) { const w = walkAt(t); h.set(w.dx, 0, w.dz); }
+    h.normalize();
+    const K = bonds.anchors(), Bt = BEAT;
+    if (legend) turnTo(h, legend.clone().sub(P).setY(0).normalize(), tband(Bt.smith - 1.5, Bt.smith - 0.1, Bt.smithOff - 0.25, Bt.smithOff + 1.1, t));
+    turnTo(h, V3(-1, 0, -0.06).normalize(), tband(Bt.mei - 1.7, Bt.mei - 0.1, Bt.meiOff - 0.35, Bt.meiOff + 1.3, t));
+    turnTo(h, K.DOG_BEG.clone().sub(P).setY(0).normalize(), 0.45 * tband(Bt.mei + 2.45, Bt.mei + 2.85, Bt.mei + 3.45, Bt.mei + 3.95, t));
+    turnTo(h, V3(0, 0, -1), tband(Bt.gate - 1.2, Bt.gate - 0.1, Bt.gateOff - 0.1, Bt.gateOff + 1.2, t));
+    return h;
+  }
   function valleyHeading(u, P) {
+    if (inWalk(u)) {
+      const t = wt(u), h = walkHeading(t, P);
+      // (from the way he faced the dog, over his first steps: no turn in one frame as the walk takes him up)
+      if (t < 1.2) turnTo(h, northDir(mcZ(WALK.u0 - 0.001)), 1 - smooth(0, 1.2, t));
+      return h;
+    }
     const z = mcZ(u);
     let yaw = turnYaw(u);
     if (u >= 61.2) yaw = Math.PI;
@@ -949,9 +1007,9 @@ export async function createEngine(canvas) {
     turnTo(h, mushFace, smooth(43.65, 44.0, u) * (1 - smooth(47.9, 48.2, u)));
     // (the sky turns: he turns round to it, to his left, away from the lens)
     turnTo(h, toEye, smooth(45.95, 46.75, u) * (1 - smooth(47.9, 48.2, u)));
-    if (A.stall && stallK(u) > 0) turnTo(h, A.stall.clone().sub(P).setY(0).normalize(), smooth(25.6, 26.3, u) * (1 - smooth(27.3, 27.9, u)) * 0.75);
     const pb = porchBlend(u);
-    if (pb > 0.05) turnTo(h, UH.center.clone().sub(P).setY(0).normalize(), Math.min(1, pb * 1.6));
+    // (from nothing: a threshold here turned him, and the lens behind him, a few degrees in one frame)
+    if (pb > 0) turnTo(h, UH.center.clone().sub(P).setY(0).normalize(), Math.min(1, pb * 1.6));
     bonds.heading(u, P, h, turnTo);
     // (in the morning, to his uncle at the door; then round to the street)
     const mo = morningK(u);
@@ -960,27 +1018,58 @@ export async function createEngine(canvas) {
     if (ek > 0) turnTo(h, UH.uncleSpot.clone().sub(P).setY(0).normalize(), smooth(0, 0.6, ek));
     return h;
   }
+  // where his eyes go on the walk up the street (walk time t): the dog going off up the street, the laundry woman
+  // waving, the children and the dog at their game, the smith's wares and the sword on its stand, the dog bounding back
+  // past him, the sweeper, Auntie Mei calling him over, the dog at his feet, Mei laughing, the dog at his heel, the dog
+  // in his way (each a little before his body turns to it: the head leads)
+  let TSW = null;
+  function walkLooks(t) {
+    const C = world.cast, Bt = BEAT, at = (who, y) => who.root.position.clone().add(V3(0, y, 0));
+    // (when he passes the sweeper on her porch)
+    if (TSW === null) { TSW = Bt.smithOff; for (let x = Bt.smithOff; x < Bt.mei; x += 0.1) if (walkAt(x).z < C.sweeper.root.position.z + 1.5) { TSW = x; break; } }
+    return [
+      [tband(-1, -0.5, 1.4, 2.4, t), bonds.dogHead],
+      [tband(2.7, 3.5, 6.0, 6.9, t), () => at(C.laundry, 1.45)],
+      [0.75 * tband(7.8, 8.7, 11.2, 12.2, t), () => at(C.kids[0], 0.85)],
+      [tband(Bt.smith - 2.7, Bt.smith - 1.8, Bt.smithOff - 0.7, Bt.smithOff + 0.15, t), () => (legend ? legend.clone() : A.stall.clone())],
+      [0.6 * tband(Bt.smithOff + 2.5, Bt.smithOff + 3.1, Bt.smithOff + 3.9, Bt.smithOff + 4.7, t), bonds.dogHead],
+      [0.5 * tband(TSW - 0.7, TSW, TSW + 0.7, TSW + 1.4, t), () => at(C.sweeper, 1.4)],
+      [tband(Bt.mei - 4.5, Bt.mei - 3.8, Bt.mei + 1.85, Bt.mei + 2.3, t), bonds.sellerFace],
+      [tband(Bt.mei + 1.95, Bt.mei + 2.35, Bt.mei + 3.9, Bt.mei + 4.4, t), bonds.dogHead],
+      [tband(Bt.mei + 4.0, Bt.mei + 4.5, Bt.meiOff - 0.45, Bt.meiOff + 0.2, t), bonds.sellerFace],
+      [0.5 * tband(Bt.meiOff + 3.0, Bt.meiOff + 3.6, Bt.meiOff + 4.6, Bt.meiOff + 5.4, t), bonds.dogHead],
+      [tband(Bt.gate - 4.3, Bt.gate - 3.5, Bt.gateOff + 0.1, Bt.gateOff + 0.8, t), bonds.dogHead],
+    ];
+  }
   // where he looks: the people he greets, the mushrooms, the sky, the burning village, the uncle -> [target, weight]
   function valleyLook(u, P) {
     const C = world.cast;
     const at = (who, y) => who.root.position.clone().add(V3(0, y, 0));
     const looks = [
-      [band(9.6, 11.0, 18.1, 18.6, u), () => (elder && elder.group.visible ? elder.anchors.head() : UNCLE_AT.clone().add(V3(0, 1.52, 0)))],
+      [band(9.6, 11.0, 18.1, 18.7, u), () => (elder && elder.group.visible ? elder.anchors.head() : UNCLE_AT.clone().add(V3(0, 1.52, 0)))],
       [band(16.62, 16.85, 17.75, 18.0, u) * 0.6, () => BOY_AT.clone().addScaledVector(SUN_UP, 30)],
       ...bonds.looks(u),
-      [band(22.6, 23.6, 24.4, 25.4, u), () => at(C.kids[0], 0.85)],
-      [band(25.3, 26.0, 27.4, 28.0, u), () => (A.stall ? A.stall.clone() : at(C.smith, 1.5))],
+      ...(inWalk(u) ? walkLooks(wt(u)) : []),
       [band(43.7, 44.2, 44.8, 45.15, u), () => mushPick.clone()],
       // the one he picked, held up before his eyes
       [band(44.95, 45.3, 45.75, 46.05, u), () => mushRaise(u, P, valleyHeading(u, P)).add(V3(0, 0.07, 0))],
       // the sky turns: his eyes go up to it, to the light fighting low in the eye of the gathering
-      [band(45.8, 46.25, 47.9, 48.4, u), () => SKYFIGHT.clone()],
+      [band(45.72, 46.32, 47.9, 48.4, u), () => SKYFIGHT.clone()],
       [band(48.3, 48.9, 55.6, 56.8, u), () => P.clone().add(valleyHeading(u, P).multiplyScalar(60)).add(V3(0, 22, 0))],
       [band(58.5, 59.5, 65.4, 66.4, u), () => V3(0, 4, 30)],
       // (when the light sits up out of him, his eyes go to it and follow it up through the roof)
       [band(92.55, 93.35, 99.0, 99.4, u), () => soulP.clone()],
       [smooth(81.6, 83.4, u) * (1 - smooth(92.5, 93.3, u)), () => (elder ? elder.anchors.head() : UH.uncleSpot.clone())],
     ];
+    // (on the walk out and the road, his head goes ahead of his body into each turn: it looks the way he will face half a
+    // second on, so the head leads and the body follows; not as he leaves the dog at the gate, where it stays on the dog)
+    if (u > 16.6 && u < 44.0) {
+      const uf = watchU(watchT(u) + 0.5), hN = valleyHeading(u, P), hF = valleyHeading(uf, valleyP(uf)).clone();
+      const turn = Math.acos(clamp(hN.dot(hF), -1, 1));
+      const stay = inWalk(u) ? tband(BEAT.gateOff - 0.6, BEAT.gateOff - 0.1, BEAT.gateOff + 2.2, BEAT.gateOff + 2.8, wt(u)) : 0;
+      const w = 0.9 * smooth(0.14, 0.45, turn) * (1 - stay);
+      if (w > 0.02) looks.push([w, () => P.clone().addScaledVector(hF, 10).add(V3(0, 1.45, 0))]);
+    }
     let best = 0, f = null;
     for (const [w, fn] of looks) if (w > best) { best = w; f = fn; }
     return best > 0.02 ? [f(), best] : null;
@@ -1031,11 +1120,11 @@ export async function createEngine(canvas) {
 
   // the soul's path: up out of him (the spirit), a breath above the burning roofs, then west after the light that fell
   const _run0 = V3(), _run1 = V3(), _fRes = new THREE.Vector2();
-  const soulP = V3(), _sp0 = V3(), _sp1 = V3(), _ss = V3(), _dbs = new THREE.Vector2(), _wc = new THREE.Color(), _wc2 = new THREE.Color(), _rvGate = V3(), _rvBasket = V3(), _wh = V3();
+  const soulP = V3(), _sp0 = V3(), _sp1 = V3(), _ss = V3(), _dbs = new THREE.Vector2(), _wc = new THREE.Color(), _wc2 = new THREE.Color(), _rvGate = V3(), _rvBasket = V3(), _wh = V3(), _hb0 = V3(), _hb1 = V3();
   const _rvGlow = new THREE.Color();
   // the room, in colour, from the moment he sees his uncle under the beam until the words begin
   const roomReveal = u => band(81.95, 83.1, 84.3, 85.6, u);
-  const PUSH = [0.05, 0.012, 0.035, 0, 0.07, 0.13, 0.1, 0.12, 0.06, 0.05, 0.09, 0.05];
+  const PUSH = [0.012, 0.035, 0, 0.07, 0.13, 0.1, 0.12, 0.06, 0.05, 0.09, 0.05];
   const soulBase = () => UH.uncleSpot.clone().add(V3(0, 1.15, 0));
   // (it hangs over the house while the crag is seen, then goes west low over the fields ahead of him, pulling away)
   const soulHover = u => soulBase().add(V3(Math.sin(u * 3.1) * 0.3, 15.5 + smooth(98.4, 102.6, u) * 3.5, Math.cos(u * 2.3) * 0.3));
@@ -1106,9 +1195,14 @@ export async function createEngine(canvas) {
   // turns round to it and the lens goes round behind him (it stays at his back), tilting up to the gathering, and holds
   // there, rising a little, while the deck forms over the valley.
   const _msA = V3(), _msB = V3();
+  // (the lens keeps to the way he came in off the road until he is down among them, and comes round to the way he
+  // faces them more slowly than he turns: tied to his turn, it whipped round him as he squatted)
+  let mushIn = null;
   const mushShot = (uu, portrait = 0) => {
-    const P = valleyP(uu), h = valleyHeading(uu, P).clone(), r = V3(-h.z, 0, h.x);
-    const cr = smooth(44, 46.3, uu), sq = smooth(43.55, 44.15, uu);
+    const P = valleyP(uu);
+    if (!mushIn) mushIn = mushSpot.clone().sub(roadPoint(-151.5)).setY(0).normalize();
+    const h = uu < 44.6 ? slerpDir(mushIn, valleyHeading(44.6, valleyP(44.6)).clone().setY(0).normalize(), smooth(43.2, 44.5, uu)) : valleyHeading(uu, P).clone(), r = V3(-h.z, 0, h.x);
+    const cr = smooth(44, 46.3, uu), sq = smooth(43.45, 44.35, uu);
     // (on a tall screen: further back and less to the side, so he and the cluster both fit across it)
     const pos = P.clone().addScaledVector(h, -lerp(1.5, 1.3, cr) - 0.7 * portrait).addScaledVector(r, lerp(lerp(0.45, 1.5, sq), 1.3, cr) * (1 - 0.45 * portrait)).add(V3(0, lerp(1.9, 1.75, cr) + 0.3 * portrait, 0));
     const look = P.clone().addScaledVector(h, lerp(6, 0.47, sq)).addScaledVector(r, 0.5 * sq).add(V3(0, lerp(1.0, 0.22, sq), 0));
@@ -1313,6 +1407,9 @@ export async function createEngine(canvas) {
     const dl = dir.length(); dir.divideScalar(Math.max(dl, 1e-3));
     let jolt = 0;
     for (const b of WAR_BLOWS) { if (!b.shake) continue; const age = cueAge(b.u, u, time); if (age < 0.9) jolt += b.shake * Math.exp(-age / 0.11); }
+    // (and a tremor while the masked one gathers his fury, the storm pouring into him; the bolts land harder)
+    jolt += 0.35 * band(52.24, 52.28, 52.35, 52.37, u);
+    for (const fu of WAR_FURY_U) { const age = cueAge(fu, u, time); if (age < 0.6) jolt += 0.9 * Math.exp(-age / 0.09); }
     jolt = Math.min(jolt, 3) * THREE.MathUtils.degToRad(1);
     let roll = 0;
     if (jolt > 1e-5) {
@@ -1345,7 +1442,19 @@ export async function createEngine(canvas) {
       dir.addScaledVector(rgt, jx * rb).addScaledVector(upv, jy * rb).normalize();
       roll += rb * 0.5 * Math.sin(time * 11.3 + 0.7);
     }
-    return { pos, look: pos.clone().addScaledVector(dir, 100), fov: FLIGHT_FOV(u), roll };
+    // (the eye rushes in on the two lights, into the war's first frame: the two of them facing each other, his sword of
+    // light forming over him; a cut in on the same line from afar was a jump: war.js standoff)
+    let fov = FLIGHT_FOV(u);
+    const ri = u < WAR[0] ? smooth(48.92, WAR[0], u) : 0;
+    if (ri > 0) {
+      const st = warShotAt(WAR[0]), k = ri * ri * (3 - 2 * ri);
+      const d1 = st.look.clone().sub(st.pos).normalize();
+      pos.lerp(st.pos, k);
+      dir.copy(slerpDir(dir, d1, k));
+      fov = lerp(fov, st.fov, k);
+      roll *= 1 - k;
+    }
+    return { pos, look: pos.clone().addScaledVector(dir, 100), fov, roll };
   }
   // (for checking the flight without drawing it)
   debug.flight = u => { const s = flightShot(u, 0, 0); return { pos: s.pos.toArray().map(v => +v.toFixed(1)), fov: +s.fov.toFixed(1), roll: +THREE.MathUtils.radToDeg(s.roll).toFixed(2), r: +Math.hypot(s.pos.x - EYE.x, s.pos.z - EYE.z).toFixed(0), mush: mushSpot.toArray().map(v => +v.toFixed(1)), look: s.look.clone().sub(s.pos).normalize().toArray().map(v => +v.toFixed(2)) }; };
@@ -1393,8 +1502,39 @@ export async function createEngine(canvas) {
     S.uFireGlow.value = fireGlow;
     S.uClash.value = sample('clash');
     S.uWind.value.set(lerp(0.0009, 0.0042, stormAmt), lerp(0.0003, 0.0012, stormAmt)).multiplyScalar(inB && u > 111 && u < 124.4 ? 3.5 : 1);
-    const sunCol = sample('sunCol');
+    let sunCol = sample('sunCol');
     S.uSunCol.value.setRGB(...sunCol);
+    // (above the clouds the day goes dark over the masked one while he gathers the storm into himself, the sky and the
+    // sea of cloud and the sun's light dimming toward the storm's violet, so his blade of lightning, and the bell it
+    // breaks, burn against it: light laid on the white of the sea did not show)
+    const furyDark = inB ? 0 : band(52.25, 52.34, 52.47, 52.7, u);
+    if (furyDark > 0) {
+      const k = lerp(1, 0.36, furyDark);
+      S.uZenith.value.multiplyScalar(k).lerp(_fdV.setRGB(0.1, 0.06, 0.2), 0.35 * furyDark);
+      S.uHorizon.value.multiplyScalar(k).lerp(_fdV.setRGB(0.22, 0.16, 0.32), 0.3 * furyDark);
+      S.uCloudLit.value.multiplyScalar(lerp(1, 0.5, furyDark));
+      S.uCloudShade.value.multiplyScalar(lerp(1, 0.55, furyDark));
+      // (the sky's own sun, its glow in the air about it, going further: at the world's measure it hung on as a cream disc
+      // by his head at the end of the fury)
+      S.uSunCol.value.multiplyScalar(k * lerp(1, 0.45, furyDark));
+      sunCol = sunCol.map(v => v * k);
+      // (and the sun's disc going with it: it had burned on at full strength in the violet dark)
+      // (the sun put out by the storm he calls: dimmed only, it hung by his head as a pale disc, the sun setting, and was
+      // taken for the one he turns on)
+      S.uSunVis.value *= lerp(1, 0.05, furyDark);
+    }
+    // (and for a breath as the gold one cuts with his great sword, the day drawn into it: the sky and the sea of cloud
+    // dimmed so its gold burns against them; its light laid on the white of the sea and a white sky, it was a pale card)
+    const cutDark = inB ? 0 : band(50.69, 50.712, 50.748, 50.79, u);
+    if (cutDark > 0) {
+      const k = lerp(1, 0.5, cutDark);
+      S.uZenith.value.multiplyScalar(k);
+      S.uHorizon.value.multiplyScalar(lerp(1, 0.58, cutDark));
+      S.uCloudLit.value.multiplyScalar(lerp(1, 0.55, cutDark));
+      S.uCloudShade.value.multiplyScalar(lerp(1, 0.62, cutDark));
+      S.uSunCol.value.multiplyScalar(k);
+      sunCol = sunCol.map(v => v * k);
+    }
     const sd = inB ? B.sunDir(u) : debug.sunA ? V3(...debug.sunA).normalize() : sunDirA.set(...env.sunDir(u)).normalize();
     S.uSunDir.value.copy(sd);
     S.uMoonCol.value.setRGB(0.5, 0.55, 0.7).multiplyScalar(sample('moon') * (1 - stormAmt * 0.8));
@@ -1408,12 +1548,21 @@ export async function createEngine(canvas) {
     // (the war, close to: the two where war.js has them, from the cut to the two of them facing each other until the
     // violet one is gone)
     const inWar = !inB && u >= WAR[0] && u < 53.1;
-    const warFlight = inWar ? war.flight(u, time) : null;
+    // (above the clouds there is nothing for the creases' shade to fall in but the two of them, close to: on the gold
+    // one's white sleeve it lay as a mottled grey smudge)
+    post.ink.uAOAmt.value = (quality.low ? 0 : 0.85) * (inWar ? 0.2 : 1);
+    // (and just before it, the two lights drawn down out of their fight to where the war has them facing each other: at
+    // its first frame they had jumped there, the violet one from over the top of the frame, the gold one out of nothing)
+    const warIn = inB || inWar ? 0 : smooth(49.05, WAR[0], u);
+    const warFlight = inWar || warIn > 0 ? war.flight(u, time) : null;
     if (inWar) {
       warFlight(time, S.uC1.value, S.uC2.value);
       for (let k = 0; k < 4; k++) warFlight(time - (k + 1) * 0.06, S.uT1.value[k], S.uT2.value[k]);
       // (the fight's centre is between the two of them now)
       _dc.copy(S.uC1.value).lerp(S.uC2.value, 0.5);
+    } else if (warIn > 0) {
+      warFlight(time, _wb1, _wb2); S.uC1.value.lerp(_wb1, warIn); S.uC2.value.lerp(_wb2, warIn);
+      for (let k = 0; k < 4; k++) { warFlight(time - (k + 1) * 0.06, _wb1, _wb2); S.uT1.value[k].lerp(_wb1, warIn); S.uT2.value[k].lerp(_wb2, warIn); }
     }
     const falling = inB ? 0 : smooth(SMASH - 0.02, SMASH + 0.04, u) * (u < 54.02 ? 1 : 0);
     if (falling > 0) {
@@ -1430,16 +1579,17 @@ export async function createEngine(canvas) {
       const g = GOLD_FALL(u, V3()), q = Math.floor(at * 97);
       lightning.strike(time, g.clone().add(V3(side * 340, 260 + (q % 3) * 60, -side * 180)), g, { seed: q, strength: 0.85, width: 2.4, branches: 6, levels: 6, color: new THREE.Color(0.7, 0.48, 1.0) });
     }
-    const blows = inWar && u < SMASH ? [] : duel.blows(time, 3, duelFloor - _dc.y);
+    const blows = (inWar || warIn > 0.15) && u < SMASH ? [] : duel.blows(time, 3, duelFloor - _dc.y);
     const lastBlow = blows[0];
     const blowAge = lastBlow ? time - lastBlow.t : 9;
     if (lastBlow) S.uImpact.value.set(lastBlow.pos.x + _dc.x, lastBlow.pos.y + _dc.y, lastBlow.pos.z + _dc.z, clashK > 0.01 && blowAge < 0.8 ? blowAge / 0.8 : -1);
-    if (smashAge < 0.8) S.uImpact.value.set(GOLD_FALL(SMASH, _gf).x, _gf.y, _gf.z, smashAge / 0.8);
+    // (its point of light: a quarter of the ring's time)
+    S.uImpactS.value = S.uImpact.value.w >= 0 ? S.uImpact.value.w * 4 : -1;
     // the light of the fight pouring down the eye of the gathering, brighter with each blow
     // (cut off by the sheets as they form across the well: from inside it, end-on, it would only be a glare)
     S.uBeam.value.set(1.0, 0.8, 0.56, (inB ? 0 : band(45.75, 46.5, 47.55, 47.72, u)) * (0.4 + 1.0 * Math.exp(-blowAge / 0.18)));
     // (under the screen the fight is only its shadows: its own light, glaring through the cloud, drawn back)
-    { const scr = 1; S.uClashGV.value.set(scr * (1 - 0.92 * band(52.64, 52.82, 53.9, 54.0, u)), scr * (1 - smooth(SMASH + 0.08, SMASH + 0.4, u))); }
+    { const scr = 1; S.uClashGV.value.set(scr * (1 - 0.92 * band(52.64, 52.82, 53.9, 54.0, u)), scr * (u <= SMASH ? 1 : 0)); }
     S.uEye.value.set(0, 0, 0, 0);
     // the blows punch holes in the cloud tops under them
     for (let i = 0; i < 3; i++) {
@@ -1453,9 +1603,11 @@ export async function createEngine(canvas) {
       for (const b of WAR_BLOWS) { const age = cueAge(b.u, u, time); if (age < 1.8) warBw.push({ b, age }); }
       warBw.sort((x, y) => x.age - y.age);
       // (the light of the newest running out over the sea)
-      const nb = warBw.find(w => w.b.kind !== 4 && w.b.kind !== 8);
+      const nb = warBw.find(w => w.b.kind !== 4 && w.b.kind !== 8 && w.b.kind !== 9);
       // (the hardest run out over the sea for longer: the ring of light crossing it)
-      if (nb) { const L0 = nb.b.crater ? 3.2 : 0.8; if (nb.age < L0) { const p = nb.b.at(u); S.uImpact.value.set(p.x, p.y, p.z, nb.age / L0); } }
+      // (and its point of light hangs there no longer than the blow's own star says: on the bell it stayed lit for most of a
+      // second where he had been, white, after his own light had gone down out of the frame, and it was taken for him)
+      if (nb) { const L0 = nb.b.crater ? 3.2 : 0.8; if (nb.age < L0) { const p = nb.b.at(u); S.uImpact.value.set(p.x, p.y, p.z, nb.age / L0); S.uImpactS.value = nb.age / (nb.b.star ?? L0 / 4); } }
       // (the hardest tear a ring out of the sea under them: its cloud thrown out and up, filling back in)
       let ci = 0;
       for (const w of warBw) {
@@ -1470,15 +1622,35 @@ export async function createEngine(canvas) {
       for (const w of warBw) {
         const b = w.b;
         if (!b.bolts || w.age !== 0) continue;
-        const M = b.at(u), q = Math.floor(b.u * 97);
+        const M = b.at(u), q = Math.floor(b.u * 97), dM = camera.position.distanceTo(M), near = clamp(dM / 150, 0.3, 1);
+        // (thrown out across the frame of the shot it is struck in: thrown every way, one came straight at the lens or
+        // went straight away from it, end-on, a short fat fuzz of light)
+        const ws = warShotAt(b.u), fw = ws.look.clone().sub(ws.pos).normalize(), rt = V3().crossVectors(fw, V3(0, 1, 0)).normalize(), upv = V3().crossVectors(rt, fw);
         for (let i = 0; i < b.bolts; i++) {
           const a1 = (q * 2.399 + i * 2.1) % (Math.PI * 2), r = 460 + i * 70;
-          lightning.strike(time + i * 0.02, M, M.clone().add(V3(Math.cos(a1) * r, (i % 2 ? 1 : -1) * (180 + (q % 5) * 50), Math.sin(a1) * r)), { seed: q * 31 + i * 7, strength: 0.9, width: 2.6, branches: 8, levels: 6, color: i % 2 ? new THREE.Color(1.0, 0.82, 0.5) : new THREE.Color(0.66, 0.5, 1.0) });
+          const E = M.clone().addScaledVector(rt, Math.cos(a1) * r).addScaledVector(upv, Math.sin(a1) * r * 0.7).addScaledVector(fw, ((q + i) % 3 - 1) * r * 0.2);
+          // (from a little way out of the meeting, always: a blow can fire on the frame before the cut in close to it, and
+          // from the meeting itself, at the lens, they were great panes of light, gold and lilac)
+          const S0 = M.clone().lerp(E, Math.max(30, 40 - dM) / M.distanceTo(E));
+          lightning.strike(time + i * 0.02, S0, E, { seed: q * 31 + i * 7, strength: 0.9, width: 2.6 * near * near, branches: 8, levels: near < 0.5 ? 8 : 6, dur: 0.6, color: i % 2 ? new THREE.Color(1.0, 0.82, 0.5) : new THREE.Color(0.66, 0.5, 1.0) });
         }
       }
     } else if (!inWar) for (let i = 0; i < 3; i++) S.uCraterS.value[i] = 1;
     // (the storm the masked one calls down on the bell about the gold one, war.js BOLTS)
-    if (inWar) for (const Bt of WAR_BOLTS) if (cueAge(Bt.u, u, time) === 0) lightning.strike(time, Bt.from(), Bt.to(), { seed: Math.floor(Bt.u * 131), strength: 1.0, width: 3.0, branches: 7, levels: 6, color: new THREE.Color(0.72, 0.46, 1.0) });
+    // (broken finer by the lens of the shot it is struck in: on a cut, the last frame's lens is the other shot's)
+    if (inWar) for (const Bt of WAR_BOLTS) if (cueAge(Bt.u, u, time) === 0) {
+      const ws = warShotAt(u), from = Bt.from(), to = Bt.to();
+      // (one out of the dark over the fight comes down from beyond the frame: begun inside it, it came out of empty sky,
+      // from a star of its own forks, or its high branches crossed into a net over the frame's top)
+      if (ws && Bt.sky) {
+        const fw = ws.look.clone().sub(ws.pos).normalize(), rt = V3().crossVectors(fw, V3(0, 1, 0)).normalize(), upv = V3().crossVectors(rt, fw);
+        const ty = Math.tan(ws.fov * Math.PI / 360) * 1.1, tx = ty * Math.max(camera.aspect, 16 / 9);
+        const inF = p => { const v = p.clone().sub(ws.pos), z = v.dot(fw); return z > 1 && Math.abs(v.dot(rt) / z) < tx && Math.abs(v.dot(upv) / z) < ty; };
+        for (let k = 0; k < 3 && inF(from); k++) from.sub(to).multiplyScalar(1.6).add(to);
+      }
+      lightning.strike(time, from, to, { seed: WAR_SEED.get(Bt), strength: Bt.strength || 1.0, width: Bt.width || 3.0, branches: Bt.branches ?? 7, levels: Bt.levels || 6, dur: Bt.dur || 1, disp: Bt.disp || 0.17, decay: Bt.decay || 0,
+        eye: ws ? ws.pos.clone() : null, wmin: Bt.wmin || 0.012, wmax: Bt.wmax || 0.06, tip: Bt.tip || 0, near: Bt.near || 0, nearM: Bt.nearM || 0, brK: Bt.brK || null, follow: Bt.follow || null, color: new THREE.Color(0.72, 0.46, 1.0) });
+    }
     // (the trenches the crescent's halves cut into the sea behind the masked one, filling back in)
     for (let k = 0; k < 2; k++) {
       const T = WAR_TRENCH[k];
@@ -1521,8 +1693,8 @@ export async function createEngine(canvas) {
     // reaching for it are what is seen)
     renderer.toneMappingExposure = sample('exposure') * (inB ? 1 : lerp(1, 0.56, band(47.85, 48.0, 48.44, SILENCE, u)) * lerp(1, 0.3, band(52.95, 53.15, 53.84, 53.98, u)));
     sun.color.setRGB(...sunCol);
-    sun.intensity = sample('sunI') * sunVis;
-    hemi.intensity = sample('hemiI') * (inB ? 1 : env.fillK(u));
+    sun.intensity = sample('sunI') * sunVis * lerp(1, 0.4, furyDark);
+    hemi.intensity = sample('hemiI') * (inB ? 1 : env.fillK(u)) * lerp(1, 0.5, furyDark);
     hemi.color.setRGB(...sample('hemiSky'));
     hemi.groundColor.setRGB(...sample('hemiGround'));
     moon.intensity = sample('moon');
@@ -1717,7 +1889,9 @@ export async function createEngine(canvas) {
       const e = getElder();
       if (e.mode !== 'morning') { if (!e.night) e.night = { p: e.group.position.clone(), q: e.group.quaternion.clone(), s: e.group.scale.clone() }; e.group.position.copy(UNCLE_AT); e.group.rotation.set(0, -Math.PI / 2, 0); e.group.scale.set(1, 1, 1); e.stale = true; }
       const give = smooth(16.12, 16.24, u);
-      const boyHead = wuhen && wuhen.group.visible ? wuhen.anchors.head() : BOY_AT.clone().add(V3(0, 1.58, 0));
+      // (where the boy's head was last drawn, unless the story has just jumped here from far off, as the memory of this
+      // morning does from the burning village: the boy is put back on the porch only later in the frame)
+      const boyHead = wuhen && wuhen.group.visible && wPrev && wPrev.distanceTo(BOY_AT) < 20 ? wuhen.anchors.head() : BOY_AT.clone().add(V3(0, 1.58, 0));
       const es = { stand: 1, hold: (1 - give) * smooth(9.0, 9.5, u), holdTarget: BASKET_TOP.clone().add(V3(0.06, 0, 0)), point: band(16.65, 16.95, 17.75, 18.05, u), pointDir: SUN_UP,
         lookAt: boyHead.clone(), speak: band(15.6, 15.8, 17.85, 18.0, u) * 0.8, wind: windV };
       // (his hand on the boy's head, drawn back over his own: bonds.js)
@@ -1829,7 +2003,14 @@ export async function createEngine(canvas) {
         if (bellN !== null && bk > 0.5) {
           metrics.bellToll = (metrics.bellToll || 0) + 1;
           const sp = gateBell.localToWorld(V3(0, -0.5, 0)).project(camera);
-          if (sp.z < 1 && Math.abs(sp.x) < 1.15 && Math.abs(sp.y) < 1.15) ripples.push({ x: sp.x * 0.5 + 0.5, y: sp.y * 0.5 + 0.5, t: time });
+          // (none when the shot is cut in the white of a bolt within a second and a half: cut short by the flash, its
+          // ring was there for a moment over where the bolt then came down, a target drawn on the page for it)
+          const cutSoon = WHITE_CUTS.some(x => x.c > u && watchT(x.c) - watchT(u) < 1.6);
+          // (and from where he stands over the village and on the run home only where the bell itself is near enough to
+          // be seen: tolled as the basket fell, from a hundred metres off, the ring was drawn round a speck on the horizon
+          // and hung on over the road as a gunsight in the sky over his head)
+          const nearBell = u < 63.7 || u >= 72.5 || gateBell.localToWorld(V3(0, -0.5, 0)).distanceTo(camera.position) < 40;
+          if (!cutSoon && nearBell && sp.z < 1 && Math.abs(sp.x) < 1.15 && Math.abs(sp.y) < 1.15) ripples.push({ x: sp.x * 0.5 + 0.5, y: sp.y * 0.5 + 0.5, t: time });
         }
         bellN = n;
       }
@@ -1855,26 +2036,19 @@ export async function createEngine(canvas) {
     // him, him a third of the frame: earth is long-lens; the lens opens only at the launch)
     // (and the run home down the same street, the morning rewound: on the same long lens from the gate, the burning
     // street stacking up beyond him, until the house)
-    const lng = inB ? 0 : Math.max(band(19.45, 20.7, 34.8, 35.75, u) * (1 - 0.6 * band(25.35, 26.15, 27.35, 28.05, u)), band(72.5, 72.505, 76.6, 77.6, u));
+    const lng = inB ? 0 : band(72.5, 72.505, 76.6, 77.6, u);
     if (lng > 0) { dist = lerp(dist, 5.2 + portrait * 1.2, lng); side = lerp(side, 0.62 * (1 - 0.6 * portrait), lng); height = lerp(height, 1.6, lng); }
+    // (up onto his uncle's porch with him and in under its eaves, nearer and lower, clear of them: two metres back at his
+    // own height over the porch, the lens went in under the eave beam as he stepped up, a black band with a ruler edge
+    // across the top of the frame for two seconds, and nearly into the beam)
+    const porchIn = inB ? 0 : smooth(78.5, 79.2, u) * (1 - indoor);
+    if (porchIn > 0) { dist = lerp(dist, 1.5 + portrait * 0.4, porchIn); height = lerp(height, 1.22, porchIn); }
     let pos = P.clone().addScaledVector(heading, -dist).addScaledVector(right, side).add(V3(0, height, 0));
     let look = P.clone().addScaledVector(heading, lerp(9, 16, lng)).add(V3(0, lerp(lerp(1.42, 1.25, run), 1.32, lng), 0)).addScaledVector(right, -0.4 * (1 - portrait) * (1 - lng));
     if (!inB) {
-      const greet = (who, a, b, c, d, w = 0.35) => { const k2 = band(a, b, c, d, u) * w; if (k2 > 0 && who) look.lerp(who.clone().add(V3(0, 1.3, 0)), k2); };
-      greet(world.cast.kids[0].root.position, 22.6, 23.6, 24.4, 25.4, 0.25);
-      // the smith's stall: his eyes go to the weapons; the camera comes round close behind his shoulder to see them
-      // with him: the sword on its stand, the wall of blades behind it
-      const sk = band(25.35, 25.3501, 27.35, 28.05, u);
-      if (sk > 0 && A.stall) {
-        const toS = (legend || A.stall).clone().sub(P).setY(0).normalize();
-        const camS = P.clone().addScaledVector(toS, -0.95).add(V3(-toS.z, 0, toS.x).multiplyScalar(0.72)).add(V3(0, 1.52, 0));
-        pos.lerp(camS, sk * 0.95);
-        const lk = (legend || A.stall).clone().add(V3(0, -0.05, 0));
-        if (A.stallWall) lk.lerp(A.stallWall, 0.32);
-        look.lerp(lk, sk);
-      }
       // at the door his eyes go down first, to the prints over the sill and in (then the cut to the room, REVERSE)
-      const thr = band(80.3, 80.75, 80.9, 81.0, u);
+      // (held down until the cut to the room: lifting again in the last frames before it, the lens whipped up)
+      const thr = band(80.3, 80.75, 81.05, 81.1, u);
       if (thr > 0) look.lerp(L(0.5, 0.05, 3.7), thr * 0.85);
       look.lerp(UH.uncleSpot.clone().add(V3(0, 0.15, 0)), smooth(81.6, 83.4, u) * indoor);
       // kneeling beside him: three-quarters from behind his right shoulder, drifting closer as he speaks
@@ -1912,17 +2086,17 @@ export async function createEngine(canvas) {
     const mnw = inB ? 0 : cam.morning(u);
     const mShot = mnw > 0 ? morningShot(u) : null;
     if (mShot) { pos.lerp(mShot.pos, mnw); look.lerp(mShot.look, mnw); }
+    // the walk out of the village: one take from the porch to the gate (walkcam.js)
+    const oner = !inB && walkCam.on(u) ? walkCam.at(u) : null;
+    if (oner) { pos.copy(oner.pos); look.copy(oner.look); }
     // the old road: low behind him off his left shoulder, the fields opening out on the left; as he steps up onto the
     // bridge the lens swings round behind him and rises outside its right-hand parapet, above the water, and looks
     // back over his shoulder upstream: the river valley, the mill, the hills beyond the crown; off the bridge it
     // settles behind him again for the pines
-    const mw = cam.montage(u);
-    if (mw > 0) {
-      const R = ROAD_SHOT;
-      const cp = P.clone().addScaledVector(heading, -R.back(u)).addScaledVector(right, R.side(u)).add(V3(0, R.up(u), 0));
-      const lk = P.clone().addScaledVector(heading, R.fwd(u)).addScaledVector(right, -R.left(u)).add(V3(0, R.lookUp(u), 0));
-      pos.lerp(cp, mw); look.lerp(lk, mw);
-    }
+    // (the old road, out of the page past the gate, the bridge, the pines: three places on his way, each come to through
+    // the white of the page and each found empty for a moment before he walks into it: ROAD_SHOTS)
+    const rsh = inB ? null : roadShot(u);
+    if (rsh) { pos.copy(rsh.pos); look.copy(rsh.look); }
     const muw = cam.mushroom(u);
     if (muw > 0) {
       const ms = mushShot(u, portrait);
@@ -1934,6 +2108,8 @@ export async function createEngine(canvas) {
     let stormFov = 50, stormRoll = 0;
     if (stw > 0) {
       const st = flightShot(u, portrait, time);
+      // (the cut out of their meeting takes its lightning with it: no web of it left over the next shot)
+      if (st.war !== lastWarShot) { if (st.war === 'release' && lastWarShot === 'charge') lightning.reset(); lightning.cut(); lastWarShot = st.war; }
       pos.lerp(st.pos, stw);
       look.lerp(st.look, stw);
       stormFov = st.fov;
@@ -1971,26 +2147,6 @@ export async function createEngine(canvas) {
     // burning gate, and a wolf stands there, snarling as he goes by (cut in; cut to behind him as he reaches the lens)
     const bs = inB ? null : bonds.shot(u, time);
     if (bs) { pos.copy(bs.pos); look.copy(bs.look); }
-    // (cut in on the wolf waiting inside the gate, from where he is running at it: its head, snarling, the violet eyes,
-    // the crimson breath at its fangs; held as he goes by it, then cut to behind him in the street)
-    const wolfIn = !inB && u > WOLF_IN[0] && u < WOLF_IN[1] && world.wolves[2] && world.wolves[2].root.visible;
-    if (wolfIn) {
-      const w2 = world.wolves[2];
-      w2.root.updateMatrixWorld(true);
-      const hp = w2.head.localToWorld(_wh.set(0, 0.06, 0.1));
-      const toHim = P.clone().sub(hp).setY(0).normalize(), l = V3(toHim.z, 0, -toHim.x);
-      const t = smooth(WOLF_IN[0], WOLF_IN[1], u);
-      pos.copy(hp).addScaledVector(toHim, 1.2 - 0.12 * t).addScaledVector(l, 0.32).add(V3(0, 0.06, 0));
-      look.copy(hp).addScaledVector(toHim, 0.06).add(V3(0, -0.02, 0));
-    }
-    // the smith's stall: cut in close on the one blade that burns brightest, while the world is ink and only the blades'
-    // light is gold (his eyes on it; the line on it)
-    if (!inB && legend && u > SMITH_IN[0] && u < SMITH_IN[1]) {
-      const t = smooth(SMITH_IN[0], SMITH_IN[1], u), toS = legend.clone().sub(P).setY(0).normalize(), sd = V3(-toS.z, 0, toS.x);
-      const along = legendAura.dir.clone().normalize();
-      pos.copy(legend).addScaledVector(along, 0.05 - 0.08 * t).addScaledVector(toS, -1.05 + 0.1 * t).addScaledVector(sd, 0.2).add(V3(0, 0.1, 0));
-      look.copy(legend).addScaledVector(along, 0.02 - 0.06 * t);
-    }
     // the room, cut to from the prints: low beside his uncle's head, looking out at the door: the old man pinned under
     // the beam in front, the boy black in the doorway against the burning street (the held moment on it; the ink draws
     // him black, not drawn: uFigSil); he comes in, sees him, the colour comes back into the room, and he runs to him and
@@ -2107,16 +2263,17 @@ export async function createEngine(canvas) {
     if (stormRoll && !debug.cam) camera.rotateZ(stormRoll);
     // (on a phone the rise keeps a little of its width while it is still in the room, so the light fits the frame)
     // (the forest's shots may keep their own focal lengths)
-    const fov0 = wordsWide ? 48 : burnIn ? lerp(...(debug.burn ? debug.burn.fov : BURN.fov), smooth(BURN_IN[0], BURN_IN[1], u)) : bShot && bShot.fovW > 0 ? lerp(cam.fov(u), bShot.fov, bShot.fovW) : wolfIn ? 44 : bs ? bs.fov : mShot ? lerp(cam.fov(u), mShot.fov, mnw) : cam.fov(u);
+    const fov0 = wordsWide ? 48 : burnIn ? lerp(...(debug.burn ? debug.burn.fov : BURN.fov), smooth(BURN_IN[0], BURN_IN[1], u)) : oner ? oner.fov : rsh ? lerp(rsh.fov, cam.fov(u), cam.mushroom(u)) : bShot && bShot.fovW > 0 ? lerp(cam.fov(u), bShot.fov, bShot.fovW) : bs ? bs.fov : mShot ? lerp(cam.fov(u), mShot.fov, mnw) : cam.fov(u);
     camera.fov = lerp(fov0, stormFov, stw) + portrait * 12 * (1 - zoomK) * (1 - rw * (1 - 0.7 * band(92.0, 92.6, 94.8, 95.6, u))) * (1 - gw) + portrait * 14 * fcw;
-    // (at the stall the lens narrows on the weapons)
-    if (!inB) camera.fov = lerp(camera.fov, 33 + portrait * 10, band(25.45, 26.25, 27.3, 28.0, u) * 0.85);
     if (debug.fov) camera.fov = debug.fov;
     // up among the clouds: the eye sees farther, the ground far below is drawn with the sky, the clouds lie over the world
     const alt = inB ? 0 : camera.position.y;
     camera.far = 3400 + 2200 * smooth(300, 1600, alt);
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
+    camera.getWorldDirection(_ripF);
+    if (ripples.length && (_ripCam.distanceTo(camera.position) > 2 || _ripF.dot(_ripFwd) < 0.9 || (!inB && cutWhite(u) > 0.5))) { ripples.length = 0; metrics.ripples = []; }
+    _ripCam.copy(camera.position); _ripFwd.copy(_ripF);
     S.uGroundK.value = smooth(380, 900, alt);
     S.uFocus.value = camera.position.distanceTo(_dc);
     // the gathering: the deck forms out from under the fight, winding round the eye it leaves open under it (the eye
@@ -2293,13 +2450,18 @@ export async function createEngine(canvas) {
     box(leaves, sample('leaves'));
     leaves.uniforms.uGustK.value = lerp(1, 2.2, stormAmt);
     box(pollen, sample('pollen'));
-    box(petals, (u < 46 ? sample('pollen') : 0) + (inB ? sample('blossom') * 0.8 : 0));
+    // (the falling petals belong to the opening: thinned out as the crane comes down to the houses, gone before it is among
+    // them, so none is ever seen passing through a roof)
+    box(petals, (inB ? 0 : sample('pollen') * (1 - smooth(9.0, 9.95, u))) + (inB ? sample('blossom') * 0.8 : 0));
     // (butterflies only while it is an ordinary morning)
     if (world.butterflies) world.butterflies.visible = !inB && u < 46.4 && lowAlt > 0.5;
     // (as the colour floods back into the valley the wind gets up, a cloud of petals rushes across and past the lens
     // while the camera falls to him, and the last of them blow on past him in the street)
-    gust.update({ u, time, amt: inB ? 0 : smooth(8.35, 9.3, u) * (1 - smooth(14.4, 15.6, u)), travel: 34 * smooth(8.4, 14.6, u), camera,
-      pxPerRad: renderer.getDrawingBufferSize(_dbs).y / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2)) });
+    // (and it has blown on past before the lens is close to the house: thinning, petal by petal, as the crane comes down
+    // to the street, gone before the porch; never deeper in front of the lens than the house it is coming down to)
+    gust.update({ u, time, amt: inB ? 0 : smooth(8.3, 9.0, u) * (1 - smooth(9.55, 10.45, u)), travel: 34 * smooth(8.4, 14.6, u), camera,
+      pxPerRad: renderer.getDrawingBufferSize(_dbs).y / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2)),
+      far: clamp(camera.position.distanceTo(UH.porchFront) * 0.82, 6, 70) });
     gust2.update({ u: 8.45 + (u - 56.7) * 1.7, time, amt: 0, travel: 46 * smooth(56.7, 57.9, u), camera,
       pxPerRad: renderer.getDrawingBufferSize(_dbs).y / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2)) });
     // (gone as the light gathers overhead: from then on the motes are the light's own, going up into it)
@@ -2311,6 +2473,7 @@ export async function createEngine(canvas) {
     const diveRain = inB ? 0 : band(52.92, 53.12, 54.3, 54.44, u);
     rain.uniforms.uAmt.value = Math.max(sample('rain') * (1 - smooth(500, 900, inB ? 0 : camera.position.y)), 0.85 * climbRain, 0.8 * diveRain);
     rain.uniforms.uCenter.value.copy(camera.position);
+    rain.uniforms.uResY.value = Math.max(1, _fRes.y || 540);
     // the cinema bars at the key moments, a little thinner on a tall screen; the rain going by breaks over them
     {
       const bk = barsAt(u), asp = camera.aspect;
@@ -2365,22 +2528,45 @@ export async function createEngine(canvas) {
       // (after the smash the fight is over: no more meetings but the smash's own, the violet one fading away above, the
       // gold one's head and trail falling with it down through the storm, its trail laid back along the fall)
       const over = !inB && u > SMASH;
-      const bw = inWar && !over ? warBw.filter(w => w.age < 1.3).slice(0, 3).map(w => ({ pos: w.b.at(u), t: time - w.age, kind: w.b.kind, amt: 1.25 }))
+      const bw = inWar && !over ? warBw.filter(w => w.age < 1.3).slice(0, 3).map(w => ({ pos: w.b.at(u), t: time - w.age, kind: w.b.kind, amt: 1.25, shockR: w.b.shockR, shockK: w.b.shockK }))
         : clashK > 0.01 && !inB && !over ? blows.map(bl => ({ pos: V3(bl.pos.x + _dc.x, bl.pos.y + _dc.y, bl.pos.z + _dc.z), t: bl.t, kind: bl.kind, amt: clashK * (bl.kind === 3 ? 0.9 : 1.25) })) : [];
-      if (over && smashAge < 1.3) bw.unshift({ pos: GOLD_FALL(SMASH, V3()), t: time - smashAge, kind: 2, amt: 1.3 });
-      const fl0 = inWar ? warFlight : duelFlight;
+      // (no burst of its own at the cut into the dive: the bell's breaking was the blow, and a second one there, a white
+      // starburst in a ring, was taken for something new beside him)
+      const fl0 = inWar ? warFlight : warIn > 0 ? (t, o1, o2) => { duelFlight(t, o1, o2); warFlight(t, _wb1, _wb2); o1.lerp(_wb1, warIn); o2.lerp(_wb2, warIn); } : duelFlight;
       const flight = falling > 0 ? (t, o1, o2) => { fl0(t, o1, o2); o1.lerp(GOLD_FALL(u - Math.max(0, time - t) * 0.15, _gf), falling); } : fl0;
-      const violetK = clashK * (1 - smooth(SMASH + 0.08, SMASH + 0.4, u));
+      // (and the violet one not seen again once the dive begins: seen from where the dive starts, far off, his light hung
+      // there beside the gold one's, and he seemed to be falling with him)
+      const violetK = clashK * (u <= SMASH ? 1 : 0);
       // (close to, the two are people: their lights are only the haze about them, not stars over them)
-      let heads = [1, 1];
-      if (inWar) { flight(time, _wg, _wm); heads = [smooth(45, 170, camera.position.distanceTo(_wg)), smooth(45, 170, camera.position.distanceTo(_wm))]; }
+      let heads = [1, 1], trailK = [1, 1];
+      if (inWar) { flight(time, _wg, _wm); heads = [smooth(45, 170, camera.position.distanceTo(_wg)), smooth(45, 170, camera.position.distanceTo(_wm))];
+        // (and their trails not drawn past the lens close to them: the gold one's dash into the lock ran back by it)
+        trailK = [smooth(15, 70, camera.position.distanceTo(_wg)), smooth(15, 70, camera.position.distanceTo(_wm))]; }
+      // (smashed down out of the shattered bell, the gold one is his light again, falling: close to, he had been gone)
+      // (a great gold light, his, going down out of the frame, its streak broad behind it and laid along the fall alone:
+      // a hairline back up along the way he had drifted down in the bell, it read as a rod, and he as risen)
+      const fallK = inWar ? band(52.445, 52.449, 52.47, 52.52, u) : 0;
+      if (inWar) { heads[0] = Math.max(heads[0], fallK); trailK[0] = Math.max(trailK[0], fallK); }
+      // (and no longer than a few metres, so it goes out of the frame with him: longer, its thin end stood up out of the
+      // frame's foot after he had gone, a rod)
+      const fallS = fallK > 0 ? lerp(1, clamp((u - 52.445) / (0.2 * 0.62), 0.004, 0.055), fallK) : 1;
       fighters.update({
-        time, flight, amts: inB ? [0, 0] : [Math.max(clashK, falling), violetK], blows: bw, camera, headK: heads,
+        // (flung back out of the burst, the masked one's streak behind him a broad one: a hairline, it read as a wire)
+        time, flight, amts: inB ? [0, 0] : [Math.max(clashK, falling), violetK], blows: bw, camera, headK: heads, trailK,
+        trailW: [lerp(1, 6, fallK), inWar ? lerp(1, 4, band(52.13, 52.15, 52.22, 52.24, u)) : 1], headS: [lerp(1, 4, fallK), 1],
+        // (and short, flung back from beside the lens: its whole length ran in from the edge of the frame, and he seemed to
+        // fly in from it)
+        // (and in the duel of the two lights before the war, short streaks: long, the gold one's ran on across the frame from
+        // its edge as a ruler-straight rod, and the violet one's folded back on itself into a loop of wire)
+        trailS: [fallS * (inWar || u >= SMASH ? 1 : 0.5), inWar ? lerp(1, 0.35, band(52.13, 52.135, 52.22, 52.24, u)) : u < SMASH ? 0.5 : 1],
         skyTex: sky.rt.textures[2], res: _fRes.set(sky.rt.width * div, sky.rt.height * div),
       });
       // the two as people, and what they throw at each other
       war.shared.tSky.value = sky.rt.textures[2]; war.shared.uRes.value.copy(_fRes);
       war.update(u, time, camera, inB ? 0 : 1, at => cueAge(at, u, time), { sunDir: S.uSunDir.value, sunCol: S.uSunCol.value, sky: S.uZenith.value });
+      // (the bolts struck this frame made for the lens it is drawn from, and kept on what they strike)
+      lightning.lens(camera.position); gStrikes.lens(camera.position);
+      lightning.res(_fRes.y); gStrikes.res(_fRes.y);
       // the shock of the newest blow bends the light round it; the hardest ones strike the frame into two tones
       const I2 = post.ink;
       I2.uShockR.value.w = 0; I2.uImpactF.value = 0;
@@ -2390,7 +2576,7 @@ export async function createEngine(canvas) {
         _ss.copy(nb.pos).project(camera);
         if (age >= 0 && age < 1 && _ss.z < 1 && Math.abs(_ss.x) < 1.3 && Math.abs(_ss.y) < 1.3) {
           const near = clamp(700 / Math.max(camera.position.distanceTo(nb.pos), 1));
-          I2.uShockR.value.set(_ss.x * 0.5 + 0.5, _ss.y * 0.5 + 0.5, lerp(0.02, 0.55, 1 - Math.pow(1 - age, 3)), Math.pow(1 - age, 2) * clashK * near * (nb.kind === 1 ? 0.6 : 1));
+          I2.uShockR.value.set(_ss.x * 0.5 + 0.5, _ss.y * 0.5 + 0.5, lerp(0.02, nb.shockR ?? 0.55, 1 - Math.pow(1 - age, 3)), Math.pow(1 - age, 2) * clashK * near * (nb.kind === 1 ? 0.6 : nb.kind === 9 ? 0.3 : 1) * (nb.shockK ?? 1));
           if (!inWar && (nb.kind === 3 || nb.kind === 2 || nb.kind === 5) && time - nb.t < 0.07) I2.uImpactF.value = 0.85 * clashK * near;
         }
       }
@@ -2399,8 +2585,8 @@ export async function createEngine(canvas) {
     }
     // (the instant it strikes, the frame is struck into two tones)
     if (!inB) { const ca = cueAge(STAR[1], u, time); post.ink.uImpactF.value = Math.max(post.ink.uImpactF.value, band(STAR[1], STAR[1] + 0.006, STAR[1] + 0.022, STAR[1] + 0.04, u) * 0.85, ca < 0.06 ? 0.85 : 0); }
-    // (and the smash that sends the gold one down: the dive's first, as the strike is its last)
-    if (smashAge < 0.07) post.ink.uImpactF.value = Math.max(post.ink.uImpactF.value, 0.8);
+    // (the smash that sends the gold one down is the bell's breaking, in the war: struck again into two tones at the cut into
+    // the dive, the first frame of it was white shapes on violet, and his light two puffballs)
     impact.set({ at: S_HIT, age: (u - STAR[1]) * 3.2, amt: inB ? 0 : 1 - smooth(56.3, 57.4, u), time, camera, ring: ringR, frontAmt: inB ? 0 : band(STAR[1], STAR[1] + 0.02, 56.9, 57.5, u) });
     // what fell: down inside the bolt onto the slope; then out of the fire, up over the ridges and down beyond them,
     // burning out as it goes (its streak lingers, and shows again when the light of the dead goes west after it)
@@ -2449,10 +2635,12 @@ export async function createEngine(canvas) {
       lastArc = slot;
     }
     // what only he sees: the light in the smith's wares, while his eyes are on them
-    const auraK = inB ? 0 : band(25.55, 26.25, 27.3, 27.95, u);
+    // (on the walk's clock: from as he comes up to the stall, full as the world drains to ink, gone as he goes on)
+    const tw = !inB && inWalk(u) ? wt(u) : -1e9, Sm = BEAT.smith, So = BEAT.smithOff;
+    const auraK = tband(Sm - 1.0, Sm + 2.6, Sm + 6.8, Sm + 7.8, tw);
     // (and while he comes up to the stall and stands at it, a warm light on the wares under the porch roof, which the
     // houses across the street keep in shade all morning)
-    if (auras) auras.set({ time, amt: auraK, fill: inB ? 0 : band(24.3, 25.2, 28.3, 29.2, u) });
+    if (auras) auras.set({ time, amt: auraK, fill: tband(Sm - 6, Sm - 2, So + 2, So + 5, tw) });
     // the shreds of cloud rushing past as the eye goes down through the sea's top, the storm, and out of its base
     {
       // (up through the well in the sea of clouds, shreds of it streaming down past; down through its bright top into
@@ -2462,12 +2650,19 @@ export async function createEngine(canvas) {
       for (const [su] of SHEETS) sheetK = Math.max(sheetK, band(su - 0.05, su - 0.015, su + 0.015, su + 0.05, u));
       const climb = inB ? 0 : Math.min(1.25, band(47.62, 47.8, 48.45, SILENCE, u) * (1 + 0.6 * sheetK));
       // (and on down through the dark of the storm: shreds of it rushing up past the lens, lit by the flashes)
-      const ra = inB ? 0 : band(52.88, 52.98, 53.82, 53.96, u);
+      // (and flung back out of the meeting above the clouds: the shreds of mist in the air there streaking past the lens
+      // riding with him, so he is seen to be thrown; with only the far sea and peaks behind him, he was struck still)
+      const ra = inB ? 0 : band(52.88, 52.98, 53.82, 53.96, u), flung = inB ? 0 : 0.8 * band(50.265, 50.27, 50.36, 50.46, u);
       const dk = smooth(52.98, 53.16, u);
       // (up the well: small shreds whipping past close to the lens, slate low down, pearl and gold higher; gone in one
       // frame out over the sea)
       // (thinned under the screen, so the shadow play is seen clear)
-      if (climb > ra) rush.set({ camera, time, dt, amt: climb * 0.55 * (u < SILENCE ? 1 : 0) * (1 - 0.85 * band(48.07, 48.1, 48.19, 48.2, u)), bg: sky.rt.textures[0], screen: renderer.getDrawingBufferSize(_scr), own: 0.55,
+      // (small shreds close by, grey-blue in their shade against the bright sky, so they are seen streaming past: in the
+      // sky's own white, tens of metres across, they were a veil over the frame, and he seemed to tumble at a lens that
+      // stood still)
+      if (flung > 0.003) rush.set({ camera, time, dt, amt: flung * 1.4, bg: sky.rt.textures[0], screen: renderer.getDrawingBufferSize(_scr), own: 0.62,
+        low: _rl.setRGB(0.55, 0.6, 0.72), high: _rh.setRGB(0.8, 0.84, 0.95), y0: 2700, y1: 3300, size: 0.14, box: 140, near: 3 });
+      else if (climb > ra) rush.set({ camera, time, dt, amt: climb * 0.55 * (u < SILENCE ? 1 : 0) * (1 - 0.85 * band(48.07, 48.1, 48.19, 48.2, u)), bg: sky.rt.textures[0], screen: renderer.getDrawingBufferSize(_scr), own: 0.55,
         low: _rl.setRGB(0.34, 0.37, 0.43), high: _rh.setRGB(1.3, 1.2, 1.0), y0: 800, y1: 2100, size: 0.15, box: 160, near: 4 });
       else rush.set({ camera, time, dt, amt: ra, bg: sky.rt.textures[0], screen: renderer.getDrawingBufferSize(_scr), own: 0.06,
         low: _rl.setRGB(0.5, 0.54, 0.62).lerp(_rc.setRGB(0.018, 0.021, 0.03), dk),
@@ -2533,11 +2728,11 @@ export async function createEngine(canvas) {
     I.uTint.value.setRGB(...sample('tint'));
     I.uShadowTint.value.setRGB(...sample('toneS'));
     I.uHighTint.value.setRGB(...sample('toneH'));
-    I.uInk.value = debug.noInk ? 0 : fx.ink(u);
+    I.uInk.value = debug.noInk ? 0 : Math.max(fx.ink(u), inB ? 0 : stallInk(u));
     // the painted look over the whole world in colour (lines a little finer on a phone); the painted light on the
     // surfaces only while the world is not drawn in ink (after the soul's light floods the colour back, it is)
     I.uToon.value = debug.toon ?? (TOON ? 1 : 0);
-    FOGU.cfToonK.value = (debug.toon ?? 1) * clamp(1 - (debug.noInk ? 0 : fx.ink(u)) * (inB ? 1 : 1 - smooth(1.0, 2.6, fx.soulSeep(u))));
+    FOGU.cfToonK.value = (debug.toon ?? 1) * clamp(1 - (debug.noInk ? 0 : Math.max(fx.ink(u), inB ? 0 : stallInk(u))) * (inB ? 1 : 1 - smooth(1.0, 2.6, fx.soulSeep(u))));
     I.uToonR.value = (debug.toonR ?? 1.35) * Math.max(1, renderer.getPixelRatio() * 0.9);
     if (debug.toonBand != null) I.uToonBand.value = debug.toonBand;
     if (debug.toonSat != null) I.uToonSat.value = debug.toonSat;
@@ -2556,6 +2751,22 @@ export async function createEngine(canvas) {
     // colour shows through the ink in a few places: around each strike as it lands on the road, the burning gate
     // as he runs under it, the room when he first sees his uncle (then the ink takes it back for the words)
     let rvP = null, rvR = 0, rvW = 0.3;
+    // (on the run home the people stay ink in it: post.js)
+    I.uSeepFig.value = !inB && u > 65.4 && u < 77 ? 1 : 0;
+    // (and his hair with them, however fine its strands: the box round his head and shoulders on the screen, post.js
+    // heroOf; a box in the world from his waist to over his head, half a metre round him, his hair blown out in it)
+    I.uHeroBox.value.set(0, 0, -1, -1);
+    if (I.uInk.value > 0.001 && wuhen && wuhen.group.visible) {
+      let x0 = 9, y0 = 9, x1 = -9, y1 = -9, ok = true;
+      wuhen.group.getWorldPosition(_hb0);
+      for (let i = 0; i < 8 && ok; i++) {
+        _hb1.set(_hb0.x + (i & 1 ? 0.5 : -0.5), _hb0.y + (i & 2 ? 1.95 : 0.95), _hb0.z + (i & 4 ? 0.5 : -0.5)).applyMatrix4(camera.matrixWorldInverse);
+        if (_hb1.z > -0.05) { ok = false; break; }
+        _hb1.applyMatrix4(camera.projectionMatrix);
+        x0 = Math.min(x0, _hb1.x); x1 = Math.max(x1, _hb1.x); y0 = Math.min(y0, _hb1.y); y1 = Math.max(y1, _hb1.y);
+      }
+      if (ok && x1 > -1 && x0 < 1 && y1 > -1 && y0 < 1) I.uHeroBox.value.set(x0 * 0.5 + 0.5, y0 * 0.5 + 0.5, x1 * 0.5 + 0.5, y1 * 0.5 + 0.5);
+    }
     if (!inB && u > 61.7 && u < 92.4) {
       if (gs.glow > 0.02 && gs.glowPos) { rvP = gs.glowPos; rvR = 0.1 + 0.55 * Math.min(1, gs.glow); rvW = 0.3; }
       const gateK = band(72.25, 72.7, 73.2, 73.75, u);
@@ -2582,7 +2793,10 @@ export async function createEngine(canvas) {
     } else I.uSeep.value.set(0.5, 0.42, inB ? fx.seep(u) : -1, 0.4);
     I.uPaper.value = fx.paper(u);
     I.uRedWash.value = fx.redInk(u);
-    I.uWhite.value = debug.noWhite ? 0 : fx.white(u);
+    // (the white a cut is made in: the page's lines go with it, boot.js; a line's dark ground left on the white page was
+    // a grey smear)
+    metrics.cutWhite = inB ? 0 : cutWhite(u);
+    I.uWhite.value = debug.noWhite ? 0 : Math.max(fx.white(u), metrics.cutWhite);
     // the breach: the white of the last sheet becomes the white of the page, and the sea of clouds settles out of it
     const breachW = inB ? 0 : smooth(48.44, SILENCE, u) * (1 - smooth(SILENCE, 48.54, u));
     if (breachW > 0) I.uWhite.value = Math.max(I.uWhite.value, 0.9 * breachW);
@@ -2603,6 +2817,8 @@ export async function createEngine(canvas) {
       I.uWhiteR.value.set(0.62, 0.5 - 0.19 / aspY, 0.2 + 2.7 * Math.pow(smooth(109.72, 110.55, u), 1.2), -0.4);
     } else I.uWhiteR.value.z = -1;
     if (u > 48.4 && u < 48.6) _wc.setRGB(0.98, 0.955, 0.89);
+    // (the dips between the places on the way to the pines are into the page itself: warm)
+    else if (u > 35 && u < 41.2) _wc.setRGB(0.97, 0.945, 0.89);
     else if (u < 107.4) _wc.setRGB(0.93, 0.94, 0.96);
     else if (u < 110.8) _wc.setRGB(1.0, 0.84, 0.56).lerp(_wc2.setRGB(0.97, 0.935, 0.86), smooth(107.62, 108.2, u));
     else _wc.setRGB(...(u < 120 ? [0.93, 0.94, 0.96] : [1.0, 0.88, 0.6]));
@@ -2630,7 +2846,7 @@ export async function createEngine(canvas) {
     }
     I.uVignette.value = lerp(0.32, 0.55, smooth(54, 60, u) * (inB ? 0.3 : 1));
     // (while he looks at the weapons the world round them dims a little and loses some colour: it is his sight)
-    if (!inB) { const ak = band(25.6, 26.3, 27.25, 27.9, u); I.uVignette.value += ak * 0.28; I.uSat.value *= 1 - ak * 0.3; }
+    if (!inB && inWalk(u)) { const ak = tband(BEAT.smith - 0.5, BEAT.smith + 1.5, BEAT.smith + 6.8, BEAT.smith + 8.0, wt(u)); I.uVignette.value += ak * 0.28; I.uSat.value *= 1 - ak * 0.3; }
     I.uGrain.value = lerp(0.03, 0.05, smooth(54, 60, u) * (inB ? 0.4 : 1));
     // sun shafts through whatever casts a shadow
     // (the march now scatters only forward, much stronger toward the sun: the forest's palettes were tuned for the old lobe)

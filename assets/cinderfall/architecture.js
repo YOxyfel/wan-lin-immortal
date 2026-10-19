@@ -335,9 +335,11 @@ export function buildHouse(kit, h, place, groundY, rand) {
   }
 
   // --- sign board above the door
+  // (on a house of one floor, between the door's head and the eave: its top inside the roof's thickness, never through
+  // it; the roof comes down to y1 at the wall and lower beyond, and a full-height board stood up out of the tiles)
   if (h.sign && SIGN_CELLS[h.sign] !== undefined) {
-    const g = signGeometry(SIGN_CELLS[h.sign], 1.9, 0.95);
-    const sy = tall ? y1 + 0.75 : y1 - 0.2;
+    const g = tall ? signGeometry(SIGN_CELLS[h.sign], 1.9, 0.95) : signGeometry(SIGN_CELLS[h.sign], 1.6, 0.8);
+    const sy = tall ? y1 + 0.75 : y1 - 0.38;
     const sz = tall ? d / 2 + pd + 0.12 : d / 2 + 0.2;
     kit.add('sign', g, mul(W, M(0, sy, sz, 0, -0.12)), { burn: burn * 0.9, vis: 3 });
   }
@@ -471,8 +473,11 @@ export function buildBridge(kit, x, y, z, rotY, endA, endB, wy) {
   shape.lineTo(-L, bottom);
   const body = new THREE.ExtrudeGeometry(shape, { depth: width, bevelEnabled: false, curveSegments: 1, steps: 1 });
   // (shape x is our z, extrusion is across: turn it so z runs along the road, x across)
-  body.rotateY(Math.PI / 2);
-  body.translate(-width / 2, 0, 0);
+  // (turned the other way, the shape's x had come out as -z: the deck was its own mirror image, a metre higher than
+  // deckY at the end on the village side and a metre lower at the other, while his feet, the balustrade and the lens
+  // all keep to deckY: running down its last steps he was waist deep in them, only his head over their edges)
+  body.rotateY(-Math.PI / 2);
+  body.translate(width / 2, 0, 0);
   kit.add('stone', body, W, { vis: 0, color: [0.92, 0.9, 0.86] });
   // the voussoirs: dressed blocks round the arch on both faces, a little proud of the wall
   const NV = 27;

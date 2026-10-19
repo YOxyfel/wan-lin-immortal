@@ -134,6 +134,9 @@ uniform mat4 uProjInv, uCamWorld; uniform vec3 uCamPos;
 ${SKY_UNIFORMS}
 uniform float uCover, uStorm, uStormGrow, uTime, uDensity, uFlash, uClash, uStarK, uDebug, uSharp;
 uniform vec3 uStormC, uFireC, uFlashPos, uFlashCol, uC1, uC2, uStarPos, uStarTail; uniform vec2 uWind; uniform vec3 uT1[4], uT2[4]; uniform vec4 uImpact;
+// (the point of light where it struck: its own time, 0..1, -1 none; a blow's light is brief, the ring it runs out over the
+// sea long)
+uniform float uImpactS;
 // the eye torn in the deck over the fight (xyz: centre, w: how open); the two fighters' own amounts (gold, violet); where the
 // star came down (xyz) and how long ago (w, 0..1 over the flash and the ring, -1 none); the dark that runs out from it
 // (xy: origin, z: radius of the front, w: amount)
@@ -854,12 +857,15 @@ void main(){
     float tr = 350. + 650. * fract(sin(dot(gl_FragCoord.xy, vec2(7.13, 41.7))) * 913.7);
     float az = atan(rd.z, rd.x);
     float streak = texture(tDetail, vec3(az * 9., .3, .5)).r * .6 + texture(tDetail, vec3(az * 23., .7, .2)).g * .4;
+    // (thinning out as the eye looks higher, to nothing at the top: cut off there at once, from a lens up near the base
+    // the edge of the curtains ran over the sky as the hard rim of a brown dome)
+    float cf = smoothstep(.3, .14, rd.y);
     for (int k = 0; k < 10; k++) {
       vec3 q = ro + rd * tr;
       if (q.y > 0. && q.y < 700.) {
         float sk = stormAt(q.xz, 0.);
         float rpatch = smoothstep(.42, .72, texture(tShape, vec3(q.xz * .00042 + vec2(uTime * .002, 0.), .1)).r);
-        float dr = sk * rpatch * (.55 + streak * .9) * smoothstep(0., 120., q.y + 60.) * smoothstep(700., 450., q.y);
+        float dr = sk * rpatch * (.55 + streak * .9) * smoothstep(0., 120., q.y + 60.) * smoothstep(700., 450., q.y) * cf;
         Tr *= exp(-dr * 650. * .0008);
       }
       tr += 650.;
@@ -894,11 +900,11 @@ void main(){
     float n1 = smoothstep(25., 140., length(uC1 - ro)), n2 = smoothstep(25., 140., length(uC2 - ro));
     L += (gold * (g1 + k1 * .3) * uClashGV.x * n1 + violet * (g2 + k2 * .3) * 1.9 * uClashGV.y * n2) * uClash * vis;
     L += (gold * g1 * uClashGV.x * n1 + violet * g2 * uClashGV.y * n2) * .5 * uClash * vis * .6;
-    float ia = uImpact.w;
-    if (ia >= 0. && ia < .25) {
+    float is = uImpactS;
+    if (is >= 0. && is < 1.) {
       vec3 di = normalize(uImpact.xyz - ro);
       float fI = pow(max(dot(rd, di), 0.), 3000.) * 18. + pow(max(dot(rd, di), 0.), 900.) * .5;
-      L += vec3(1., .92, 1.) * fI * (1. - ia * 4.) * uClash * (.25 + T * .75);
+      L += vec3(1., .92, 1.) * fI * (1. - is) * uClash * (.25 + T * .75);
     }
   }
   vec3 col = (sky * T + L) * Tr + rc * (1. - Tr);
@@ -948,7 +954,7 @@ export function createSky(renderer, quality) {
     uFlash: { value: 0 }, uFlashPos: { value: V3(0, 1000, -900) }, uFlashCol: { value: new THREE.Color(0.75, 0.72, 1.0) },
     uClash: { value: 0 }, uC1: { value: V3(0, 0, 0) }, uC2: { value: V3(0, 0, 0) },
     uStarK: { value: 0 }, uStarPos: { value: V3(0, -9999, 0) }, uStarTail: { value: V3(0, -9999, 0) },
-    uT1: { value: [V3(), V3(), V3(), V3()] }, uT2: { value: [V3(), V3(), V3(), V3()] }, uImpact: { value: new THREE.Vector4(0, 0, 0, -1) },
+    uT1: { value: [V3(), V3(), V3(), V3()] }, uT2: { value: [V3(), V3(), V3(), V3()] }, uImpact: { value: new THREE.Vector4(0, 0, 0, -1) }, uImpactS: { value: -1 },
     uEye: { value: new THREE.Vector4(0, 0, 0, 0) }, uHit: { value: new THREE.Vector4(0, 0, 0, -1) }, uHitCol: { value: new THREE.Color(1, 0.86, 0.74) }, uDark: { value: new THREE.Vector4(0, 0, 0, 0) }, uClashGV: { value: new THREE.Vector2(1, 1) },
     uCrater: { value: [new THREE.Vector4(0, 0, 0, -1), new THREE.Vector4(0, 0, 0, -1), new THREE.Vector4(0, 0, 0, -1)] }, uCraterS: { value: [1, 1, 1] },
     uTrench: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uTrenchK: { value: [new THREE.Vector2(), new THREE.Vector2()] }, uFocus: { value: 0 }, uGroundK: { value: 0 }, uSeaK: { value: 0 }, uDive: { value: 0 }, uBands: { value: new THREE.Vector4(0, 1300, 1650, 2000) }, uBandT: { value: new THREE.Vector4(150, 170, 210, 0) }, uWell: { value: new THREE.Vector4(1, 0, 0, 0) },

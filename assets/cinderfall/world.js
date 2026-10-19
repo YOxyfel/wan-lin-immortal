@@ -546,8 +546,8 @@ function buildCast(anchors, rand) {
   const sweeper = add({ ...VILLAGER_COLORS[1], long: true, hat: 'cloth', scarf: [0.6, 0.2, 0.2] }, 'sweeper', { day: 'sweep' });
   // sweeping the terrace between the porch posts
   place(sweeper, at('east-h', 1.9, H['east-h'].frame.plat, H['east-h'].frame.d / 2 + 1.95), faceStreet('east-h') + 0.6);
-  const kidA = add({ ...VILLAGER_COLORS[2], scale: 0.62 }, 'kid', { day: 'run', loop: { c: new THREE.Vector3(roadX(24) + 1.5, 0, 24), r: 2.6, sp: 0.9 } });
-  const kidB = add({ ...VILLAGER_COLORS[0], scale: 0.58 }, 'kid', { day: 'run', loop: { c: new THREE.Vector3(roadX(24) + 1.5, 0, 24), r: 2.6, sp: 0.9, off: 1.1 } });
+  const kidA = add({ ...VILLAGER_COLORS[2], scale: 0.62 }, 'kid', { day: 'run', loop: { c: new THREE.Vector3(roadX(24) - 0.7, 0, 24), r: 2.6, sp: 0.9 } });
+  const kidB = add({ ...VILLAGER_COLORS[0], scale: 0.58 }, 'kid', { day: 'run', loop: { c: new THREE.Vector3(roadX(24) - 0.7, 0, 24), r: 2.6, sp: 0.9, off: 1.1 } });
   const cartMan = add({ ...VILLAGER_COLORS[4], grey: true, beard: true, hat: 'straw' }, 'cartman', { day: 'walk' });
   const chatA = add({ ...VILLAGER_COLORS[0], hat: 'straw' }, 'chat', { day: 'idle' });
   place(chatA, new THREE.Vector3(roadX(60) + 3.2, 0, 58.4), -0.6);

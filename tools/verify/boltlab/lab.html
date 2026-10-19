@@ -1,0 +1,110 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#123}canvas{display:block}</style></head><body>
+<!-- (the import map is put in by serve.cjs) -->
+<script type="module">
+// The bolt lab: the war's lightning alone, as the lens of the film's shot at story position u sees it, over a plain
+// sky, with numbers for what the eye objects to (a stroke crossing itself, doubling back, running ruler-straight).
+import * as THREE from 'three';
+import { createLightning } from '/assets/cinderfall/weather.js';
+import * as W from '/assets/cinderfall/war.js';
+import { watchT } from '/assets/cinderfall/score.js';
+const q = new URLSearchParams(location.search);
+const WD = +(q.get('w') || 960), HT = +(q.get('h') || 540);
+const renderer = new THREE.WebGLRenderer({ antialias: false });
+renderer.setSize(WD, HT); renderer.setPixelRatio(1);
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(q.get('bg') || '#3d5fa0');
+const cam = new THREE.PerspectiveCamera(48, WD / HT, 0.08, 6000);
+const war = W.createWar();
+const L = createLightning(12);
+scene.add(L.group);
+if (L.res) L.res(HT);
+const placeCam = u => { const s = W.shot(u); cam.position.copy(s.pos); cam.fov = s.fov; cam.updateProjectionMatrix(); cam.lookAt(s.look); cam.updateMatrixWorld(); return s; };
+const pose = u => { placeCam(u); war.update(u, 100, cam, 1, () => Infinity, null); };
+const u = +q.get('u');
+const T = watchT(u);
+let slot = 0;
+// the war's own bolts (war.js BOLTS), each struck from the lens of the shot it is struck in
+const struck = [];
+for (const Bt of W.BOLTS) {
+  if (Bt.u > u + 1e-9) continue;
+  const age = T - watchT(Bt.u);
+  if (age > 1.3 * (Bt.dur || 1)) continue;
+  pose(Bt.u);
+  const from = Bt.from(), to = Bt.to(), ws = W.shot(Bt.u);
+  if (ws && Bt.sky) {
+    const fw = ws.look.clone().sub(ws.pos).normalize(), rt = new THREE.Vector3().crossVectors(fw, new THREE.Vector3(0, 1, 0)).normalize(), upv = new THREE.Vector3().crossVectors(rt, fw);
+    const ty = Math.tan(ws.fov * Math.PI / 360) * 1.1, tx = ty * Math.max(WD / HT, 16 / 9);
+    const inF = p => { const v = p.clone().sub(ws.pos), z = v.dot(fw); return z > 1 && Math.abs(v.dot(rt) / z) < tx && Math.abs(v.dot(upv) / z) < ty; };
+    for (let k = 0; k < 3 && inF(from); k++) from.sub(to).multiplyScalar(1.6).add(to);
+  }
+  L.strike(T - age, from, to, { seed: Math.floor(Bt.u * 131), strength: Bt.strength || 1.0, width: Bt.width || 3.0, branches: Bt.branches ?? 7, levels: Bt.levels || 6, dur: Bt.dur || 1, disp: Bt.disp || 0.17, decay: Bt.decay || 0,
+    eye: cam.position.clone(), wmin: Bt.wmin || 0.012, wmax: Bt.wmax || 0.06, tip: Bt.tip || 0, near: Bt.near || 0, nearM: Bt.nearM || 0, brK: Bt.brK || null, follow: Bt.follow || null, color: new THREE.Color(0.72, 0.46, 1.0) });
+  struck.push(Bt.u.toFixed(3));
+}
+// and those the hardest blows throw out of them (engine.js: from a little way out of the meeting)
+for (const b of W.BLOWS) {
+  if (!b.bolts || b.u > u + 1e-9) continue;
+  const age = T - watchT(b.u);
+  if (age > 0.8) continue;
+  pose(b.u);
+  const M = b.at(b.u), qq = Math.floor(b.u * 97), dM = cam.position.distanceTo(M), near = Math.min(1, Math.max(0.3, dM / 150));
+  for (let i = 0; i < b.bolts; i++) {
+    const a1 = (qq * 2.399 + i * 2.1) % (Math.PI * 2), r = 460 + i * 70;
+    const ws = W.shot(b.u), fw = ws.look.clone().sub(ws.pos).normalize(), rt = new THREE.Vector3().crossVectors(fw, new THREE.Vector3(0, 1, 0)).normalize(), upv = new THREE.Vector3().crossVectors(rt, fw);
+    const E = M.clone().addScaledVector(rt, Math.cos(a1) * r).addScaledVector(upv, Math.sin(a1) * r * 0.7).addScaledVector(fw, ((qq + i) % 3 - 1) * r * 0.2);
+    const S0 = M.clone().lerp(E, Math.max(30, 40 - dM) / M.distanceTo(E));
+    L.strike(T - age + i * 0.02, S0, E, { seed: qq * 31 + i * 7, strength: 0.9, width: 2.6 * near * near, branches: 8, levels: near < 0.5 ? 8 : 6, dur: 0.6, eye: cam.position.clone(), color: i % 2 ? new THREE.Color(1.0, 0.82, 0.5) : new THREE.Color(0.66, 0.5, 1.0) });
+  }
+  struck.push('blow' + b.u.toFixed(3));
+}
+pose(u);
+L.lens(cam.position);
+L.update(T);
+renderer.render(scene, cam);
+// the numbers: each stroke's points as the lens sees them
+const PV = new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+const px = v => { const c = new THREE.Vector4(v.x, v.y, v.z, 1).applyMatrix4(PV); return c.w > 0.1 ? [(c.x / c.w * 0.5 + 0.5) * WD, (0.5 - c.y / c.w * 0.5) * HT] : null; };
+const rep = { u, T: +T.toFixed(2), struck, strokes: 0, crossings: 0, reversals: 0, longStraight: 0, visible: 0 };
+const segX = (a, b, c, d) => { const o = (p, q, r) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])); return o(a, b, c) * o(a, b, d) < 0 && o(c, d, a) * o(c, d, b) < 0; };
+for (const m of L.group.children) {
+  if (!m.visible) continue;
+  const g = m.geometry, P = g.attributes.position, Pp = g.attributes.aPrev, n = g.drawRange.count / 6 + 1;
+  // (strokes start where a point's previous is itself; two vertices a point)
+  const pts = [];
+  let cur = null;
+  const nv = P.count, Al = g.attributes.aAlong, Br = g.attributes.aBright, Wd = g.attributes.aW;
+  // (only the vertices the index draws: past them, the slot's earlier bolts)
+  let vmax = 0; { const I = g.index.array; for (let k = 0; k < g.drawRange.count; k++) vmax = Math.max(vmax, I[k]); }
+  for (let v = 0; v <= vmax; v += 2) {
+    const p = new THREE.Vector3(P.getX(v), P.getY(v), P.getZ(v)), pp = new THREE.Vector3(Pp.getX(v), Pp.getY(v), Pp.getZ(v));
+    if (p.distanceTo(pp) < 1e-6) { if (cur && cur.length > 1) pts.push(cur); cur = []; if (q.get('dbg')) console.log('LAB start v' + v, 'along', Al.getX(v).toFixed(2), 'br', Br.getX(v).toFixed(2), 'w', Wd.getX(v).toFixed(2)); }
+    if (cur) cur.push(p);
+  }
+  if (cur && cur.length > 1) pts.push(cur);
+  for (const s of pts) {
+    const sp = s.map(px).filter(Boolean);
+    if (q.get('dbg')) console.log('LAB stroke', m.id, s.length, JSON.stringify(sp[0] && sp[0].map(Math.round)), JSON.stringify(sp[sp.length - 1] && sp[sp.length - 1].map(Math.round)));
+    if (sp.length < 3) continue;
+    const onScreen = sp.filter(p => p[0] >= 0 && p[0] <= WD && p[1] >= 0 && p[1] <= HT).length;
+    if (onScreen < 2) continue;
+    rep.strokes++; rep.visible += onScreen;
+    // crossings of the stroke with itself (segments not adjacent)
+    const inS = p => p[0] >= -50 && p[0] <= WD + 50 && p[1] >= -50 && p[1] <= HT + 50;
+    for (let i = 0; i < sp.length - 1; i++) if (inS(sp[i])) for (let j = i + 2; j < sp.length - 1; j++) if (inS(sp[j]) && segX(sp[i], sp[i + 1], sp[j], sp[j + 1])) rep.crossings++;
+    // sharp reversals: a turn of more than 120 degrees between segments a pixel or more long
+    let run = 0;
+    for (let i = 1; i < sp.length - 1; i++) {
+      const a = [sp[i][0] - sp[i - 1][0], sp[i][1] - sp[i - 1][1]], b = [sp[i + 1][0] - sp[i][0], sp[i + 1][1] - sp[i][1]];
+      const la = Math.hypot(...a), lb = Math.hypot(...b);
+      if (la < 1 || lb < 1) continue;
+      const cs = (a[0] * b[0] + a[1] * b[1]) / la / lb;
+      if (cs < -0.5 && inS(sp[i])) rep.reversals++;
+      const ins = p => p[0] >= 0 && p[0] <= WD && p[1] >= 0 && p[1] <= HT;
+      if (cs > 0.9986 && ins(sp[i]) && ins(sp[i + 1])) { run += lb; rep.longStraight = Math.max(rep.longStraight, run); } else run = 0;
+    }
+  }
+}
+rep.longStraight = Math.round(rep.longStraight);
+console.log('LAB ' + JSON.stringify(rep));
+window.__done = true;
+</script></body></html>

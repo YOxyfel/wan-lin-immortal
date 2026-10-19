@@ -95,28 +95,48 @@ export function maskGeometry() {
 // the sect's robes on the villagers' body, and what goes over them: a deep hood open in front with a peak falling back,
 // the angular iron mask with violet slits, a mantle over the shoulders (on the crag, and the one who fights above the
 // clouds); dis: the dissolve's uniform, base: the height it rises from, rim: the violet at its edges (less by day)
-export const SECT_ROBES = { robe: [0.045, 0.04, 0.05], under: [0.06, 0.05, 0.07], pants: [0.04, 0.035, 0.04], sash: [0.32, 0.08, 0.5] };
+// (their shin wraps black with the rest: in the villagers' pale linen, under the one hanging over the lens they were a
+// pair of pale soles poking up at the bottom of the frame)
+export const SECT_ROBES = { robe: [0.045, 0.04, 0.05], under: [0.06, 0.05, 0.07], pants: [0.04, 0.035, 0.04], sash: [0.32, 0.08, 0.5], wraps: [0.05, 0.045, 0.055] };
 export function sectGarb(dis, base = 0, rim = 0.55) {
   const robeMat = dissolving(new THREE.MeshStandardMaterial({ color: 0x0d0b10, roughness: 0.92, side: THREE.DoubleSide }), dis, { base, rim });
-  const maskMat = dissolving(new THREE.MeshStandardMaterial({ color: 0x3a3a40, roughness: 0.32, metalness: 0.88 }), dis, { base });
+  // (iron: a dull grey plate, not the black of the hood it sits in)
+  const maskMat = dissolving(new THREE.MeshStandardMaterial({ color: 0x62626c, roughness: 0.38, metalness: 0.72 }), dis, { base });
   const trimMat = dissolving(new THREE.MeshStandardMaterial({ color: 0x2a0d40, emissive: VIOLET, emissiveIntensity: 0.9, roughness: 0.6 }), dis, { base });
   const eyeMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 0.7, 4.2) });
   const maskG = maskGeometry();
   const slitG = new THREE.BoxGeometry(0.05, 0.009, 0.012);
-  const hoodG = new THREE.SphereGeometry(0.142, 18, 12, Math.PI / 2 + 0.78, Math.PI * 2 - 1.56, 0, Math.PI * 0.66);
+  // (a deep cowl, its sides drawn forward round the mask: shallow, the mask stood out of it, and from behind it was a
+  // flat plate sticking out beside his head like the brim of an umbrella)
+  // (and deep, down round the back of the neck and into the mantle: shallow, seen from under it its hollow was the
+  // canopy of an umbrella)
+  const hoodG = new THREE.SphereGeometry(0.146, 20, 14, Math.PI / 2 + 0.66, Math.PI * 2 - 1.32, 0, Math.PI * 0.8);
   hoodG.scale(1.0, 1.12, 1.1);
-  const peakG = new THREE.ConeGeometry(0.075, 0.26, 10, 1, true);
-  const mantleG = new THREE.CylinderGeometry(0.17, 0.4, 0.5, 20, 3, true, Math.PI / 2 + 0.55, Math.PI * 2 - 1.1);
+  // (drawn forward at its sides, round the mask, and less over the brow: drawn forward all over, its crown stood out over
+  // his face like a visor, and when he looked up, from behind it was a brim)
+  { const P = hoodG.attributes.position;
+    for (let i = 0; i < P.count; i++) {
+      const z = P.getZ(i);
+      if (z <= 0) continue;
+      const yk = Math.min(1, Math.max(0, P.getY(i) / (0.142 * 1.12)));
+      P.setZ(i, z * (1.24 - 0.22 * yk * yk));
+    }
+    hoodG.computeVertexNormals(); }
+  // (no peak: a point falling back down the hood, however soft, stood up off his head from behind as a horn)
+  // (the mantle over his shoulders round, falling from inside the hood: a cone, from behind it was a box with a ledge for
+  // shoulders and the hood a dome set on it)
+  // (a short one, close about the shoulders: long and flared, bent over the glaive, it stood off his back)
+  const mantleG = new THREE.LatheGeometry([[0.11, 0.31], [0.15, 0.285], [0.205, 0.24], [0.252, 0.18], [0.284, 0.11], [0.302, 0.035], [0.31, -0.04]].map(([r, y]) => new THREE.Vector2(r, y)), 22, Math.PI / 2 + 0.55, Math.PI * 2 - 1.1);
   return {
     robeMat, maskMat, trimMat, eyeMat,
     dress(p, shadow = false) {
       const head = p.head, chest = p.spine;
-      const hood = new THREE.Mesh(hoodG, robeMat); hood.position.set(0, 0.085, -0.012); hood.castShadow = shadow; head.add(hood);
-      const peak = new THREE.Mesh(peakG, robeMat); peak.position.set(0, 0.2, -0.1); peak.rotation.x = -0.62; head.add(peak);
-      const mask = new THREE.Mesh(maskG, maskMat); mask.position.set(0, 0.06, 0.068); mask.scale.setScalar(0.92); head.add(mask);
-      for (const sx of [-1, 1]) { const sl = new THREE.Mesh(slitG, eyeMat); sl.position.set(sx * 0.038, 0.085, 0.112); head.add(sl); }
+      const hood = new THREE.Mesh(hoodG, robeMat); hood.position.set(0, 0.085, 0.02); hood.castShadow = shadow; head.add(hood);
+      // (out in front of the face, over all of it: close to, the face had come through it, bare under the violet slits)
+      const mask = new THREE.Mesh(maskG, maskMat); mask.position.set(0, 0.058, 0.122); mask.scale.set(1.08, 1.0, 1.6); head.add(mask);
+      for (const sx of [-1, 1]) { const sl = new THREE.Mesh(slitG, eyeMat); sl.position.set(sx * 0.038, 0.085, 0.197); head.add(sl); }
       const mantle = new THREE.Mesh(mantleG, robeMat); mantle.position.set(0, 0.12, -0.02); mantle.castShadow = shadow; chest.add(mantle);
-      return { hood, peak, mask, mantle };
+      return { hood, mask, mantle };
     },
   };
 }

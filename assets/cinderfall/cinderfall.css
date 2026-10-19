@@ -45,8 +45,11 @@
 /* (behind each line a soft wash, as an inscription has its own empty paper: dark under light words, paper under ink
    words, so a line is never white on white or grey on grey whatever the picture behind it) */
 .cf-cap { isolation: isolate; }
+/* (the wash comes as the line is written, not before it: at the line's full strength before the brush had written it,
+   on a pale sky it was a dark smudge with nothing in it) */
 .cf-cap::before { content: ''; position: absolute; inset: -38% -16% -34% -16%; z-index: -1; pointer-events: none; filter: blur(10px);
-  background: radial-gradient(closest-side, rgba(10, 8, 7, .62), rgba(10, 8, 7, .38) 58%, rgba(10, 8, 7, 0)); }
+  background: radial-gradient(closest-side, rgba(10, 8, 7, .62), rgba(10, 8, 7, .38) 58%, rgba(10, 8, 7, 0));
+  opacity: min(1, calc(var(--reveal, 1) * 1.6)); }
 .cf-cap.ink::before { background: radial-gradient(closest-side, rgba(239, 230, 210, .86), rgba(239, 230, 210, .55) 58%, rgba(239, 230, 210, 0)); }
 .cf-cap .eyebrow { color: #d8c7a5; margin-bottom: 16px; text-shadow: 0 1px 14px #000a; }
 .cf-cap p { font: 400 clamp(32px, 4.2vw, 64px)/1.04 "Cormorant Garamond", Georgia, serif; letter-spacing: -.01em; text-shadow: 0 2px 28px #000b, 0 0 2px #0006;
