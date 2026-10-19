@@ -577,39 +577,39 @@ export function createScore(ctx, out, { play = () => false, has = () => false } 
   // the launch: lifting off, bursting up through the crown, the pulse of the climb up the well doubling, the roll under
   // the screen where the fight's shadows play to the clash of their blades; the three sheets; then nothing
   at(47.47, t => drum(t, { gain: 0.2, pitch: 50, decay: 0.9, sub: 0.6 }), 1);
-  at(47.535, t => { drum(t, { gain: 0.42, pitch: 46, decay: 1.2, sub: 0.8 }); gong(t, { gain: 0.07, f0: 58, dur: 4, fall: 1.04 }); }, 1);
+  at(47.535, t => { drum(t, { gain: 0.42, pitch: 46, decay: 1.2, sub: 0.8 }); play('taiko', { gain: 0.5, at: t, dest: drumIn }); gong(t, { gain: 0.07, f0: 58, dur: 4, fall: 1.04 }); }, 1);
   for (let i = 1; i <= 8; i++) at(47.535 + i * 0.052, t => drum(t, { gain: 0.12 + i * 0.012, pitch: 60, decay: 0.3 }), 0.5);
   at(48.0, t => shock(t, { gain: 0.14, f0: 66, dur: 0.6, crack: 0.6 }), 1);
   for (let i = 1; i <= 5; i++) at(47.95 + i * 0.024, t => drum(t, { gain: 0.16 + i * 0.015, pitch: 62, decay: 0.24 }), 0.5);
   for (let i = 0; i < 9; i++) at(48.08 + 0.072 * Math.pow(i / 9, 0.75), t => drum(t, { gain: 0.1 + i * 0.022, pitch: 66, decay: 0.18, skin: 0.6 }), 0.3);
   at(48.155, t => { shock(t, { gain: 0.32, f0: 50, dur: 1.4, crack: 0.8 }); drum(t, { gain: 0.38, pitch: 48, decay: 0.8, sub: 0.6 }); }, 1);
-  for (const [u, p] of [[48.21, 46], [48.34, 44], [48.45, 42]]) at(u, t => drum(t, { gain: 0.5, pitch: p, decay: 1.3, sub: 0.9 }), 1);
+  for (const [u, p] of [[48.21, 46], [48.34, 44], [48.45, 42]]) at(u, t => { drum(t, { gain: 0.5, pitch: p, decay: 1.3, sub: 0.9 }); play('taiko', { gain: 0.42, rate: Math.pow(2, (p - 46) / 12), at: t, dest: drumIn }); }, 1);
   // (after the silence: the sea of clouds, the sun, the gong barely touched)
   at(49.2, t => { gong(t, { gain: 0.05, f0: 74, dur: 9, fall: 0.99, swell: 2.2 }); choir(t + 0.3, [D4, A4, E5], 4.5, { gain: 0.04, vowel: 'a', attack: 3 }); bell(t + 1.4, A5, 0.022, 5); }, 6);
   // ---- the war, close to (war.js): the two face each other, thunder rolling under the masked one, a bell for the
   // great sword forming; the first blow; the crescent thrown, split, its halves into the sea; the storm called down on
   // the bell; the lock, grinding, bursting; the glaive coming down (drums and the shock of the air, never metal: they
   // are not smiths)
-  at(49.36, t => { drum(t, { gain: 0.5, pitch: 38, decay: 2.2, sub: 1 }); gong(t + 0.05, { gain: 0.08, f0: 46, dur: 8, fall: 0.97, swell: 1.2 }); choir(t + 0.2, [D2, Gs2, D3], 3.4, { gain: 0.04, vowel: 'u', attack: 1.2 }); }, 6);
+  at(49.36, t => { drum(t, { gain: 0.5, pitch: 38, decay: 2.2, sub: 1 }); play('taiko', { gain: 0.45, rate: 0.84, at: t, dest: drumIn }); gong(t + 0.05, { gain: 0.08, f0: 46, dur: 8, fall: 0.97, swell: 1.2 }); choir(t + 0.2, [D2, Gs2, D3], 3.4, { gain: 0.04, vowel: 'u', attack: 1.2 }); }, 6);
   for (const u of [49.53, 49.83]) at(u, t => drum(t, { gain: 0.42, pitch: 40, decay: 1.4, sub: 0.9 }), 1);
   at(49.6, t => shock(t, { gain: 0.12, f0: 30, dur: 3.5, crack: 0 }), 4);
   at(49.86, t => { bell(t, A5, 0.03, 5); tremolo(t, D4, 2.2, 0.05); }, 4);
-  at(50.25, t => { if (!play('clash', { gain: 0.7, at: t, dest: drumIn })) shock(t, { gain: 0.7, f0: 38, dur: 2.8, crack: 1 }); drum(t, { gain: 0.6, pitch: 36, decay: 2.0, sub: 1 }); gong(t, { gain: 0.1, f0: 44, dur: 6, fall: 0.92 }); }, 1);
+  at(50.25, t => { if (!play('clash', { gain: 0.8, at: t, dest: drumIn })) shock(t, { gain: 0.7, f0: 38, dur: 2.8, crack: 1 }); drum(t, { gain: 0.6, pitch: 36, decay: 2.0, sub: 1 }); play('taiko', { gain: 0.5, rate: 0.9, at: t, dest: drumIn }); gong(t, { gain: 0.1, f0: 44, dur: 6, fall: 0.92 }); }, 1);
   at(50.742, t => { shock(t, { gain: 0.32, f0: 74, dur: 0.9, crack: 0.7 }); bell(t, E6, 0.025, 3); }, 1);
-  at(50.95, t => { if (!play('clash2', { gain: 0.6, at: t, dest: drumIn })) shock(t, { gain: 0.55, f0: 44, dur: 2.2, crack: 1 }); drum(t, { gain: 0.45, pitch: 42, decay: 1.2, sub: 0.8 }); }, 1);
+  at(50.95, t => { if (!play('clash2', { gain: 0.6, at: t, off: 0.08, dest: drumIn })) shock(t, { gain: 0.55, f0: 44, dur: 2.2, crack: 1 }); drum(t, { gain: 0.45, pitch: 42, decay: 1.2, sub: 0.8 }); }, 1);
   for (const u of [51.09, 51.11]) at(u, t => shock(t, { gain: 0.3, f0: 32, dur: 2.6, crack: 0.15 }), 0.5);
   at(51.15, t => { choir(t, [D2, NOTE.Ds2, A2], 2.6, { gain: 0.045, vowel: 'u', attack: 0.6 }); shock(t, { gain: 0.14, f0: 28, dur: 3, crack: 0 }); }, 2);
-  for (const u of [51.172, 51.2, 51.232, 51.262, 51.292, 51.322, 51.354, 51.384, 51.418, 51.448, 51.47]) at(u, t => { if (!play('thunder', { gain: 0.45, at: t, dest: drumIn })) shock(t, { gain: 0.3, f0: 62, dur: 1.3, crack: 0.95 }); }, 0.2);
-  at(51.555, t => { if (!play('clash', { gain: 0.65, rate: 0.9, at: t, dest: drumIn })) shock(t, { gain: 0.6, f0: 40, dur: 2.4, crack: 1 }); drum(t, { gain: 0.5, pitch: 40, decay: 1.5, sub: 1 }); choir(t + 0.05, [D2, NOTE.Ds2, Gs2, A2], 2.6, { gain: 0.05, vowel: 'a', attack: 0.15, release: 0.4 }); }, 1);
+  for (const u of [51.172, 51.2, 51.232, 51.262, 51.292, 51.322, 51.354, 51.384, 51.418, 51.448, 51.47]) at(u, t => { shock(t, { gain: 0.3, f0: 62, dur: 1.3, crack: 0.95 }); if (u === 51.172 || u === 51.262 || u === 51.47) play('thunder', { gain: 0.55, at: t, off: 0.35, dest: drumIn }); }, 0.2);
+  at(51.555, t => { if (!play('clash-lock', { gain: 0.75, at: t, dest: drumIn })) shock(t, { gain: 0.6, f0: 40, dur: 2.4, crack: 1 }); drum(t, { gain: 0.5, pitch: 40, decay: 1.5, sub: 1 }); choir(t + 0.05, [D2, NOTE.Ds2, Gs2, A2], 2.6, { gain: 0.05, vowel: 'a', attack: 0.15, release: 0.4 }); }, 1);
   for (let i = 0; i < 7; i++) at(51.62 + i * 0.07, t => drum(t, { gain: 0.2 + i * 0.03, pitch: 50 - i, decay: 0.6, sub: 0.5 }), 0.2);
-  at(52.1, t => { if (!play('smash', { gain: 0.8, at: t, dest: drumIn })) shock(t, { gain: 0.8, f0: 34, dur: 3.2, crack: 1 }); gong(t, { gain: 0.18, f0: 42, dur: 7, fall: 0.9 }); drum(t, { gain: 0.65, pitch: 34, decay: 2.2, sub: 1 }); }, 1);
+  at(52.1, t => { if (!play('clash', { gain: 0.8, rate: 0.84, at: t, dest: drumIn })) shock(t, { gain: 0.8, f0: 34, dur: 3.2, crack: 1 }); if (!play('gong', { gain: 0.42, rate: 0.84, at: t, dest: drumIn })) gong(t, { gain: 0.18, f0: 42, dur: 7, fall: 0.9 }); drum(t, { gain: 0.65, pitch: 34, decay: 2.2, sub: 1 }); }, 1);
   for (let i = 0; i < 10; i++) at(52.2 + 0.26 * Math.pow(i / 10, 0.7), t => drum(t, { gain: 0.14 + i * 0.03, pitch: 56 - i * 0.6, decay: 0.32, sub: 0.3 }), 0.2);
   // the dive: over the top (weightless), the thunder gathering, the star falling, the strike
   at(52.5, t => choir(t, [Fs4, A4, D5], 0.6, { gain: 0.03, vowel: 'o', attack: 0.35, release: 1.4 }));
   for (let i = 0; i < 16; i++) at(52.95 + 1.05 * Math.pow(i / 16, 0.62), t => drum(t, { gain: 0.16 + i * 0.02, pitch: 58 - i * 0.4, decay: 0.4, sub: 0.3 }), 0.5);
   for (let i = 0; i < 14; i++) at(54.0 + 0.41 * Math.pow(i / 14, 0.8), t => drum(t, { gain: 0.26 + i * 0.02, pitch: 64, decay: 0.22, skin: 0.6 }), 0.4);
   at(54.0, t => choir(t, [D3, Gs3, D4], 1.2, { gain: 0.04, vowel: 'u', attack: 1.2, release: 0.3 }), 2);
-  at(54.42, t => { gong(t, { gain: 0.26, f0: 55, dur: 8, fall: 0.9 }); drum(t, { gain: 0.6, pitch: 40, decay: 1.8, sub: 1 }); choir(t + 0.05, [D3, A3, D4, Fs4], 3, { gain: 0.06, vowel: 'a', attack: 0.5, release: 3.5 }); }, 2);
+  at(54.42, t => { if (!play('gong', { gain: 0.45, rate: 0.94, at: t, dest: drumIn })) gong(t, { gain: 0.26, f0: 55, dur: 8, fall: 0.9 }); drum(t, { gain: 0.6, pitch: 40, decay: 1.8, sub: 1 }); choir(t + 0.05, [D3, A3, D4, Fs4], 3, { gain: 0.06, vowel: 'a', attack: 0.5, release: 3.5 }); }, 2);
   at(55.5, t => xuan(t, 0.24, 0.035));
   at(56.2, t => flute(t, [[Fs4, 2, 'v'], [E4, 1], [D4, 3, 'f']], B * 1.35, { gain: 0.065, xiao: true }));
   at(58.45, t => pluck(t, B2, { gain: 0.09, press: -1, vib: 0.12, vibAt: 0.7 }));
@@ -703,7 +703,7 @@ export function createScore(ctx, out, { play = () => false, has = () => false } 
   for (let i = 0; i < 18; i++) at(139.16 + 0.27 * Math.pow(i / 18, 0.75), t => pluck(t, [A4, B4, D5, E5, Fs5, A5][Math.floor(i / 3)], { gain: 0.05 + i * 0.004, len: 0.25 }), 0.1);
   // the pillar: the gong (rising), the drums, the choir, his uncle's theme in the bells brought home
   at(139.44, t => {
-    gong(t, { gain: 0.3, f0: 52, dur: 10, fall: 1.05 }); drum(t, { gain: 0.6, pitch: 38, decay: 2, sub: 1 });
+    gong(t, { gain: 0.3, f0: 52, dur: 10, fall: 1.05 }); drum(t, { gain: 0.6, pitch: 38, decay: 2, sub: 1 }); play('gong', { gain: 0.4, at: t, dest: drumIn }); play('taiko', { gain: 0.5, rate: 0.84, at: t, dest: drumIn });
     choir(t + 0.02, [D3, A3, D4, Fs4, A4, D5], 5, { gain: 0.08, vowel: 'a', attack: 0.35, release: 4 });
     bells(t + 0.9, [[A5 - 12, 0.5], [D5 - 12, 0.5], [B4 - 12, 0.5], [E5 - 12, 1.5], ...THEME_A.slice(0, 5)], 0.58, 0.03);
   }, 8);
@@ -719,10 +719,10 @@ export function createScore(ctx, out, { play = () => false, has = () => false } 
     // (the recorded shocks where they are there: two kinds of blow, the smash down; pitched a little apart each time)
     const rec = (name, gain, rate = 1) => play(name, { gain, rate: rate * (0.94 + Math.random() * 0.12), at: t, dest: d });
     const pick = () => (Math.random() < 0.5 ? 'clash' : 'clash2');
-    if (kind === 1) { if (!rec(pick(), 0.32 * k, 1.2)) shock(t, { gain: 0.16 * k, f0: 70, dur: 0.55, crack: 0.7, dest: d }); }
+    if (kind === 1) { if (!rec(has('clash-short') ? 'clash-short' : pick(), 0.32 * k, 1.2)) shock(t, { gain: 0.16 * k, f0: 70, dur: 0.55, crack: 0.7, dest: d }); }
     else if (kind === 2) { if (!rec('smash', 0.95 * k)) { shock(t, { gain: 0.55 * k, f0: 42, dur: 2.4, crack: 0.8, dest: d }); drum(t, { gain: 0.4 * k, pitch: 40, decay: 1.4, sub: 1, dest: d }); } }
     else if (kind === 3) drum(t, { gain: 0.38 * k, pitch: 38, decay: 1.4, sub: 1, dest: d });
-    else if (kind === 4) { if (!rec(pick(), 0.12 * k, 0.8)) shock(t, { gain: 0.06 * k, f0: 48, dur: 0.5, crack: 0, dest: d }); }
+    else if (kind === 4) { if (!rec(has('clash-short') ? 'clash-short' : pick(), 0.12 * k, 0.8)) shock(t, { gain: 0.06 * k, f0: 48, dur: 0.5, crack: 0, dest: d }); }
     else if (kind === 5) { if (!rec(pick(), 0.85 * k, 0.85)) { shock(t, { gain: 0.45 * k, f0: 46, dur: 1.9, crack: 0.9, dest: d }); drum(t, { gain: 0.3 * k, pitch: 46, decay: 1.0, sub: 0.7, dest: d }); } }
     else if (!rec(pick(), 0.6 * k)) shock(t, { gain: 0.32 * k, f0: 54, dur: 1.2, crack: 0.6, dest: d });
   }

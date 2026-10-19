@@ -1,4 +1,60 @@
 {
-  "sfx": {},
-  "music": {}
+ "sfx": {
+  "autumn-loop": "sfx/autumn-loop.mp3",
+  "bell": "sfx/bell.mp3",
+  "clash": "sfx/clash.mp3",
+  "clash-lock": "sfx/clash-lock.mp3",
+  "clash-short": [
+   "sfx/clash-short-a.mp3",
+   "sfx/clash-short-b.mp3"
+  ],
+  "clash2": "sfx/clash2.mp3",
+  "cloud-punch": "sfx/cloud-punch.mp3",
+  "crystal-crack": "sfx/crystal-crack.mp3",
+  "dive": "sfx/dive.mp3",
+  "fire-loop": "sfx/fire-loop.mp3",
+  "gather": "sfx/gather.mp3",
+  "gong": "sfx/gong.mp3",
+  "heartbeat": "sfx/heartbeat.mp3",
+  "high-wind-loop": "sfx/high-wind-loop.mp3",
+  "ink": "sfx/ink.mp3",
+  "launch": "sfx/launch.mp3",
+  "morning-loop": "sfx/morning-loop.mp3",
+  "pillar": "sfx/pillar.mp3",
+  "rooster": "sfx/rooster.mp3",
+  "sect-pulse": "sfx/sect-pulse.mp3",
+  "shimmer": "sfx/shimmer.mp3",
+  "smash": "sfx/smash.mp3",
+  "step-dirt": "sfx/step-dirt.mp3",
+  "step-leaves": "sfx/step-leaves.mp3",
+  "strike": "sfx/strike.mp3",
+  "taiko": "sfx/taiko.mp3",
+  "thunder": "sfx/thunder.mp3",
+  "winter-loop": "sfx/winter-loop.mp3",
+  "wolf-howl": "sfx/wolf-howl.mp3",
+  "wolf-snarl": "sfx/wolf-snarl.mp3"
+ },
+ "loops": {
+  "morning-loop": [
+   0.25,
+   18.0
+  ],
+  "fire-loop": [
+   0.25,
+   18.0
+  ],
+  "high-wind-loop": [
+   0.25,
+   13.0
+  ],
+  "winter-loop": [
+   0.25,
+   13.0
+  ],
+  "autumn-loop": [
+   0.25,
+   13.0
+  ]
+ },
+ "music": {}
 }

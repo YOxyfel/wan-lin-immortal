@@ -690,3 +690,25 @@ all, underplaying its value"; the clashes sounding like a weaponsmith; the music
 - **Recorded music and sound** (`audio.js`, `assets/cinderfall/audio/manifest.json`): a player for the ten cues (each
   started and crossfaded on Watch's clock, the score's melody stepping back under it) and a bank of effects in place
   of the synthesised ones, both empty until the files are in.
+
+## Round 12, continued: the recorded effects (19 October 2026)
+
+- **The effects are in** (`assets/cinderfall/audio/sfx/`, `manifest.json`): the 28 effects generated with ElevenLabs in
+  the flow "Cinderfall sound effects" (31 takes; four of the war's first shock), downloaded once the workspace could
+  reach the store they sit in. The morning came out almost silent and was made again (four takes: the one with no
+  rooster in it is the loop; a rooster cut from another crows once, far down the lanes, as the hamlet is first seen).
+  The hush came out as hiss and is not used.
+- **Prepared for the film**: each trimmed to its first sound and levelled (the hits to one peak loudness, the
+  ambiences to -23 LUFS, the steps matched to each other); the ambiences made seamless loops, the file periodic past
+  both ends so wherever a decoder puts its start the loop has no seam; MP3, 3.5 MB in all.
+- **Played on the frame** (`audio.js`): where each recording's sound begins is found when it is decoded (a decoder may
+  leave the encoder's silence at its head), so a hit lands with its picture; the ambiences loop on their loop points;
+  the made birdsong rests while the recorded morning and autumn have their own.
+- **The war's sound** (`score.js`): the first blow is the great recorded shock with a taiko in it; the lock has its own
+  take; the storm's bolts each crack on their frame, the first on the glaive, the first on the bell and the last
+  rolling on as recorded thunder; the burst is the great shock again, lower; the smash is the engine's, as the glaive
+  comes down. The recorded taiko is under the launch, each cloud punched through and the war's first drum; the
+  recorded gong under the burst, the fall of the star and the pillar.
+- **The balance**: the whole film's sound rendered along Watch, with and without the recordings, and compared moment
+  by moment. The recordings sit 0-4 dB over the made sounds they replace; the fire, the heartbeat, the wolves, the
+  bell, the sect's pulse and the dive were brought down to sit under the score, and the fire drops inside the house.

@@ -30,13 +30,28 @@ export function createAudio({ context = null } = {}) {
   // (from the page, not the module: the build bundles the modules elsewhere and copies this folder as it is)
   const BASE = typeof document !== 'undefined' ? new URL('assets/cinderfall/audio/', document.baseURI).href : './audio/';
   const bank = {}, tracks = {};
-  let loops = {};
+  // (where each recording's sound begins: a decoder may leave the encoder's few ms of silence at the head, and a hit
+  // must land on its frame; an ambience's loop points, [start, length] in seconds, from the manifest: the file is
+  // periodic past both ends, so wherever the decoder puts its start the loop is seamless)
+  const heads = new WeakMap();
+  let loops = {}, loopPts = {};
+  const headOf = b => {
+    const d = b.getChannelData(0), d2 = b.numberOfChannels > 1 ? b.getChannelData(1) : d, n = Math.min(d.length, b.sampleRate);
+    for (let i = 0; i < n; i++) if (Math.abs(d[i]) > 0.003 || Math.abs(d2[i]) > 0.003) return Math.max(0, i / b.sampleRate - 0.002);
+    return 0;
+  };
   async function loadBank() {
     let m = null;
     try { const r = await fetch(BASE + 'manifest.json', { cache: 'no-cache' }); if (r.ok) m = await r.json(); } catch {}
     if (!m || !ctx) return;
+    loopPts = m.loops || {};
     const dec = async f => { try { const b = await (await fetch(BASE + f)).arrayBuffer(); return await ctx.decodeAudioData(b); } catch (e) { console.warn('sound', f, e); return null; } };
-    await Promise.all(Object.entries(m.sfx || {}).map(async ([name, files]) => { const v = (await Promise.all([].concat(files).map(dec))).filter(Boolean); if (v.length) bank[name] = v; }));
+    await Promise.all(Object.entries(m.sfx || {}).map(async ([name, files]) => {
+      const v = (await Promise.all([].concat(files).map(dec))).filter(Boolean);
+      if (!v.length) return;
+      if (!loopPts[name]) for (const b of v) heads.set(b, headOf(b));
+      bank[name] = v;
+    }));
     await Promise.all(Object.entries(m.music || {}).map(async ([id, f]) => { const b = await dec(f); if (b) tracks[id] = b; }));
   }
   const has = name => !!(bank[name] && bank[name].length);
@@ -44,11 +59,12 @@ export function createAudio({ context = null } = {}) {
   function play(name, { gain = 1, rate = 1, at = ctx.currentTime, pan = 0, dest = master, off = 0 } = {}) {
     const v = bank[name];
     if (!v || !v.length) return false;
-    const src = ctx.createBufferSource(); src.buffer = v[(Math.random() * v.length) | 0]; src.playbackRate.value = rate;
+    const b = v[(Math.random() * v.length) | 0];
+    const src = ctx.createBufferSource(); src.buffer = b; src.playbackRate.value = rate;
     const g = ctx.createGain(); g.gain.value = gain;
     let n = src.connect(g);
     if (pan && ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan; n = n.connect(p); }
-    n.connect(dest); src.start(at, off);
+    n.connect(dest); src.start(Math.max(at, ctx.currentTime), off + (heads.get(b) || 0));
     return true;
   }
   // a looped recording under a level (an ambience): made the first time it is asked for, silent until then
@@ -56,8 +72,11 @@ export function createAudio({ context = null } = {}) {
     if (loops[name] !== undefined) return loops[name];
     if (!has(name)) return null;
     const src = ctx.createBufferSource(); src.buffer = bank[name][0]; src.loop = true;
+    const lp = loopPts[name];
+    if (lp && lp[0] + lp[1] <= src.buffer.duration) { src.loopStart = lp[0]; src.loopEnd = lp[0] + lp[1]; }
     const g = ctx.createGain(); g.gain.value = 0;
-    src.connect(g).connect(master); src.start(ctx.currentTime, Math.random() * src.buffer.duration);
+    src.connect(g).connect(master);
+    src.start(ctx.currentTime, lp ? lp[0] + Math.random() * lp[1] : Math.random() * src.buffer.duration);
     return (loops[name] = g);
   }
   // the music: ten tracks, one to each scene (see the music list); in Watch each is laid where it falls in the film,
@@ -156,8 +175,8 @@ export function createAudio({ context = null } = {}) {
       if (on && score) { score.reset(lastU); lastPhase = null; cueNow = undefined; }
       return on;
     },
-    // (for the offline check: start on the context given, sound on)
-    startOffline() { start(); on = true; },
+    // (for the offline check: start on the context given, sound on, the recordings decoded into it)
+    async startOffline({ bank = true } = {}) { start(); on = true; if (bank) await loadBank(); },
     // Watch on or off: the music laid on the film's own clock, or following the reader
     setWatch(v) { watching = !!v; cueNow = undefined; },
     // u: story position; now: ms; speed: how fast the reader scrolls; wind; m: the engine's metrics
@@ -183,7 +202,7 @@ export function createAudio({ context = null } = {}) {
       roarFilter.frequency.setTargetAtTime(110 + 520 * launch * smooth(47.5, 48.45, u), t, 0.2);
       windFilter.frequency.setTargetAtTime(300 + wind * 380 + cloud * 300, t, 0.5);
       const fire = band(55, 58, 104, 107.5, u) * (1 - band(84.5, 85.5, 91.6, 92.6, u) * 0.6);
-      const fireRec = amb('fire-loop', fire * 0.75, 0.3);
+      const fireRec = amb('fire-loop', fire * 0.45 * (1 - band(79.4, 80.4, 91.6, 92.6, u) * 0.6), 0.3);
       fireGain.gain.setTargetAtTime(fire * (0.05 + 0.03 * Math.sin(now * 0.013)) * (fireRec ? 0.3 : 1), t, 0.2);
       if (fire > 0.1 && Math.random() < (fireRec ? 0.06 : 0.18)) burst(0.05 * fire, 0.05, 2800 + Math.random() * 3000, 1, 'highpass');
       // water: the forest's streams, the camp's; the dell
@@ -195,7 +214,8 @@ export function createAudio({ context = null } = {}) {
       humGain.gain.setTargetAtTime(band(133.4, 136.5, 141.5, 143, u) * (0.016 + smooth(137.7, 140, u) * 0.026) + band(108.8, 109.4, 110.6, 111.6, u) * 0.016, t, 0.6);
       // (no birds in the winters, nor on the morning of the sixth autumn when there was not one track)
       const birdsOn = u < 46.5 || (u > 114.4 && u < 124.5 && !(u > 119.4 && u < 120.4)) || (u > 125.9 && u < 129.4) || (u > 133.5 && u < 140);
-      if (birdsOn && now - lastChirp > 900 + Math.random() * 2500) { lastChirp = now; chirp(t); }
+      const recBirds = (morningA && u < 46.2) || (u > 121.2 && u < 133.6 && !!loopLevel('autumn-loop'));
+      if (birdsOn && !recBirds && now - lastChirp > 900 + Math.random() * 2500) { lastChirp = now; chirp(t); }
       // his footsteps, on his heel strikes
       const st = m.step;
       if (st && st.speed > 0.15 && st.near > 0.02 && hollow < 0.5) {
@@ -205,23 +225,25 @@ export function createAudio({ context = null } = {}) {
         }
         lastPhase = st.phase;
       } else lastPhase = null;
-      for (const [at, s] of STRIKES) if (pass(at)) { if (!play('thunder', { gain: 0.9 * s, rate: 0.95 + Math.random() * 0.1 })) { burst(0.45 * s, 2.6, 160, 0.7); tone(48, 'sine', 0.3 * s, 0.02, 2.2, 0.6); } }
+      for (const [at, s] of STRIKES) if (pass(at)) { if (!play('thunder', { gain: 0.65 * s, rate: 0.95 + Math.random() * 0.1, off: 0.25 })) { burst(0.45 * s, 2.6, 160, 0.7); tone(48, 'sine', 0.3 * s, 0.02, 2.2, 0.6); } }
       // the bell under the gate tolls by itself while the village burns: on the toll of the one that is seen swinging
       // (engine.js), or, with no picture to follow (the soundtrack's own render), every 4.2 s
-      const toll = () => { if (!play('bell', { gain: 0.55 })) bell(); };
+      const toll = () => { if (!play('bell', { gain: 0.4 })) bell(); };
       if (m && m.bellToll != null) { if (m.bellToll !== lastToll) { if (lastToll != null && u > 61 && u < 78) toll(); lastToll = m.bellToll; } }
       else if (u > 61 && u < 76 && now - lastBell > 4200) { lastBell = now; toll(); }
-      if (((u > 62 && u < 66) || (u > 97.5 && u < 103)) && now - lastHowl > 7000) { lastHowl = now; if (!play('wolf-howl', { gain: u > 97 ? 0.35 : 0.5, pan: Math.random() - 0.5 })) howl(u > 97 ? 0.03 : 0.05); }
-      if (pass(72.86)) play('wolf-snarl', { gain: 0.8 });
+      if (((u > 62 && u < 66) || (u > 97.5 && u < 103)) && now - lastHowl > 7000) { lastHowl = now; if (!play('wolf-howl', { gain: u > 97 ? 0.22 : 0.3, pan: Math.random() - 0.5 })) howl(u > 97 ? 0.03 : 0.05); }
+      if (pass(72.86)) play('wolf-snarl', { gain: 0.45 });
       // the heartbeat: in the dark under the glow; at his uncle's side, stopping as the hand falls
       const beat = band(57, 58.5, 61.5, 62.5, u) + band(83, 84, 91.36, 91.42, u);
-      if (beat > 0.2 && now - lastBeat > 850) { lastBeat = now; if (!play('heartbeat', { gain: 0.7 * Math.min(1, beat) })) { tone(52, 'sine', 0.26 * Math.min(1, beat), 0.005, 0.18, 0.7, t); tone(48, 'sine', 0.16 * Math.min(1, beat), 0.005, 0.16, 0.7, t + 0.19); } }
+      if (beat > 0.2 && now - lastBeat > 850) { lastBeat = now; if (!play('heartbeat', { gain: 0.4 * Math.min(1, beat) })) { tone(52, 'sine', 0.26 * Math.min(1, beat), 0.005, 0.18, 0.7, t); tone(48, 'sine', 0.16 * Math.min(1, beat), 0.005, 0.16, 0.7, t + 0.19); } }
+      // (a rooster, once, somewhere down the lanes, as the hamlet is first seen)
+      if (pass(7.6)) play('rooster', { gain: 0.22, pan: -0.35 });
       // the launch: the burst out of the pines; a thud as the eye goes through each sheet of cloud; out into the sun
       if (pass(46.1)) play('hush', { gain: 0.6 });
       if (pass(47.535)) { if (!play('launch', { gain: 0.85 })) { burst(0.3, 1.4, 90, 0.6); tone(38, 'sine', 0.3, 0.02, 1.6, 1.8); } }
       for (const at of [48.21, 48.34, 48.45]) if (pass(at)) { if (!play('cloud-punch', { gain: 0.8, rate: 0.9 + Math.random() * 0.2 })) { burst(0.22, 0.5, 160, 0.6); tone(55, 'sine', 0.22, 0.004, 0.45, 0.7); } }
       // (the dive after the falling light)
-      if (pass(52.5)) play('dive', { gain: 0.75 });
+      if (pass(52.5)) play('dive', { gain: 0.55 });
       if (pass(48.6)) tone(1760, 'sine', 0.022, 0.9, 3.2, 1);
       // the star: its fall, and where it comes down
       if (pass(STAR[0])) tone(1300, 'sine', 0.04, 0.08, 1.4, 0.35);
@@ -230,18 +252,18 @@ export function createAudio({ context = null } = {}) {
       if (pass(92.05)) { if (!play('shimmer', { gain: 0.35, rate: 1.1 })) tone(1760, 'sine', 0.05, 0.003, 1.6, 0.98); }
       // the soul rising; the masks' array on the crag
       if (pass(92.6)) play('shimmer', { gain: 0.45, rate: 0.85 });
-      if (pass(98.6)) play('sect-pulse', { gain: 0.6 });
+      if (pass(98.6)) play('sect-pulse', { gain: 0.35 });
       // his blood on the crystal: it cracks
       if (pass(136.95)) play('crystal-crack', { gain: 0.75 });
-      // the light gathering over the dell
-      if (pass(139.16)) play('gather', { gain: 0.6 });
+      // the light gathering over the dell (its whine ending as the pillar falls)
+      if (pass(139.27)) play('gather', { gain: 0.6 });
       // the last page: the drop of his blood blooming into ink
       if (pass(141.5)) play('ink', { gain: 0.6 });
       if (pass(108.9)) bell(0.75);
       // the slide down into the dell
       if (pass(132.35)) burst(0.3, 0.6, 220, 0.6);
       // the pillar strikes: a crack, the ground's boom under it, and the bell after
-      if (pass(139.44)) { if (!play('pillar', { gain: 1 })) { burst(0.3, 0.3, 3200, 0.7, 'highpass'); burst(0.55, 2.8, 110, 0.7); tone(40, 'sine', 0.5, 0.004, 3.2, 0.55); tone(80, 'triangle', 0.12, 0.004, 1.4, 0.5); } }
+      if (pass(139.44)) { if (!play('pillar', { gain: 1, off: 0.09 })) { burst(0.3, 0.3, 3200, 0.7, 'highpass'); burst(0.55, 2.8, 110, 0.7); tone(40, 'sine', 0.5, 0.004, 3.2, 0.55); tone(80, 'triangle', 0.12, 0.004, 1.4, 0.5); } }
       if (pass(139.52)) bell(1.5);
       if (pass(143.9)) bell(1);
       if (score) score.update(u, t, m);
