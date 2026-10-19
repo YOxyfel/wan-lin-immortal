@@ -11,7 +11,7 @@ import { srgb } from './hero-geo.js';
 import { elderCards, elderStatics } from './hero-hair.js';
 import { buildCharacter, srgbColor } from './hero-char.js';
 import { clamp, lerp, smooth, DEG } from './hero-util.js';
-import { idlePose, reachArm, pointArm } from './hero-pose.js';
+import { idlePose, reachArm, pointArm, patArm } from './hero-pose.js';
 
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const ease = w => w * w * (3 - 2 * w);
@@ -136,11 +136,20 @@ export function createElder() {
     idlePose(K, Pc, c);
     const add = (n, x, y, z) => { eulerQ(qA, x, y, z); Pc.q[I[n]].multiply(qA); };
     add('spine', 4, 0, 0); add('chest', 6, 0, 0); add('neck', 6, 0, 0); add('head', -6, 0, 0);
+    // (leaning in to the boy: from the hips, his weight forward)
+    const ln = ease(clamp(s.lean || 0));
+    if (ln > 0) { add('spine', 7 * ln, 0, 0); add('chest', 5 * ln, 0, 0); add('neck', -6 * ln, 0, 0); add('head', -4 * ln, 0, 0); }
     group.updateWorldMatrix(true, false);
     const hd = ease(clamp(s.hold || 0));
     if (hd > 0 && s.holdTarget) {
       rig.copyPose(Pt, Pc); reachArm(K, Pt, c, group.worldToLocal(_t.copy(s.holdTarget))); K.fingers(Pt, 'R', 'hook');
       rig.blendBones(Pc, Pt, hd, K.armBones.R);
+    }
+    // his left palm on the boy's head, then laid back level over his own: the boy is taller
+    const pa = ease(clamp(s.pat || 0));
+    if (pa > 0 && s.patTarget) {
+      rig.copyPose(Pt, Pc); patArm(K, Pt, c, group.worldToLocal(_t.copy(s.patTarget)), 'L');
+      rig.blendBones(Pc, Pt, pa, K.armBones.L);
     }
     const pt = ease(clamp(s.point || 0));
     if (pt > 0 && s.pointDir) {
@@ -159,7 +168,7 @@ export function createElder() {
       eulerQ(_lq, lp * 0.35, ly * 0.4, 0); Pc.q[I.neck].premultiply(_lq);
       eulerQ(_lq, lp * 0.5, ly * 0.55, 0); Pc.q[I.head].premultiply(_lq);
     }
-    U.uMouth.value = clamp(s.speak) * (0.25 + 0.75 * Math.abs(Math.sin(t * 7.3) * Math.sin(t * 2.1 + 0.5)));
+    U.uMouth.value = Math.max(clamp(s.speak) * (0.25 + 0.75 * Math.abs(Math.sin(t * 7.3) * Math.sin(t * 2.1 + 0.5))), clamp(s.laugh) * (0.35 + 0.25 * Math.abs(Math.sin(t * 9.1))));
     const blink = Math.pow(Math.max(0, Math.sin(t * 0.7) * Math.sin(t * 1.9 + 0.4)), 30);
     // (awake, his eyes creased by the smile and the sun)
     U.uLid.value = clamp(0.3 + blink * 0.7);
@@ -169,7 +178,7 @@ export function createElder() {
     rig.apply(Pc);
     rig.fk(Pc);
   }
-  const defaults = { speak: 0, reach: 0, drop: 0, eyes: 1, reachTarget: null, stand: 0, hold: 0, holdTarget: null, point: 0, pointDir: null, lookAt: null };
+  const defaults = { speak: 0, reach: 0, drop: 0, eyes: 1, reachTarget: null, stand: 0, hold: 0, holdTarget: null, point: 0, pointDir: null, lookAt: null, lean: 0, pat: 0, patTarget: null, laugh: 0 };
   const api = {
     group, rig, bones: {}, uniforms: U, state: st, skinMesh: C.skinMesh, clothMesh: C.clothMesh, hairMesh: C.hairMesh, _K: K,
     anchors: { handR: () => C.anchorPos('handR'), handL: () => C.anchorPos('handL'), head: () => C.anchorPos('head') },

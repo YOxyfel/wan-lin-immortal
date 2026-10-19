@@ -238,6 +238,14 @@ export function createAudio({ context = null } = {}) {
       if (beat > 0.2 && now - lastBeat > 850) { lastBeat = now; if (!play('heartbeat', { gain: 0.4 * Math.min(1, beat) })) { tone(52, 'sine', 0.26 * Math.min(1, beat), 0.005, 0.18, 0.7, t); tone(48, 'sine', 0.16 * Math.min(1, beat), 0.005, 0.16, 0.7, t + 0.19); } }
       // (a rooster, once, somewhere down the lanes, as the hamlet is first seen)
       if (pass(7.6)) play('rooster', { gain: 0.22, pan: -0.35 });
+      // the street's dog: up out of the sun with a bark as he comes down the steps; panting while he scratches its ears;
+      // a small whine when he tells it to go home. That night, by the old man: its tail on the boards as the boy comes
+      // in at the door; a whine as the hand falls
+      if (pass(19.05)) play('dog-bark', { gain: 0.3, pan: -0.15 });
+      if (pass(20.62)) play('dog-pant', { gain: 0.3 });
+      if (pass(33.42)) play('dog-whine-soft', { gain: 0.24 });
+      if (pass(81.72)) { burst(0.09, 0.07, 150, 0.8, 'lowpass', t); burst(0.06, 0.07, 150, 0.8, 'lowpass', t + 0.3); }
+      if (pass(91.62)) play('dog-whine', { gain: 0.3 });
       // the launch: the burst out of the pines; a thud as the eye goes through each sheet of cloud; out into the sun
       if (pass(46.1)) play('hush', { gain: 0.6 });
       if (pass(47.535)) { if (!play('launch', { gain: 0.85 })) { burst(0.3, 1.4, 90, 0.6); tone(38, 'sine', 0.3, 0.02, 1.6, 1.8); } }

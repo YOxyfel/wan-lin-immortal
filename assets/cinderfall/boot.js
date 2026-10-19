@@ -1,6 +1,6 @@
 // Cinderfall prologue: scroll → scroll position su → story position u (held moments stretch it) → world, ink overlay,
 // captions, title and the last page.
-import { TOTAL, TOTAL_U, uToS, sToU, inkCut, inkfx, fx, INK_CUTS, timeRate, PROTECT, PAUSES } from './timeline.js';
+import { TOTAL, TOTAL_U, uToS, sToU, inkCut, inkfx, fx, INK_CUTS, timeRate, PROTECT, PAUSES, memoryAt } from './timeline.js';
 import { CAPS, paceAt, watchPace } from './watch.js';
 import { createInkOverlay, writeGlyph } from './ink.js';
 import { GLYPHS } from './glyphs.js';
@@ -352,7 +352,8 @@ async function boot() {
     if (engine && inView) {
       // hold the cloud while the forest is still being built
       const hold = u > 107.9 && !engine.forest;
-      engine.update(hold ? Math.min(u, 108.25) : u, time, dt * rate);
+      // (in a memory the world is drawn at the moment remembered: timeline.js MEMORY)
+      engine.update(hold ? Math.min(u, 108.25) : memoryAt(u), time, dt * rate);
       renderTimed();
     }
     // ---------------------------------------------------------------- ink overlay

@@ -390,6 +390,15 @@ export function pose(p, kind, t, amt = 1) {
     const osc = Math.sin(ph * 9) * amt;
     K.armFK(P, 'R', 20 * amt, 10 + 145 * amt, 0, 30 * amt + 18 * osc, 0, 0, 30 * amt);
     K.e(P, 'neck', -3, -5, 0);
+  } else if (kind === 'give') {
+    // holding something out in the right hand, palm up, leaning a little to it (amt 0..1)
+    K.armFK(P, 'R', lerp(6, 58, amt), lerp(9, 16, amt), 0, lerp(14, 34, amt), lerp(0, -12, amt), 0, lerp(8, -75, amt));
+    K.e(P, 'spine', 5 * amt, 0, 0).e(P, 'chest', 3 * amt, 0, 0).e(P, 'neck', 4 * amt, 0, 0);
+  } else if (kind === 'laugh') {
+    // a hand on her hip, her head back a little, shaking with it (amt 0..1)
+    const sh = Math.sin(ph * 13) * amt;
+    K.armFK(P, 'L', 20 * amt, 38 * amt, 0, 95 * amt, 0, 0, 40 * amt);
+    K.e(P, 'chest', -4 * amt + sh * 1.2, 0, 0).e(P, 'neck', -10 * amt + sh * 2, 0, 0);
   } else if (kind === 'sit' || kind === 'sitwave') {
     P.rp.y = 0.52;
     legs(88, 86, 86, 90, -4, -2);

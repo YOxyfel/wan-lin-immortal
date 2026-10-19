@@ -371,8 +371,12 @@ export function buildWorld(mats, quality) {
   for (const c of cast.all) root.add(c.root);
   const wolves = Array.from({ length: 6 }, (_, i) => makeWolf(31 + i, i === 0 ? 1.2 : 1));
   for (const w of wolves) root.add(w.root);
+  // Ah Huang, the village dog (engine.js animates it: the morning's bonds; that night, by the old man)
+  const huang = makeWolf(11, 0.42, { dog: true });
+  huang.root.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  root.add(huang.root);
 
-  return { root, anchors, meshes, terrain, grass, stream, river, paddies, waterwheel, cast, wolves, avoid, butterflies };
+  return { root, anchors, meshes, terrain, grass, stream, river, paddies, waterwheel, cast, wolves, huang, avoid, butterflies };
 }
 
 // where the uncle sits by day: a bench against the front wall under the window, right of the door (house-local x,

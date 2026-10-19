@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { proportions, eulerQ } from './hero-rig.js';
 import { styleFor, HERO_HEAD } from './hero-body.js';
 import { wuhenCards } from './hero-hair.js';
-import { idlePose, gaitPose, crouchPose, kneelPose, sitPose, pushupPose, drawPose, fallPose, liePose, getUpKey, waveArm, reachArm, reachArmL, holdArms, holdUpArm, carveArms, palmArm, measureArm } from './hero-pose.js';
+import { idlePose, gaitPose, crouchPose, kneelPose, sitPose, pushupPose, drawPose, fallPose, liePose, getUpKey, waveArm, reachArm, reachArmL, holdArms, holdUpArm, carveArms, palmArm, measureArm, patArm } from './hero-pose.js';
 import { buildCharacter } from './hero-char.js';
 import { clamp, lerp, smooth, DEG } from './hero-util.js';
 
@@ -24,7 +24,7 @@ export function createHero({ age = 0 } = {}) {
   });
   const { group, rig, K, U, Pc, Pt, Pi, st, contactMin, setAge } = C;
   // ---------------------------------------------------------------- update
-  const defaults = { speed: 0, run: 0, wave: 0, crouch: 0, kneel: 0, reach: 0, grief: 0, draw: 0, release: 0, fall: 0, lie: 0, getUp: 0, sit: 0, pushup: 0, hold: 0, holdWidth: 0, lookAt: null, lookW: 1, wind: null, gripL: null, gripR: null, raise: 0, raiseTarget: null, lookUp: 0, carve: 0, carveTarget: null, carveMode: null, braceTarget: null, palm: 0, palmTarget: null, measure: 0, measureTarget: null, measureSlide: 0, reachL: 0, reachLTarget: null, lift: 0, lean: 0 };
+  const defaults = { speed: 0, run: 0, wave: 0, crouch: 0, kneel: 0, reach: 0, grief: 0, draw: 0, release: 0, fall: 0, lie: 0, getUp: 0, sit: 0, pushup: 0, hold: 0, holdWidth: 0, lookAt: null, lookW: 1, wind: null, gripL: null, gripR: null, raise: 0, raiseTarget: null, lookUp: 0, carve: 0, carveTarget: null, carveMode: null, braceTarget: null, palm: 0, palmTarget: null, measure: 0, measureTarget: null, measureSlide: 0, reachL: 0, reachLTarget: null, lift: 0, lean: 0, pat: 0, patTarget: null };
   const _look = V(), _hp = V(), _lq = new THREE.Quaternion(), _lnQ = new THREE.Quaternion(), _cvK = V(), _cvB = V(), _cvP = V(), _cvM = V();
   function computePose(dt, time, s) {
     const d = K.dims();
@@ -99,6 +99,12 @@ export function createHero({ age = 0 } = {}) {
     if (pm > 0 && s.palmTarget) {
       group.updateWorldMatrix(true, false);
       rig.copyPose(Pt, Pc); palmArm(K, Pt, c, group.worldToLocal(_cvP.copy(s.palmTarget))); rig.blendBones(Pc, Pt, ease(pm), K.armBones.R);
+    }
+    // his right palm laid on something (the dog's head, its ears)
+    const pt = clamp(s.pat || 0);
+    if (pt > 0 && s.patTarget) {
+      group.updateWorldMatrix(true, false);
+      rig.copyPose(Pt, Pc); patArm(K, Pt, c, group.worldToLocal(_cvP.copy(s.patTarget)), 'R'); rig.blendBones(Pc, Pt, ease(pt), K.armBones.R);
     }
     const hd = clamp(s.hold || 0);
     if (hd > 0) { rig.copyPose(Pt, Pc); holdArms(K, Pt, c); rig.blendBones(Pc, Pt, ease(hd), [...K.armBones.L, ...K.armBones.R]); }

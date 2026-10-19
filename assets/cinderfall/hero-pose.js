@@ -551,6 +551,21 @@ export function measureArm(K, P, c, target, slide = 0) {
   return P;
 }
 
+// a palm laid down flat on top of something before him (a head: his uncle's hand on the boy's; the boy's on the dog's),
+// fingers forward and a little in. s: 'R' | 'L'; target: the palm's centre (group space)
+export function patArm(K, P, c, target, s = 'R') {
+  const r = K.rig, m = s === 'L' ? 1 : -1;
+  r.fk(P);
+  const yaw = yawOf(r.wq[K.I.chest]);
+  const fwd = V(Math.sin(yaw), 0, Math.cos(yaw)), left = V(Math.cos(yaw), 0, -Math.sin(yaw));
+  const fd = fwd.clone().addScaledVector(left, -0.3 * m).normalize();
+  K.e(P, 'clavicle' + s, 0, 9 * m, -11 * m);
+  // (the elbow out to that side and a little up)
+  K.arm(P, s, target, V(m, 0.3, -0.2), fd, V(0, -1, 0), 0.5);
+  K.fingers(P, s, 'flat');
+  return P;
+}
+
 // the right palm laid flat on something before him, fingers up
 export function palmArm(K, P, c, target) {
   const r = K.rig;

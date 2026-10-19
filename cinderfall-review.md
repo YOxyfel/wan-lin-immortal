@@ -712,3 +712,45 @@ all, underplaying its value"; the clashes sounding like a weaponsmith; the music
 - **The balance**: the whole film's sound rendered along Watch, with and without the recordings, and compared moment
   by moment. The recordings sit 0-4 dB over the made sounds they replace; the fire, the heartbeat, the wolves, the
   bell, the sect's pulse and the dive were brought down to sit under the score, and the fire drops inside the house.
+
+## Round 13: the morning's bonds, and what comes of them (19 October 2026)
+
+The reviewer: some cuts on the walk out of the village and on the run back to it were abrupt; the walk out wanted
+intimacy (going up to his uncle, a pet, petting it, talking: the peace of the place, its people, something to be
+attached to); and the reveal of the village on fire was long for so little built up before it. Every moment to be at
+its peak.
+
+- **The measure** (`bonds.js`, `hero-elder.js`, `hero-pose.js`): the crane comes down to the two of them at the door,
+  the marks of his height on the door post beside them. His uncle lays a palm on his head, draws it back level over his
+  own, looks up at it and laughs: "Taller than me, now." Then the close on the old man's face, the basket, the sun.
+- **Huang, the street's dog** (`wolf.js`, `world.js`, `bonds.js`): a small sandy dog with a curled tail, built from the
+  wolf's rig and sharing its shader program (sit, lie, trot, wag, sniff; a head that turns to look). It dozes in the sun
+  at the foot of his uncle's steps, is up with a bark as he comes down, and sits at his feet to be scratched behind the
+  ears (over his shoulder, its face turned up into his hand); it goes up the street with him and off after the children
+  in their game.
+- **The bun** (`bonds.js`, `village-life.js`, `people3d.js`): Auntie Mei holds a bun out over her terrace's edge ("One
+  for the road. Not for that dog."); he takes it and bows to give it to the dog sat at his feet; she laughs, a hand on
+  her hip. The cart man no longer waves, and the boy no longer waves at him.
+- **The gate**: the garrison going out ahead of him ("No one asked why."); the dog trots round in front of him and sits
+  down in his way, wanting to come; he kneels to it, a hand on its head ("Go home. Watch the old man for me."), steps
+  round it, and goes out under the gate alone; low behind the dog, it sits and watches him go.
+- **The cuts on the walk out**: each beat is a take of its own (over his shoulder at the door, round after him down the
+  steps, over his shoulder to the dog, the long lens up the street, the stall cut to directly, in after him at the bun
+  stall, the long lens to the gate, over his shoulder to the dog, the dog's own height), cut on what he does: as he
+  crouches, as the dog bolts, as he kneels and as he gets up. No more the same framing with the scenery jumping
+  under him.
+- **The run home, cut on the bolts** (`bonds.js`): behind him from the pines; high behind his right shoulder, small on
+  the road across the dark fields with the fire at its end; low behind his left heel, the road pouring under the lens;
+  the gate from where the dog sat, a wolf standing there now, snarling as he comes in through the burning gate; close
+  at his left side down the burning street; the long lens to the house. Each cut lands on a bolt's flash.
+- **The payoffs**: the wolf at the gate stands where the dog sat and faces the way it faced (`village-life.js`); in the
+  house the dog is lying by the old man, between him and the door. Its head comes up at the boy in the doorway and its
+  tail thumps the boards; it lies with its head on its paws while the old man speaks, lifts it and whines as his hand
+  falls, and its eyes follow the light up out of him. As "Uncle." is written over the burning, the morning cuts in for
+  a moment in all its colour: the old man laughing, his hand held level over his own head (`timeline.js` MEMORY, drawn by
+  `boot.js`).
+- **The reveal, shorter**: from the strike to the run, 56 s of Watch became 37: two of the lines between them are gone
+  ("Day turned to night in a single breath.", "Then, below —") and the light's is written in quicker.
+- **Sound** (`audio.js`, `assets/cinderfall/audio/sfx/`): the dog's bark, its panting, two whines (ElevenLabs: six takes,
+  four kept); its tail on the boards is made.
+- **Watch** runs 7:20; the morning, from the crane to the gate, is 69 s of it.

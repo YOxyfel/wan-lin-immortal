@@ -6,11 +6,14 @@ import { roadX, heightAt } from './layout.js';
 import { mcZ } from './timeline.js';
 import { pose } from './people3d.js';
 import { poseWolf } from './wolf.js';
+import { DOG_GATE_AT } from './bonds.js';
 import { clamp, lerp, smooth, band } from './util.js';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 // ground covered per unit of the pose clocks (people3d / beasts): one walk cycle ~1.4 m, a run ~3.2 m, a gallop ~4.5 m
 const WALK_M = 1.2, RUN_M = 4.8, GALLOP_M = 6.8, PROWL_M = 0.66;
+// (where the bun seller stands to hand him one, at the edge of her terrace: engine.js BUN)
+export const BUN_SELLER = { x: -4.1, z: -8.0 };
 
 export function createVillageLife(world) {
   const A = world.anchors, H = A.houses, cast = world.cast, W = world.wolves;
@@ -114,9 +117,10 @@ export function createVillageLife(world) {
   }
   // the one that chases her across the street: out of the gap beside his uncle's house, into the gap opposite
   const CHASE = path([[roadX(35.6) + 15, 35.8], [roadX(35.4) + 7, 35.4], lane(33.6, 1.5), lane(31.6, -3.0), [roadX(31.0) - 9, 30.9], [roadX(30.8) - 17, 30.8]]);
-  // the one at the gate: prowls in from the guard post, then stands its ground, snarling at him
-  const g = A.gate.center;
-  const PROWL = path([[g.x + 2.4, g.z + 16], [g.x + 2.9, g.z + 11], [g.x + 3.2, g.z + 6.5]]);
+  // the one at the gate: prowls in from the guard post, then stands its ground where the dog sat that morning, snarling
+  // at him as he comes in through the gate (bonds.js)
+  const g = A.gate.center, dg = DOG_GATE_AT();
+  const PROWL = path([[g.x + 2.4, g.z + 16], [g.x + 2.9, g.z + 11], [dg.x, dg.z]]);
 
   // ---------------------------------------------------------------- helpers
   const castFrustum = new THREE.Frustum(), castPM = new THREE.Matrix4(), castSph = new THREE.Sphere(V3(), 1.3);
@@ -158,12 +162,17 @@ export function createVillageLife(world) {
           stand(c, x, z, Math.atan2(-Math.sin(a) * rx, Math.cos(a) * rz));
           const dist = a * (rx + rz) * 0.5;
           poseSeen(c, 'run', dist / (RUN_M * 0.6));
+        } else if (c.role === 'seller' && u > 27.9 && u < 31.4) {
+          // (at the edge of her terrace, a bun held out to him across it; her hand to her hip, laughing, when he gives it
+          // to the dog) see engine.js BUN
+          stand(c, BUN_SELLER.x, BUN_SELLER.z, Math.PI / 2);
+          const give = band(28.75, 29.05, 29.45, 29.75, u), laugh = band(30.05, 30.35, 31.0, 31.4, u);
+          if (laugh > 0.02) poseSeen(c, 'laugh', time, laugh); else poseSeen(c, 'give', time, give);
         } else if (c.role === 'cartman') {
-          // up the street toward the gate's end of town, unhurried, a hand raised to the boy as they pass
+          // up the street from the gate's end of town, unhurried
           const z0 = -34, z1 = -6, k = smooth(24, 34, u), zz = lerp(z0, z1, k);
           stand(c, roadX(zz) - 1.9, zz, Math.atan2(roadX(zz + 0.5) - roadX(zz - 0.5), 1));
-          const wv = band(29.4, 29.9, 30.7, 31.2, u);
-          poseSeen(c, wv > 0.4 ? 'wave' : 'walk', (zz - z0) / WALK_M, wv);
+          poseSeen(c, 'walk', (zz - z0) / WALK_M);
         } else if (c.role === 'soldier') {
           // (once he speeds up along the road the column keeps pace: through the gate and off east along the track
           // before he reaches the turning, so he never walks through it)
@@ -255,5 +264,8 @@ export function createVillageLife(world) {
     }
   }
 
-  return { update, groundY, FLEE, ROOF_RUN, roofAt };
+  // (where a villager's right hand is, for what they hold: the bun)
+  const _hand = V3();
+  const handR = c => { const S = c.person._; const b = S.rig.bones[S.rig.idx.handR]; b.updateWorldMatrix(true, false); return _hand.setFromMatrixPosition(b.matrixWorld).clone(); };
+  return { update, groundY, FLEE, ROOF_RUN, roofAt, handR };
 }

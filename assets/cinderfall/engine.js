@@ -16,6 +16,7 @@ import { createQi, createOrb } from './qi.js';
 import { createBurst } from './burst.js';
 import { createGoldTrail } from './trail.js';
 import { createVillageLife } from './village-life.js';
+import { createBonds } from './bonds.js';
 import { createPetalGust } from './petal-gust.js';
 import { WAKE } from './decor.js';
 import { createBirdBurst } from './bird-burst.js';
@@ -683,7 +684,8 @@ export async function createEngine(canvas) {
   // the cut in on the wolf at the gate as he comes through it
   // the cut in on the burning blade at the smith's (see the camera)
   const SMITH_IN = [26.3, 26.76];
-  const WOLF_IN = [72.86, 73.06];
+  // (held until he is past it: running in at the lens, his face would be seen)
+  const WOLF_IN = [72.86, 73.28];
   // the cut to the room from inside it, from the prints at the door until he kneels (see the camera)
   const REVERSE = [80.98, 83.5];
   // the cut in on their hands as the old man's falls, the tear (see the camera)
@@ -814,19 +816,29 @@ export async function createEngine(canvas) {
   const BASKET_TOP = V3(6.08, PLAT + 0.98, 43.84);
   // (where he points: up at the morning sun, on his left as he faces the street)
   const SUN_UP = V3(-0.25, 0.62, 0.74).normalize();
-  // (the shots: over the boy's shoulder on his uncle's face, slowly in; close on the hands at the handle; wider over his
-  // shoulder as the old man points at the sun (a little to the right of him, so the 福 on the door leaf is not on his
-  // head); back as the boy turns and goes) [u, lens, look, fov]
+  // (the shots: the crane comes down to the two of them at the door, behind the boy's right shoulder, his uncle's face
+  // turned to him, the marks of his height on the door post beside them, while the old man's hand measures him; cut in
+  // over his shoulder on the old man's face (the only face the film holds on), slowly in; close on the hands at the
+  // handle; wider over his shoulder as the old man points at the sun (a little to the right of him, so the 福 on the
+  // door leaf is not on his head); round after the boy as he goes down the steps to the dog in the street, until he
+  // crouches to it (bonds.js has the next shot)) [u, lens, look, fov]
   const MORNING_SHOTS = [
-    [[9.6, V3(1.8, 3.4, 40.2), V3(6.0, 2.3, 44.2), 44], [12.6, V3(2.4, 3.05, 40.9), V3(6.0, 2.35, 44.15), 42], [13.3, V3(4.58, 2.8, 44.52), V3(6.52, 2.64, 44.0), 30], [15.45, V3(4.8, 2.76, 44.42), V3(6.52, 2.63, 44.0), 26]],
+    [[9.6, V3(-0.4, 8.0, 56.0), V3(5.6, 2.3, 44.4), 44], [11.3, V3(0.7, 3.5, 49.0), V3(6.0, 2.45, 44.1), 39], [12.6, V3(3.6, 2.85, 47.0), V3(6.03, 2.52, 44.06), 36], [13.95, V3(4.6, 2.75, 46.2), V3(6.05, 2.55, 44.05), 34]],
+    [[13.95, V3(4.58, 2.8, 44.52), V3(6.45, 2.64, 44.0), 30], [15.45, V3(4.8, 2.76, 44.42), V3(6.5, 2.63, 44.0), 26]],
     [[15.45, V3(5.96, 2.3, 42.9), BASKET_TOP.clone().add(V3(0, 0.07, 0)), 35], [16.6, V3(5.96, 2.26, 43.0), BASKET_TOP.clone().add(V3(-0.12, -0.02, 0)), 36]],
-    [[16.6, V3(4.15, 2.92, 45.15), V3(6.35, 2.65, 44.0), 36], [18.15, V3(4.25, 2.9, 45.1), V3(6.3, 2.68, 44.0), 35], [18.8, V3(3.4, 2.8, 46.3), V3(4.6, 1.8, 43.2), 42], [19.6, V3(2.4, 2.75, 45.6), V3(1.2, 1.5, 38.0), 46]],
+    [[16.6, V3(4.15, 2.92, 45.15), V3(6.35, 2.65, 44.0), 36], [18.15, V3(4.25, 2.9, 45.1), V3(6.3, 2.68, 44.0), 35], [18.8, V3(3.4, 2.8, 46.3), V3(4.6, 1.8, 43.2), 42], [19.6, V3(2.4, 2.75, 45.6), V3(1.2, 1.4, 38.5), 44], [20.25, V3(1.85, 2.3, 44.9), V3(0.75, 0.6, 40.6), 40]],
   ];
   const morningShot = (() => {
     const shots = MORNING_SHOTS.map(keys => ({ u0: keys[0][0], u1: keys[keys.length - 1][0], pos: new THREE.CatmullRomCurve3(keys.map(k => k[1]), false, 'centripetal'), look: new THREE.CatmullRomCurve3(keys.map(k => k[2]), false, 'centripetal'), t: monoKeys(keys.map((k, i) => [k[0], i / (keys.length - 1)])), fov: monoKeys(keys.map(k => [k[0], k[3]])) }));
     const out = { pos: V3(), look: V3(), fov: 46 };
     return u => { let s = shots[0]; for (const x of shots) if (u >= x.u0) s = x; const t = clamp(s.t(u)); s.pos.getPoint(t, out.pos); s.look.getPoint(t, out.look); out.fov = s.fov(u); return out; };
   })();
+  // the morning's bonds: his uncle's hand measuring him, the dog, the bun, the dog sent home at the gate; that night the
+  // wolf where the dog sat, the dog by the old man (bonds.js)
+  const bonds = createBonds({ world, life: () => life, valleyP, valleyHeading, groundY: (x, z) => life.groundY(x, z) });
+  // that night the dog is lying by the old man, between him and the door, its nose to the door (bonds.js)
+  const dogNight = { p: UH.local(-0.3, 0, 2.0).setY(0), yaw: Math.atan2(UH.door.x - UH.center.x, UH.door.z - UH.center.z),
+    boy: () => (wuhen && wuhen.group.visible ? wuhen.anchors.head() : UH.door.clone().add(V3(0, 1.5, 0))), old: () => (elder ? elder.anchors.head() : UH.uncleSpot.clone()), soul: () => soulP.clone() };
   // the basket: in his uncle's hand, then the boy's (his left takes the handle beside the old man's right)
   const uncleBasket = held.clone(true);
   uncleBasket.visible = false;
@@ -909,6 +921,7 @@ export async function createEngine(canvas) {
       const T = A.stall.clone().lerp(P, 0.62);
       P.lerp(T.setY(P.y), sk * 0.5);
     }
+    bonds.feet(u, P, mo);
     const pb = porchBlend(u);
     if (pb > 0) {
       const door = UH.door.clone();
@@ -939,6 +952,7 @@ export async function createEngine(canvas) {
     if (A.stall && stallK(u) > 0) turnTo(h, A.stall.clone().sub(P).setY(0).normalize(), smooth(25.6, 26.3, u) * (1 - smooth(27.3, 27.9, u)) * 0.75);
     const pb = porchBlend(u);
     if (pb > 0.05) turnTo(h, UH.center.clone().sub(P).setY(0).normalize(), Math.min(1, pb * 1.6));
+    bonds.heading(u, P, h, turnTo);
     // (in the morning, to his uncle at the door; then round to the street)
     const mo = morningK(u);
     if (mo > 0) turnTo(h, V3(1, 0, 0), smooth(0.35, 1, mo));
@@ -953,10 +967,9 @@ export async function createEngine(canvas) {
     const looks = [
       [band(9.6, 11.0, 18.1, 18.6, u), () => (elder && elder.group.visible ? elder.anchors.head() : UNCLE_AT.clone().add(V3(0, 1.52, 0)))],
       [band(16.62, 16.85, 17.75, 18.0, u) * 0.6, () => BOY_AT.clone().addScaledVector(SUN_UP, 30)],
-      [band(19.4, 20.4, 21.6, 22.6, u), () => at(C.laundry, 1.45)],
+      ...bonds.looks(u),
       [band(22.6, 23.6, 24.4, 25.4, u), () => at(C.kids[0], 0.85)],
       [band(25.3, 26.0, 27.4, 28.0, u), () => (A.stall ? A.stall.clone() : at(C.smith, 1.5))],
-      [band(28.8, 29.6, 30.8, 31.6, u), () => at(C.cartMan, 1.5)],
       [band(43.7, 44.2, 44.8, 45.15, u), () => mushPick.clone()],
       // the one he picked, held up before his eyes
       [band(44.95, 45.3, 45.75, 46.05, u), () => mushRaise(u, P, valleyHeading(u, P)).add(V3(0, 0.07, 0))],
@@ -1704,8 +1717,11 @@ export async function createEngine(canvas) {
       const e = getElder();
       if (e.mode !== 'morning') { if (!e.night) e.night = { p: e.group.position.clone(), q: e.group.quaternion.clone(), s: e.group.scale.clone() }; e.group.position.copy(UNCLE_AT); e.group.rotation.set(0, -Math.PI / 2, 0); e.group.scale.set(1, 1, 1); e.stale = true; }
       const give = smooth(16.12, 16.24, u);
+      const boyHead = wuhen && wuhen.group.visible ? wuhen.anchors.head() : BOY_AT.clone().add(V3(0, 1.58, 0));
       const es = { stand: 1, hold: (1 - give) * smooth(9.0, 9.5, u), holdTarget: BASKET_TOP.clone().add(V3(0.06, 0, 0)), point: band(16.65, 16.95, 17.75, 18.05, u), pointDir: SUN_UP,
-        lookAt: wuhen && wuhen.group.visible ? wuhen.anchors.head() : BOY_AT.clone().add(V3(0, 1.58, 0)), speak: band(15.6, 15.8, 17.85, 18.0, u) * 0.8, wind: windV };
+        lookAt: boyHead.clone(), speak: band(15.6, 15.8, 17.85, 18.0, u) * 0.8, wind: windV };
+      // (his hand on the boy's head, drawn back over his own: bonds.js)
+      bonds.elder(u, es, e, wuhen && wuhen.group.visible ? boyHead : null);
       driveHero(e, true, dt, time, es, jumped || e.mode !== 'morning');
       e.mode = 'morning';
       // (the basket in his hand until the boy has it)
@@ -1732,6 +1748,8 @@ export async function createEngine(canvas) {
     }
     // (where the light is, before anyone looks at it)
     soulAt(u, soulP);
+    // the dog, before him: his hand goes to its head, his eyes to it; that night, by the old man
+    bonds.updateDog(u, time, inB, dogNight);
     if (!inB) {
       P = valleyP(u);
       heading = valleyHeading(u, P);
@@ -1739,10 +1757,9 @@ export async function createEngine(canvas) {
       const moved = P.distanceTo(wPrev || P);
       speed = scrub ? Math.min(6, valleyP(u + 0.05).distanceTo(valleyP(u - 0.05)) / 0.1 * 0.6) : moved > 1.2 ? lastSpeed : Math.min(6, moved / dt);
       // (a jog down off the porch into the street, eager to be off; the run home; the rush to his uncle)
-      run = Math.max(band(18.35, 18.8, 19.7, 20.3, u) * 0.45, band(65.5, 66.5, 78.6, 79.6, u), band(82.6, 82.8, 83.4, 83.6, u) * 0.7);
-      kneel = kneelK(u);
+      run = Math.max(band(18.35, 18.8, 19.5, 19.95, u) * 0.45, band(65.5, 66.5, 78.6, 79.6, u), band(82.6, 82.8, 83.4, 83.6, u) * 0.7);
+      kneel = Math.max(kneelK(u), bonds.kneel(u));
       reach = smooth(84.6, 85.8, u) * (1 - handDrop(u) * 0.6);
-      wave = band(29.3, 29.8, 30.6, 31.1, u) * 0.85;
       // (in the morning his left hand goes to the basket's handle beside his uncle's)
       hs.reachL = band(15.72, 15.98, 16.2, 16.5, u);
       hs.reachLTarget = BASKET_TOP.clone().add(V3(-0.07, 0, 0));
@@ -1760,6 +1777,8 @@ export async function createEngine(canvas) {
       // the last words, then the hand drops
       hs.grief = Math.max(band(84.4, 85.4, 91.4, 92.4, u) * 0.3, handDrop(u) * (1 - 0.65 * smooth(92.7, 93.7, u)));
       hs.gripL = u < 65.6 ? 'hook' : null;
+      // (the dog scratched behind the ears; the bun taken and given; bonds.js)
+      if (u < 36) bonds.hero(u, time, hs);
       const lk = valleyLook(u, P);
       if (lk) { hs.lookAt = lk[0]; hs.lookW = lk[1]; }
       if (wuhen) { wuhen.setAge(0); wuhen.setFade(1); }
@@ -1842,11 +1861,10 @@ export async function createEngine(canvas) {
     let look = P.clone().addScaledVector(heading, lerp(9, 16, lng)).add(V3(0, lerp(lerp(1.42, 1.25, run), 1.32, lng), 0)).addScaledVector(right, -0.4 * (1 - portrait) * (1 - lng));
     if (!inB) {
       const greet = (who, a, b, c, d, w = 0.35) => { const k2 = band(a, b, c, d, u) * w; if (k2 > 0 && who) look.lerp(who.clone().add(V3(0, 1.3, 0)), k2); };
-      greet(world.cast.laundry.root.position, 19.4, 20.4, 21.6, 22.6, 0.3);
       greet(world.cast.kids[0].root.position, 22.6, 23.6, 24.4, 25.4, 0.25);
       // the smith's stall: his eyes go to the weapons; the camera comes round close behind his shoulder to see them
       // with him: the sword on its stand, the wall of blades behind it
-      const sk = band(25.35, 26.15, 27.35, 28.05, u);
+      const sk = band(25.35, 25.3501, 27.35, 28.05, u);
       if (sk > 0 && A.stall) {
         const toS = (legend || A.stall).clone().sub(P).setY(0).normalize();
         const camS = P.clone().addScaledVector(toS, -0.95).add(V3(-toS.z, 0, toS.x).multiplyScalar(0.72)).add(V3(0, 1.52, 0));
@@ -1855,7 +1873,6 @@ export async function createEngine(canvas) {
         if (A.stallWall) lk.lerp(A.stallWall, 0.32);
         look.lerp(lk, sk);
       }
-      greet(world.cast.cartMan.root.position, 28.8, 29.6, 30.8, 31.6, 0.3);
       // at the door his eyes go down first, to the prints over the sill and in (then the cut to the room, REVERSE)
       const thr = band(80.3, 80.75, 80.9, 81.0, u);
       if (thr > 0) look.lerp(L(0.5, 0.05, 3.7), thr * 0.85);
@@ -1948,17 +1965,14 @@ export async function createEngine(canvas) {
       pos.copy(debug.burn ? V3(...debug.burn.pos) : BURN.pos).lerp(debug.burn ? V3(...debug.burn.pos2) : BURN.pos2, t);
       look.copy(debug.burn ? V3(...debug.burn.look) : BURN.look);
     }
-    // the run home is the morning rewound: at the gate the lens is just inside it, where it stood that morning as he
-    // went out under it, looking out the same way; now he comes at it out of the dark through the burning gate, the wolf
-    // at the gate snarling as he goes by (cut in; cut to behind him as he reaches the lens)
-    const grw = inB ? 0 : band(72.5, 72.505, 73.28, 73.285, u);
-    if (grw > 0) {
-      const k = smooth(72.5, 73.28, u);
-      const cp = V3(0.3, 1.59, -30.1).lerp(V3(0.28, 1.52, -28.8), k);
-      pos.lerp(cp, grw); look.lerp(cp.clone().add(V3(0.02, -0.01 - 0.035 * k, -1)), grw);
-    }
+    // the morning's bonds, each a take of its own (bonds.js): the dog at the foot of the steps; the bun; the dog in his
+    // way at the gate, and watching him go. And the run home is the morning rewound: at the gate the lens is low where
+    // the dog sat that morning, looking out the way it watched him go; now he comes at it out of the dark through the
+    // burning gate, and a wolf stands there, snarling as he goes by (cut in; cut to behind him as he reaches the lens)
+    const bs = inB ? null : bonds.shot(u, time);
+    if (bs) { pos.copy(bs.pos); look.copy(bs.look); }
     // (cut in on the wolf waiting inside the gate, from where he is running at it: its head, snarling, the violet eyes,
-    // the crimson breath at its fangs; cut back as he reaches it)
+    // the crimson breath at its fangs; held as he goes by it, then cut to behind him in the street)
     const wolfIn = !inB && u > WOLF_IN[0] && u < WOLF_IN[1] && world.wolves[2] && world.wolves[2].root.visible;
     if (wolfIn) {
       const w2 = world.wolves[2];
@@ -2093,7 +2107,7 @@ export async function createEngine(canvas) {
     if (stormRoll && !debug.cam) camera.rotateZ(stormRoll);
     // (on a phone the rise keeps a little of its width while it is still in the room, so the light fits the frame)
     // (the forest's shots may keep their own focal lengths)
-    const fov0 = wordsWide ? 48 : burnIn ? lerp(...(debug.burn ? debug.burn.fov : BURN.fov), smooth(BURN_IN[0], BURN_IN[1], u)) : bShot && bShot.fovW > 0 ? lerp(cam.fov(u), bShot.fov, bShot.fovW) : mShot ? lerp(cam.fov(u), mShot.fov, mnw) : grw > 0 ? lerp(cam.fov(u), wolfIn ? 44 : 29, grw) : cam.fov(u);
+    const fov0 = wordsWide ? 48 : burnIn ? lerp(...(debug.burn ? debug.burn.fov : BURN.fov), smooth(BURN_IN[0], BURN_IN[1], u)) : bShot && bShot.fovW > 0 ? lerp(cam.fov(u), bShot.fov, bShot.fovW) : wolfIn ? 44 : bs ? bs.fov : mShot ? lerp(cam.fov(u), mShot.fov, mnw) : cam.fov(u);
     camera.fov = lerp(fov0, stormFov, stw) + portrait * 12 * (1 - zoomK) * (1 - rw * (1 - 0.7 * band(92.0, 92.6, 94.8, 95.6, u))) * (1 - gw) + portrait * 14 * fcw;
     // (at the stall the lens narrows on the weapons)
     if (!inB) camera.fov = lerp(camera.fov, 33 + portrait * 10, band(25.45, 26.25, 27.3, 28.0, u) * 0.85);
@@ -2181,6 +2195,7 @@ export async function createEngine(canvas) {
       h.uniforms.uKK.value.x = 0.34 * kk; h.uniforms.uKK.value.z = 0.32 * kk;
       if (!inB) h.setAge(0);
       driveHero(h, wShow, dt, time, { speed, wave, run, kneel, reach, draw, lie, ...hs }, jumped);
+      if (!inB) bonds.updateBun(u, h.group.visible ? h.anchors.handR() : null);
       // (his gait, for his footsteps: the left heel strikes at phase 0, the right at 0.5; near: how close the lens is to
       // where he is this frame — his head's anchor is still where the last frame left it, a world away on a cut)
       if (h.group.visible && h.state.lastState) metrics.step = { phase: h.state.phase, speed: Math.max(0, h.state.lastState.speed || 0), run: h.state.lastState.run || 0, near: clamp(1 - (camera.position.distanceTo(P) - 3) / 30) };
