@@ -20,7 +20,7 @@ node tools/verify/serve.cjs 8081 node tools/verify/strip.cjs OUTDIR war 960 540 
 | Tool | What it does |
 | --- | --- |
 | `serve.cjs PORT CMD …` | Serves the repo (with the pages' import map) while `CMD` runs; gives it `SITE`. |
-| `strip.cjs OUT TAG W H FPS T0 T1 …` | Frames at the film's own speed between Watch times; strikes the run home's ground bolts (debug mode turns scripted strikes off). |
+| `strip.cjs OUT TAG W H FPS T0 T1 …` | Frames at the film's own speed between Watch times, on the story's own clock (slowed where `SLOWMO` slows it, so a blow's stop holds its impact frame as the film does); strikes the run home's ground bolts (debug mode turns scripted strikes off). |
 | `sheet.py OUT.jpg COLS SCALE frames…` | Contact sheet, each frame labelled with `u` and its Watch time. |
 | `cutscan.cjs U0 U1 OUT.json` + `cutrules.py OUT.json` | Every frame's lens, his place and face, the dog, the white of the page; then the cut rules (below). |
 | `allcheck.sh TAG [PORT]` | `cutscan` + `cutrules` over every passage that has been cut-checked: the morning and walk, the fight, the run home. |

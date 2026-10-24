@@ -37,11 +37,25 @@ export const STRETCHES = [[47.42, 0.05, 0.3], [47.47, 0.065, 0.12], [47.535, 0.4
   // gathering his fury while the storm pours into him; letting it go, the blade sweeping down the sky; the storm's blade
   // on the bell, its shattering, his fall (war.js FURY)
   // (the sweep, from afar, slower still: in under half a second the greatest blow of the fight was a stick turning over)
-  [52.12, 0.12, 0.7], [52.24, 0.12, 0.23], [52.36, 0.025, 0.2], [52.385, 0.045, 0.12], [52.43, 0.04, 0.17],
+  [52.12, 0.12, 0.7], [52.24, 0.107, 0.23], [52.347, 0.002, 0.05], [52.349, 0.011, 0.23], [52.36, 0.025, 0.2], [52.385, 0.045, 0.12],
+  // (the gold one smashed down out of the bell no faster than the lens can tip after him: at twice his old speed it
+  // whipped down at 122 degrees a second)
+  [52.43, 0.015, 0.17], [52.445, 0.0025, 0.05], [52.4475, 0.0225, 0.28],
   // (and before it, the great sword's swing down the sky as the crescent is born out of it: at full pace it crossed the
   // frame in two frames; and the crescent split on the glaive, its halves going apart past him either side: at full
   // pace they were out of the frame in a frame or two, and he seemed to have swallowed it)
-  [50.715, 0.035, 0.3], [50.945, 0.03, 0.35],
+  [50.715, 0.035, 0.3], [50.92, 0.03, 0.4], [50.95, 0.0012, 0.05], [50.9512, 0.0238, 0.35],
+  // each blow that lands is felt: time draws out over the last of the way in, stops dead on the blow for a breath (its
+  // impact frame held, the lens knocked off true by it), and what it throws goes off at speed: the meeting of the two
+  // lights; the crescent on the glaive; the bell hammered by the storm and shattering; the dash into the lock, the stop
+  // on the cut in close to it; the lock's burst, the masked one flung back out of it; the storm let go out of him; the
+  // bell shattered, the gold one smashed down out of it
+  // (at the fight's own pace every blow went by as it would in any footage, no weight to any of them, each meeting a
+  // single frame)
+  [50.19, 0.045, 0.5], [50.235, 0.015, 0.3], [50.25, 0.0015, 0.05], [50.2515, 0.0135, 0.8],
+  [51.3, 0.18, 0.7], [51.48, 0.045, 0.5],
+  [51.525, 0.015, 0.6], [51.54, 0.016, 0.3], [51.556, 0.0015, 0.05], [51.5575, 0.0425, 0.6],
+  [52.04, 0.045, 0.45], [52.085, 0.002, 0.05], [52.087, 0.033, 1.5],
   // the run home: the gate, framed as it was that morning (engine.js)
   [72.5, 0.78, 0.36],
   // the morning's bonds, given room: his uncle's hand measuring him against himself (come down to in three steps, so
@@ -65,6 +79,16 @@ export const SLOWMO = [
   [48.466, 48.468, 48.95, 49.3, 0.17],
   // (the dive: the lens tipping over at the top, weightless for a moment before it falls)
   [52.5, 52.56, 52.68, 52.8, 0.3],
+  // (and the fight's blows: slow as each comes in, so it is slow motion and not two men slowed in a quick world; dead
+  // still on each one's stop, the sparks, the bent air, the flicker and the impact frame held with the blow, the lens
+  // left where the blow knocked it; then all at speed again. Left on the clock, the sparks would fly on through a
+  // stopped world, footage paused under a moving overlay)
+  [50.2, 50.235, 50.2515, 50.252, 0.35], [50.2499, 50.25, 50.2515, 50.2516, 0.05],
+  [50.705, 50.715, 50.75, 50.76, 0.35],
+  [50.915, 50.93, 50.975, 50.985, 0.4], [50.9499, 50.95, 50.9512, 50.9513, 0.05],
+  [51.48, 51.49, 51.5575, 51.5585, 0.4], [51.5559, 51.556, 51.5575, 51.5576, 0.05],
+  [52.035, 52.05, 52.087, 52.0872, 0.5], [52.0849, 52.085, 52.087, 52.0871, 0.05],
+  [52.3469, 52.347, 52.349, 52.3491, 0.05], [52.4449, 52.445, 52.4475, 52.4476, 0.05],
   // (his uncle's hand falls; the tear: the fire and the embers all but stop while it falls)
   [91.4, 91.55, 92.0, 92.2, 0.08],
 ];

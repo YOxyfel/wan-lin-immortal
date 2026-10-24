@@ -1,5 +1,5 @@
 // Frames of the film at its own speed: the story stepped at 30 frames a second on Watch's clock (so heads, springs,
-// bolts and everything else move as they do when it plays), every n-th frame rendered and saved.
+// bolts and everything else move as they do when it plays, on the story's own clock), every n-th frame rendered and saved.
 // Usage (under serve.cjs): node strip.cjs OUTDIR TAG W H CAPFPS T0 T1 [T0 T1 ...]   (spans in Watch seconds)
 // Saves OUTDIR/u<u>-<TAG>.jpg (sheet.py labels them with their Watch time).
 // Debug mode (?debug) turns the scripted strikes off: the run home's ground strikes are struck here as the story
@@ -26,15 +26,20 @@ const { launch, site, offline } = require('./browser.cjs');
       const cap = t >= t0 - 1e-6 && Math.round((t - t0) * FPS) % every === 0;
       const u = await page.evaluate(async ([t, dt, cap]) => {
         const { watchT } = await import('/assets/cinderfall/score.js');
-        const { memoryAt, STRIKES } = await import('/assets/cinderfall/timeline.js');
+        const { memoryAt, STRIKES, timeRate } = await import('/assets/cinderfall/timeline.js');
         let a = 0, b = 146;
         for (let i = 0; i < 50; i++) { const m = (a + b) / 2; if (watchT(m) < t) a = m; else b = m; }
         const u = (a + b) / 2;
         const G = STRIKES.filter(x => x[3] === 2), lu = window.__lastU ?? u;
         G.forEach((x, i) => { if (lu < x[0] && u >= x[0]) window.__cf.engine.debug.gstrike = [i, 0]; });
         window.__lastU = u;
-        if (cap) await window.__cf.frame(u, 1000 + t, dt);
-        else window.__cf.engine.update(memoryAt(u), 1000 + t, dt);
+        // (on the story's own clock, as boot.js runs it: slowed in the slow-motion beats, timeline.js SLOWMO; on Watch's,
+        // a blow's stop held its impact frame and its sparks for their length in Watch seconds, not as the film does)
+        const rate = timeRate(u), step = window.__clkT == null ? 0 : t - window.__clkT;
+        window.__clk = window.__clkT == null ? 1000 + t : window.__clk + (step > 0 ? step * rate : 1);
+        window.__clkT = t;
+        if (cap) await window.__cf.frame(u, window.__clk, dt);
+        else window.__cf.engine.update(memoryAt(u), window.__clk, dt * rate);
         return u;
       }, [t, 1 / FPS, cap]);
       if (cap) await page.screenshot({ path: `${out}/u${u.toFixed(4)}-${tag}.jpg`, type: 'jpeg', quality: 82, timeout: 300000 });

@@ -1085,3 +1085,46 @@ frames a few hundredths of a second apart, by us and by a second pair of eyes th
   ruler of a blade at the swing, the crescent's halves smears; the gold one's own sword gone from his hand in the push
   back, the ride with him a held pose; the opening's trails still beads on rods.
 - **Watch** runs 8:12; the morning, from the crane to the gate, is 1:44 of it.
+
+## Round 15: the blows of the fight above the clouds, given their weight (24 October 2026)
+
+The reviewer: the fight in the sky is glossed over far too fast; each attack, each moment should feel its impact; as it
+is, it plays like footage at normal speed; it should slow down, and strike.
+
+**How it was**: the fight ran at its own pace (a fifth of the story a second) through every blow. Only the great
+sword's swing, the crescent's split and the end of the fury had been slowed, and nothing had been slowed on the clock
+the sparks, the flicker and the impact frames run on: each meeting went by in a frame, its impact frame for a
+twentieth of a second.
+
+- **Every blow is ramped** (`timeline.js` STRETCHES and SLOWMO): the last of the way in slows to between a half and a
+  third of the pace, the story's clock with it, so it is slow motion and not two men slowed in a quick world; the
+  blow stops dead for a tenth to a quarter of a second, its impact frame held in two tones, the lens left where the
+  blow knocked it, the sparks and the bent air held at their first instant; and what it throws goes off at speed.
+- **The beats**: the two lights streaking in at each other over most of a second, the stop on the meeting, its impact
+  frame held on into the white the cut is made in (`war.js` BLOWS: at its old length it would have ended as the white
+  began to rise, a frame of plain colour between the two); the great sword's swing and the crescent born out of it in
+  slow motion; the crescent coming in at the masked one, the stop on the split, its halves going apart slowly; the
+  storm hammering the bell, the bell bulging and shattering at half speed; the dash into the lock slowing as they
+  meet, the stop made on the cut in close to them, the two of them in two tones over the crossed blade and shaft; the
+  light of the lock swelling, the stop on its burst, the masked one flung out of it at half again the pace; the storm
+  let go out of him, stopped on; the storm's blade on the bell, stopped on, the gold one smashed down out of it
+  faster than he fell before, as fast as the lens can tip down after him (at twice his old speed it whipped down at
+  122 degrees a second).
+- **Watch**: the fight is 27.0 s (was 24.6); Watch is 8:14 (was 8:12), every music slot from the fight on 2.4 s later
+  (the music list is updated).
+- **The strips** (`tools/verify/strip.cjs`): frames are rendered on the story's own clock, as the film runs it (on
+  Watch's they ran the clock at full speed through every slowed passage, so a stop's impact frame was shorter in the
+  strips than in the film, and slow motion's sparks flew at full speed).
+- **Checked**: frame strips at fifteen a second over every blow, on the story's own clock, looked at by us (no second
+  pair of eyes this round, to keep the round lean, as the owner asked); every cut rule (0 FAIL in the walk, the fight
+  and the run home); the whole story at high quality (no programs created during it, no page errors).
+- **Still open after this round** (for the next): on the dash into the lock, a row of round glows along the gold one's
+  streak behind him (now for a quarter of a second, four of them; before, two or three run together for a frame or
+  two); and all of round 14's list: on the run home, the colour round strikes one and two goes out within a tenth of
+  a second while the gate's lingers; bolts one, two and six still a pale band between dark edges in a frame or two;
+  the far pagoda a dark dome until strike one lights it; every strike the same rhythm. In the fight: the dive's end
+  under the storm (the pines telephone poles, the hillside a slab, the great bolt a capsule and then a smooth tube,
+  the lens plunging to him and stopping dead under the flash as he appears); single-frame grey hairlines among the
+  fury's strokes and its last stroke a frozen curve onto his hood; the great sword's notched crown as it forms, a flat
+  ruler of a blade at the swing, the crescent's halves smears; the gold one's own sword gone from his hand in the push
+  back, the ride with him a held pose; the opening's trails still beads on rods.

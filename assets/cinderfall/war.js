@@ -79,7 +79,9 @@ export const maskedAt = (u, out = V3()) => MASKED(u, out);
 // ------------------------------------------------------------------ the blows: [u, kind, where, size]
 // kind: the duel's (duel.js BLOW) and the war's own: 6 the crescent thrown, 7 the crescent split, 8 lightning on the bell
 export const BLOWS = [
-  { u: 50.25, kind: 5, at: u => L(0, 1.5, 0), crater: [0, 0, 1.9, 2.2], frame: 0.06, bolts: 3, shake: 1.6 },
+  // (its impact frame held on past the blow's stop into the white the cut is made in: at its old length it ended as the
+  // white began to rise, a frame or two of plain colour between the two, a flicker)
+  { u: 50.25, kind: 5, at: u => L(0, 1.5, 0), crater: [0, 0, 1.9, 2.2], frame: 0.12, bolts: 3, shake: 1.6 },
   { u: 50.742, kind: 6, at: u => GOLD(50.742).addScaledVector(AX, 14).add(V3(0, 2, 0)), shake: 0.4 },
   { u: 50.95, kind: 7, at: u => CRES_HIT(), frame: 0.045, bolts: 1, shake: 1.2 },
   ...[51.306, 51.322, 51.343, 51.364, 51.388, 51.418, 51.448, 51.47].map((u, i) => ({ u, kind: 8, i, at: () => boltHit(i), shake: 0.35 + (i === 7 ? 0.4 : 0) })),
